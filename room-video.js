@@ -921,6 +921,17 @@
       // 喺第二個分頁（例如撳咗朋友邀請彈窗）先接受入房，一定要連埋分頁都
       // 一齊切返去，唔係個房間狀態變咗但畫面仲留喺原本嗰頁，睇落好似冇反應
       if (typeof window.switchTab === 'function') window.switchTab('room');
+      // 一入房就自動全螢幕（好似 Google Meet 咁），唔使學生自己再撳「⛶ 全螢幕」
+      // 先識用。淨係 UI 層面嘅「放大版面」全螢幕（見 toggleVideoFullscreenMode），
+      // 唔係瀏覽器嗰種真．全螢幕（唔想無端端搶走瀏覽器控制項／要求額外權限）。
+      // 等返一個 tick 等個畫面真正切換咗去 room-active 之後先觸發，唔係就
+      // 量唔到啱嘅可用空間（同 toggleVideoFullscreenMode 入面個做法一致）。
+      requestAnimationFrame(() => {
+        const roomActiveEl = document.getElementById('room-active');
+        if (roomActiveEl && !roomActiveEl.classList.contains('video-fullscreen-mode')) {
+          window.toggleVideoFullscreenMode();
+        }
+      });
 
       startTimer();
       listenToRoomSignaling(roomId);
