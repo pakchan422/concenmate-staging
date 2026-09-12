@@ -703,12 +703,20 @@
     // 特登唔用返 window.showToast（嗰個淨係得一個「位」，如果連續有多個人
     // 幾乎同時加入會互相蓋晒），而係獨立疊加顯示，睇晒晒邊個入咗嚟。
     function showJoinNotification(name) {
+      const roomActiveEl = document.getElementById('room-active');
+      if (!roomActiveEl) return;
       let container = document.getElementById('join-notification-container');
+      // 掛喺 #room-active 入面（唔係成個 document.body），並且用 position:absolute
+      // 置中喺呢個房間畫面正中間——同 #room-active 本身係咪全螢幕狀態無關，
+      // 兩種情況（普通版面 / 全螢幕）都一樣會出現喺視訊房嘅正中央，唔會走去
+      // 成個瀏覽器視窗嘅頂部（見 index.html 入面 #room-active { position:relative }）。
       if (!container) {
         container = document.createElement('div');
         container.id = 'join-notification-container';
-        container.style.cssText = 'position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;';
-        document.body.appendChild(container);
+        container.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:500; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;';
+        roomActiveEl.appendChild(container);
+      } else if (container.parentElement !== roomActiveEl) {
+        roomActiveEl.appendChild(container);
       }
       const note = document.createElement('div');
       note.textContent = `👋 ${name || '同學'} 進來了`;

@@ -9,7 +9,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.100.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.101.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -306,6 +306,13 @@
        做右手邊直向細長條——因為橫向螢幕通常係「高度」唔夠用（睇返
        updateFullscreenGridSize 嘅計算就知），將控制列由食「高度」
        改做食「闊度」，就可以令鏡頭畫面用盡返個高度，顯示得更大。 */
+    /* 淨係想令 #room-active 變做「有加咗定位」嘅容器（非全螢幕嗰陣都要），
+       等入面用 position:absolute 嘅嘢（例如「XXX 進來了」提示，見
+       showJoinNotification）係跟返呢個房間畫面本身置中，唔係成個瀏覽器
+       視窗置中——本身唔係 .video-fullscreen-mode 都要生效，所以獨立寫
+       喺呢度，唔跟落 fullscreen 嗰條 selector 度。 */
+    #room-active { position: relative; }
+
     #room-active.video-fullscreen-mode {
       position: fixed;
       inset: 0;
@@ -2607,6 +2614,17 @@
   <div class="modal-backdrop" id="modal-invite-friend" style="display:none;">
     <div class="modal-box">
       <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">🤝 邀請朋友入房</h3>
+
+      <!-- 分享連結邀請：唔限於已經係 ConcenMate 好友嘅人，隨時可以複製／
+           分享去 WhatsApp、Instagram 等社交媒體，等對方一撳就直接入到嚟。
+           見 window.shareRoomInviteLink（app-features.js）。 -->
+      <div style="background:#F0F6F8; border-radius:12px; padding:10px 12px; margin-bottom:14px;">
+        <p style="font-size:13px; font-weight:bold; color:var(--brand-800); margin-bottom:2px;">🔗 用連結邀請（WhatsApp／Instagram 等都得）</p>
+        <p style="font-size:13px; color:#666; margin-bottom:8px;">唔限已加你做朋友都得，撳一下就可以將連結傳畀任何人</p>
+        <button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px; padding:7px;" onclick="shareRoomInviteLink()">📤 分享溫習房連結</button>
+      </div>
+
+      <p style="font-size:13px; font-weight:bold; color:var(--brand-800); margin-bottom:2px;">或者邀請已加嘅朋友：</p>
       <p style="font-size:13px; color:#888; margin-bottom:12px;">邀請會在 5 分鐘內有效，之後就會過期</p>
       <div id="invite-friend-list" style="max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
       <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; margin-top:12px;" onclick="closeModal('modal-invite-friend')">關閉</button>

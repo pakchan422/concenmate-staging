@@ -2976,6 +2976,39 @@
       if (panel) panel.style.display = 'none';
     };
 
+    // ===================== 🔗 分享連結邀請（WhatsApp／Instagram 等） =====================
+    // 同下面「邀請朋友入房」唔同：呢個唔限於已經加咗做 ConcenMate 好友嘅
+    // 人，隨時可以將連結貼去任何社交媒體傳畀任何人，對方撳一下連結、
+    // 登入（或註冊）之後就會自動加入返呢間房——見 window.checkJoinRoomHashRoute
+    // （app-core.js），呢度淨係負責「整條連結出嚟、分享／複製」呢部分。
+    window.shareRoomInviteLink = async function() {
+      if (!state.currentRoomId) { window.showToast('要在房間入面先可以分享連結', '⚠️'); return; }
+      const roomTitleEl = document.getElementById('active-room-title');
+      const roomName = (roomTitleEl && roomTitleEl.innerText) || '溫習房';
+      const link = `${window.location.origin}${window.location.pathname}#join-room=${state.currentRoomId}`;
+      const shareText = `一齊嚟 ConcenMate 溫習啦！撳呢個連結加入我個溫習房「${roomName}」：`;
+
+      // 手機瀏覽器（同部分電腦瀏覽器）支援 navigator.share，會彈出裝置本身
+      // 嘅分享選單，入面就會有 WhatsApp、Instagram 等已安裝嘅社交 App 可以揀。
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'ConcenMate 書伴 · 溫習室邀請', text: shareText, url: link });
+          return; // 用家喺分享選單度揀咗（或者取消咗）都算完成，唔使再做複製那一步
+        } catch (e) {
+          // 用家自己撳「取消」都會拋呢個 error，唔算真正失敗，跌落去用複製方式頂住
+        }
+      }
+
+      // 冇 navigator.share 支援（多數電腦瀏覽器）：複製到剪貼簿，畀用家自己
+      // 貼去 WhatsApp 網頁版／Instagram 訊息等
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n${link}`);
+        window.showToast('連結已複製！貼去 WhatsApp、Instagram 等傳畀朋友啦', '📋');
+      } catch (e) {
+        window.showToast('複製失敗，連結：' + link, '⚠️');
+      }
+    };
+
     // ===================== 邀請朋友入房 =====================
     // 邀請有效期：5 分鐘，過咗期就算撳「加入」都會提示過期，唔會直接放行
     const ROOM_INVITE_VALID_MS = 5 * 60 * 1000;
