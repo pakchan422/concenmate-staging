@@ -9,7 +9,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.102.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.103.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1309,9 +1309,13 @@
       .landing-nav-inner { padding-left: 16px; padding-right: 16px; gap: 8px; }
       .landing-nav-badge { display: none; }
       .landing-nav-tagline { display: none; }
-      .landing-nav-actions { gap: 10px; }
-      .landing-nav-login-header { display: none; }
-      .landing-nav-actions .landing-btn { padding: 10px 16px; font-size: 14px; }
+      .landing-nav-actions { gap: 8px; }
+      /* 手機窄畫面下都要保留「登入」按鈕，之前設定咗 display:none 會令
+         登入前主頁完全冇入口去登入畫面，只剩返「免費開始使用」（註冊），
+         而家改為縮細字體＋去除白位，保留於畫面上，確保登入同註冊兩個
+         按鈕喺窄畫面都能夠並排顯示晒。 */
+      .landing-nav-login-header { font-size: 13px; }
+      .landing-nav-actions .landing-btn { padding: 10px 14px; font-size: 13px; }
     }
   </style>
 </head>
