@@ -9,7 +9,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.108.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.109.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1886,13 +1886,19 @@
               <div class="fs-hide-in-fullscreen" style="display:flex; align-items:center; gap:6px;">
                 <span style="font-weight:bold; font-size:16px;" id="active-room-title">DSE 衝刺專注房</span>
                 <span class="tag" style="background:#F0E9DF; color:#1E4550;" id="active-room-subject">數學</span>
-                <!-- 呢間房有設密碼鎖先會顯示（見 room-video.js 嘅 enterRoomSetup），
-                     撳一下用 toast 顯示返個密碼。圖示預設係🔒 emoji，管理員可以喺
-                     後台「功能圖示」分頁上傳自訂圖片取代（key: roomLock）。 -->
-                <button type="button" id="room-password-lock-btn" onclick="window.showRoomPasswordPopup()" title="查看房間密碼" style="display:none; align-items:center; justify-content:center; background:none; border:none; cursor:pointer; padding:2px;">
-                  <span class="nav-icon" id="nav-icon-roomLock" style="width:20px; height:20px; font-size:18px;">🔒</span>
-                </button>
               </div>
+
+              <!-- 呢間房有設密碼鎖先會顯示（見 room-video.js 嘅 enterRoomSetup），撳一下
+                   會喺視訊溫習室正中間彈出密碼提示，5 秒後自動消失（見 room-video.js
+                   嘅 window.showRoomPasswordPopup）。圖示預設係🔒 emoji，管理員可以喺
+                   後台「功能圖示」分頁上傳自訂圖片取代（key: roomLock）。
+                   ⚠️ 特登擺喺 .fs-hide-in-fullscreen 之外（獨立一嚿），先至可以喺
+                   全螢幕模式都繼續顯示——唔係嘅話成個房名／科目嗰個 div 入咗全螢幕
+                   會俾 .fs-hide-in-fullscreen 個 CSS 規則隱藏晒，個鎖 icon 會跟埋一齊
+                   唔見咗。 -->
+              <button type="button" id="room-password-lock-btn" onclick="window.showRoomPasswordPopup()" title="查看房間密碼" style="display:none; align-items:center; justify-content:center; background:none; border:none; cursor:pointer; padding:2px;">
+                <span class="nav-icon" id="nav-icon-roomLock" style="width:20px; height:20px; font-size:18px;">🔒</span>
+              </button>
 
               <div class="room-bar-btn-group" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                 <button class="btn btn-primary" type="button" id="btn-camera" onclick="toggleCamera()">📹 開啟鏡頭</button>

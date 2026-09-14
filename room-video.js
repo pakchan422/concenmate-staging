@@ -913,12 +913,46 @@
       }
     };
 
-    // 房間工具列嗰粒🔒掣：撳一下就用 toast 顯示返呢間房嘅密碼（房主同
-    // 已經輸入啱密碼先入到房嘅參加者，都算「已經知道密碼」，純粹方便
-    // 隨時查返、或者複製俾其他想入嚟嘅朋友，唔使再問房主一次）。
+    // 房間工具列嗰粒🔒掣：撳一下就喺視訊溫習室正中間彈一個提示視窗，顯示返
+    // 呢間房嘅密碼，5 秒後自動消失（房主同已經輸入啱密碼先入到房嘅參加者，
+    // 都算「已經知道密碼」，純粹方便隨時查返、或者複製俾其他想入嚟嘅朋友，
+    // 唔使再問房主一次）。
+    // 特登唔用 window.showToast（嗰個掛喺成個瀏覽器視窗右下角／頂部，全螢幕
+    // 模式入面未必留意到），改用同 showJoinNotification 一樣嘅做法：掛喺
+    // #room-active 入面、用 position:absolute 置中喺呢個房間畫面正中間——
+    // 同 #room-active 本身係咪全螢幕狀態無關，兩種情況都一樣會出現喺視訊房
+    // 嘅正中央（見 index.html 入面 #room-active { position:relative }）。
     window.showRoomPasswordPopup = function() {
       if (!state.currentRoomPassword) return; // 冇密碼嘅房，粒掣本身都會隱藏，呢度係保險檢查
-      window.showToast(`🔒 呢間溫習室嘅密碼係：${state.currentRoomPassword}`, '🔑');
+
+      const roomActiveEl = document.getElementById('room-active');
+      if (!roomActiveEl) return;
+
+      // 每次撳都清走上一個未消失嘅提示，避免連撳幾下疊埋一齊顯示
+      const existing = document.getElementById('room-password-popup-overlay');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'room-password-popup-overlay';
+      overlay.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:600; pointer-events:none; opacity:0; transition:opacity .25s ease, transform .25s ease;';
+      overlay.innerHTML = `
+        <div style="background:rgba(20,20,20,0.85); color:#fff; padding:22px 32px; border-radius:16px; text-align:center; box-shadow:0 6px 24px rgba(0,0,0,0.35); backdrop-filter:blur(4px);">
+          <div style="font-size:30px; margin-bottom:8px;">🔒</div>
+          <div style="font-size:14px; opacity:0.85; margin-bottom:6px;">呢間溫習室嘅密碼係</div>
+          <div style="font-size:32px; font-weight:bold; letter-spacing:10px;">${window.escapeHtml(state.currentRoomPassword)}</div>
+        </div>
+      `;
+      roomActiveEl.appendChild(overlay);
+      requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        overlay.style.transform = 'translate(-50%, -50%) scale(1)';
+      });
+
+      // 5 秒後自動消失（先淡出，再真正移除元素）
+      setTimeout(() => {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 300);
+      }, 5000);
     };
 
     window.handleCreateRoomSubmit = async function(e) {
