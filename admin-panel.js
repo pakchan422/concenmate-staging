@@ -187,7 +187,7 @@
 
       if (!adminGachaDraft) {
         if (!gachaConfigLoaded) {
-          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入緊扭蛋機設定...</p>';
+          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中扭蛋機設定...</p>';
           return; // Firestore 資料一到，loadGachaConfigFromFirestore() 會自動再 render 多次
         }
         adminGachaDraft = {
@@ -255,19 +255,19 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
               <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">🦦 Ottiee 貼紙圖鑑（共 ${pool.length} 隻）</h3>
               <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminNormalizeGachaWeights()">⚖️ 調整做啱好 100</button>
+                <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminNormalizeGachaWeights()">⚖️ 調整為剛好 100</button>
                 <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminRenumberGachaStickers()">🔢 重新排序編號</button>
                 <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminAddGachaPrize()">➕ 新增貼紙</button>
               </div>
             </div>
-            <p style="font-size:13px; color:#888; margin-bottom:8px;">貼紙編號（#id）對應用戶收集圖鑑嘅位置，刪除貼紙之後編號會留返個缺口（例如刪走 #13~#17 之後就由 #12 跳去 #18），呢個唔影響扭蛋／收集功能，純粹畫面上唔靚。如果想執返靚佢，撳「🔢 重新排序編號」會將現存貼紙由上到下重新編做 1、2、3...連續號碼——但要留意：如果已經有真實學生扭過蛋、收藏緊某幾隻貼紙，重新編號會令佢哋原有嘅收藏對唔返新編號（貼紙會「變咗做另一隻」），所以呢個掣淨係啱喺未有學生正式用過、或者你肯接受洗牌返晒佢哋收藏記錄嗰陣先撳。</p>
+            <p style="font-size:13px; color:#888; margin-bottom:8px;">貼紙編號（#id）對應用戶收集圖鑑嘅位置，刪除貼紙之後編號會留返個缺口（例如刪走 #13~#17 之後就由 #12 跳去 #18），呢個唔影響扭蛋／收集功能，純粹畫面上唔靚。如果想執返靚佢，撳「🔢 重新排序編號」會將現存貼紙由上到下重新編做 1、2、3...連續號碼——但要留意：如果已經有真實學生扭過蛋、收藏了某幾隻貼紙，重新編號會令他們原有的收藏對應不上新編號（貼紙會「變咗做另一隻」），所以呢個掣淨係啱喺未有學生正式用過、或者你肯接受洗牌返晒佢哋收藏記錄嗰陣先撳。</p>
             <div style="overflow-x:auto;">
               <table class="admin-table">
                 <thead><tr><th>#</th><th>圖片</th><th>貼紙名稱</th><th>機率權重</th><th></th></tr></thead>
                 <tbody>${rows || '<tr><td colspan="5" style="text-align:center; color:#999; padding:16px;">未有貼紙，請點擊「新增貼紙」開始</td></tr>'}</tbody>
               </table>
             </div>
-            <p style="font-size:13px; color:#888; margin-top:8px;">總權重：<span id="admin-gacha-total">${totalWeight}</span>（右邊「≈ %」欄會在你打緊數字嗰陣即時更新，撳「調整做啱好 100」會將所有權重等比例縮放到啱啱好加埋等於 100，之後那個 % 就會同權重數字一致）</p>
+            <p style="font-size:13px; color:#888; margin-top:8px;">總權重：<span id="admin-gacha-total">${totalWeight}</span>（右邊「≈ %」欄會在你輸入數字時即時更新，點擊「調整為剛好 100」會將所有權重等比例縮放到剛好合計等於 100，之後那個 % 就會與權重數字一致）</p>
           </div>
         `;
       }
@@ -381,7 +381,7 @@
       }
       const sticker = adminGachaDraft.stickers[idx];
       const oldPhoto = sticker.photo;
-      window.showToast('⏳ 上傳緊相片…', '📤');
+      window.showToast('⏳ 上傳中相片…', '📤');
       try {
         const { blob, mimeType } = await compressImageFileToBlob(file, 300, 0.75);
         const ext = mimeType === 'image/png' ? 'png' : 'jpg';
@@ -422,7 +422,7 @@
         return;
       }
       const oldUrl = adminGachaDraft.machineImageUrl;
-      window.showToast('⏳ 上傳緊圖片…', '📤');
+      window.showToast('⏳ 上傳中圖片…', '📤');
       try {
         const { blob, mimeType } = await compressImageFileToBlob(file, 400, 0.85);
         const ext = mimeType === 'image/png' ? 'png' : 'jpg';
@@ -540,7 +540,7 @@
       }
 
       const btn = document.getElementById('btn-admin-save-gacha');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 儲存緊…'; }
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 儲存中…'; }
       try {
         await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'gacha'), payload);
         window.showToast('✅ 扭蛋機設定已儲存，即時對所有用戶生效！', '🎉');
@@ -583,7 +583,7 @@
         // 喺呢度補叫多一次先會顯示到啱嘅相（登入嗰陣呢份資料仲未到）
         if (typeof updateOtterDisplay === 'function') updateOtterDisplay();
         // 如果管理員岩岩好打開緊「扭蛋機獎品」呢個分頁、又仲未開始編輯
-        // （adminGachaDraft 仲係 null，即係岩岩好卡喺「載入緊...」嗰個畫面），
+        // （adminGachaDraft 仲係 null，即係岩岩好卡喺「載入中...」嗰個畫面），
         // 而家攞到資料喇，即刻幫佢用返最新（剛儲存低嗰份）資料重新 render 一次，
         // 唔使佢自己撳一撳個分頁先會刷新
         if (currentAdminTab === 'gacha' && !adminGachaDraft) {
@@ -594,7 +594,7 @@
         }
       }, (err) => {
         console.error('讀取扭蛋機設定失敗:', err);
-        gachaConfigLoaded = true; // 唔好卡死喺「載入緊...」畫面，起碼俾程式碼入面嘅預設值可以用
+        gachaConfigLoaded = true; // 唔好卡死喺「載入中...」畫面，起碼俾程式碼入面嘅預設值可以用
         if (typeof window.isCurrentUserAdmin === 'function' && window.isCurrentUserAdmin()) {
           window.showToast('讀取扭蛋機設定失敗（可能是 Firestore 規則未生效）：' + (err.message || err), '⚠️');
         }
@@ -614,7 +614,7 @@
       if (!container) return;
       if (!adminLevelDraft) {
         if (!levelConfigLoaded) {
-          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入緊等級系統設定...</p>';
+          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中等級系統設定...</p>';
           return;
         }
         adminLevelDraft = JSON.parse(JSON.stringify(LEVEL_CONFIG));
@@ -806,7 +806,7 @@
     function renderAdminRoomsTab() {
       const container = document.getElementById('admin-tab-rooms');
       if (!container || !window.db || !window.fs) return;
-      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入緊房間資料...</p>';
+      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中房間資料...</p>';
 
       if (adminRoomsUnsubscribe) adminRoomsUnsubscribe();
       adminRoomsUnsubscribe = window.fs.onSnapshot(window.fs.collection(window.db, 'rooms'), (snapshot) => {
@@ -860,7 +860,7 @@
     function renderAdminQaTab() {
       const container = document.getElementById('admin-tab-qa');
       if (!container || !window.db || !window.fs) return;
-      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入緊帖子資料...</p>';
+      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中帖子資料...</p>';
 
       if (adminQaUnsubscribe) adminQaUnsubscribe();
       adminQaUnsubscribe = window.fs.onSnapshot(window.fs.collection(window.db, 'qa_posts'), (snapshot) => {
@@ -985,7 +985,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
               <option value="all">🗂 全部範疇</option>
             </select>
           </div>
-          <div id="admin-flashcards-list-container"><p style="text-align:center; color:#999; padding:20px;">載入緊溫習卡...</p></div>
+          <div id="admin-flashcards-list-container"><p style="text-align:center; color:#999; padding:20px;">載入中溫習卡...</p></div>
         </div>
       `;
       toggleFlashcardSubjectMode();
@@ -1219,7 +1219,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
 
       const btn = document.getElementById('btn-bulk-import-flashcards');
       const originalText = btn ? btn.innerText : '';
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 匯入緊…'; }
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 匯入中…'; }
       try {
         const existingSnap = await window.fs.getDocs(window.fs.collection(window.db, 'flashcards'));
         const existingKeys = new Set(existingSnap.docs.map(d => {
@@ -1258,7 +1258,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
     function renderAdminUsersTab() {
       const container = document.getElementById('admin-tab-users');
       if (!container || !window.db || !window.fs) return;
-      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入緊用戶資料...</p>';
+      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中用戶資料...</p>';
 
       if (adminUsersUnsubscribe) adminUsersUnsubscribe();
       adminUsersUnsubscribe = window.fs.onSnapshot(window.fs.collection(window.db, 'users'), (snapshot) => {
@@ -1426,7 +1426,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
            </div>`;
       container.innerHTML = `
         <div style="margin-bottom:10px; background:#FFF7E6; border:1px solid #F0D9A0; border-radius:8px; padding:8px 10px; font-size:13px; color:#8a6d1f;">
-          ⚠️ 技術上的重要提醒：這個網站沒有獨立伺服器，只是用緊 Firebase，所以這裡看唔到、亦都做唔到真正的「IP 封鎖」（因為 Firestore 規則見唔到用戶的真實 IP）。「停權」這個功能就實實在在有效——會即刻令該帳戶下次登入被強制登出，亦令他完全用唔到這個平台。
+          ⚠️ 技術上的重要提醒：這個網站沒有獨立伺服器，只是使用 Firebase，所以這裡看不到、也無法做到真正的「IP 封鎖」（因為 Firestore 規則看不到用戶的真實 IP）。「停權」這個功能就確實有效——會即刻令該帳戶下次登入被強制登出，亦令他完全無法使用這個平台。
         </div>
         ${cards}
         ${loadMoreHtml}
@@ -1436,7 +1436,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
     function renderAdminReportsTab() {
       const container = document.getElementById('admin-tab-reports');
       if (!container || !window.db || !window.fs) return;
-      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入緊舉報記錄...</p>';
+      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中舉報記錄...</p>';
 
       adminReportsLoadedDocs = [];
       adminReportsAllLoaded = false;
@@ -1466,7 +1466,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
       const lastDoc = adminReportsLoadedDocs[adminReportsLoadedDocs.length - 1];
       if (!lastDoc) return;
       const btn = document.getElementById('admin-reports-load-more-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '載入緊...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '載入中...'; }
       try {
         const q = window.fs.query(
           window.fs.collection(window.db, 'reports'),
@@ -1571,7 +1571,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
 
       if (!adminNavIconsDraft) {
         if (!navIconsConfigLoaded) {
-          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入緊圖示設定...</p>';
+          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中圖示設定...</p>';
           return; // Firestore 資料一到，loadNavIconsFromFirestore() 會自動再 render 多次
         }
         adminNavIconsDraft = Object.assign({}, window.NAV_ICON_URLS);
@@ -1624,7 +1624,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
         return;
       }
       const oldUrl = adminNavIconsDraft[key];
-      window.showToast('⏳ 上傳緊圖片…', '📤');
+      window.showToast('⏳ 上傳中圖片…', '📤');
       try {
         const { blob, mimeType } = await compressImageFileToBlob(file, 128, 0.85);
         const ext = mimeType === 'image/png' ? 'png' : 'jpg';
@@ -1691,7 +1691,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
         }
       }, (err) => {
         console.error('讀取側邊欄圖示設定失敗:', err);
-        navIconsConfigLoaded = true; // 唔好卡死喺「載入緊...」畫面
+        navIconsConfigLoaded = true; // 唔好卡死喺「載入中...」畫面
       });
     }
     window.loadNavIconsFromFirestore = loadNavIconsFromFirestore;

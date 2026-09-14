@@ -509,7 +509,7 @@
       const reason = (reasonEl && reasonEl.value) || '其他';
       const notes = (notesEl && notesEl.value || '').trim();
 
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 送緊出...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 傳送中...'; }
       try {
         // 順便攞埋被舉報用家嘅帳號 ID／Email，等管理員唔使再自己查一次
         // 就知道實際要停權邊個帳戶
@@ -999,7 +999,7 @@
       const originalBtnText = submitBtn ? submitBtn.innerText : '';
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerText = '⏳ 建立緊…';
+        submitBtn.innerText = '⏳ 建立中…';
       }
 
       try {
@@ -1602,7 +1602,7 @@
       if (!window.currentUser || !window.currentUser.uid || !window.fs || !window.db) return;
       const listEl = document.getElementById('flashcards-list-container');
       if (!flashcardsHasLoadedOnce && listEl) {
-        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">🔄 載入緊溫習卡...</p>';
+        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">🔄 載入中溫習卡...</p>';
       }
       try {
         const [cardsSnap, progressSnap] = await Promise.all([

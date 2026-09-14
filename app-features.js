@@ -1719,7 +1719,7 @@
         return;
       }
       if (!gachaHistoryHasLoadedOnce) {
-        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:10px;">載入緊中獎記錄...</p>';
+        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:10px;">載入中獎記錄...</p>';
         if (emptyEl) emptyEl.style.display = 'none';
       }
       try {
@@ -1896,7 +1896,7 @@
       ['pop-user-avatar','pop-user-school','pop-user-grade','pop-user-fav','pop-user-dislike','pop-user-hours','pop-user-verified'].forEach(id => {
         const el = document.getElementById(id); if (el) el.innerText = '';
       });
-      if (nameEl) nameEl.innerText = '載入緊…';
+      if (nameEl) nameEl.innerText = '載入中…';
       if (actionsEl) actionsEl.innerHTML = '';
       openModal('modal-view-profile');
 
@@ -1929,7 +1929,7 @@
     async function renderFriendActionButtons(targetUid, targetUserData) {
       const container = document.getElementById('pop-user-friend-actions');
       if (!container || !window.currentUser || !window.db || !window.fs) return;
-      container.innerHTML = '<p style="font-size:13px; color:#999;">載入緊好友狀態...</p>';
+      container.innerHTML = '<p style="font-size:13px; color:#999;">載入中好友狀態...</p>';
       try {
         const reqId = friendRequestDocId(window.currentUser.uid, targetUid);
         const [friendSnap, reqSnap] = await Promise.all([
@@ -1960,7 +1960,7 @@
               </div>
             `;
           } else {
-            container.innerHTML = `<span class="tag">⏳ 邀請已送出，等緊回覆</span>`;
+            container.innerHTML = `<span class="tag">⏳ 邀請已送出，等待回覆</span>`;
           }
           return;
         }
@@ -1982,7 +1982,7 @@
       try {
         const existing = await window.fs.getDoc(reqRef);
         if (existing.exists() && existing.data().status === 'pending') {
-          window.showToast('已經送了邀請，等緊對方回覆', 'ℹ️');
+          window.showToast('已經送了邀請，等待對方回覆', 'ℹ️');
           return;
         }
         if (existing.exists() && existing.data().status === 'accepted') {
@@ -2060,7 +2060,7 @@
       if (!raw) return;
       if (!window.currentUser) { openModal('modal-login'); return; }
       if (!window.db || !window.fs) return;
-      resultEl.innerHTML = '<p style="font-size:13px; color:#999;">搜尋緊...</p>';
+      resultEl.innerHTML = '<p style="font-size:13px; color:#999;">搜尋中...</p>';
       const idLower = raw.toLowerCase();
       try {
         const mapSnap = await window.fs.getDoc(window.fs.doc(window.db, 'usernames', idLower));
@@ -3073,7 +3073,7 @@
       if (!state.currentRoomId) { window.showToast('要在房間入面先可以邀請朋友', '⚠️'); return; }
       const listEl = document.getElementById('invite-friend-list');
       if (!listEl) return;
-      listEl.innerHTML = '<p style="font-size:13px; color:#999; text-align:center;">載入緊好友名單...</p>';
+      listEl.innerHTML = '<p style="font-size:13px; color:#999; text-align:center;">載入中好友名單...</p>';
       openModal('modal-invite-friend');
       try {
         const snap = await window.fs.getDocs(window.fs.collection(window.db, 'users', window.currentUser.uid, 'friends'));
@@ -3119,7 +3119,7 @@
           createdAt: now,
           expiresAt: now + ROOM_INVITE_VALID_MS
         });
-        window.showToast(`✅ 已經邀請 ${friendUsername} 入房，等緊他回應`, '📨');
+        window.showToast(`✅ 已經邀請 ${friendUsername} 入房，等待他回應`, '📨');
         window.closeModal('modal-invite-friend');
       } catch (e) {
         window.showToast('邀請失敗：' + (e.message || e), '❌');
