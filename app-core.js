@@ -520,7 +520,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (!loginId) return;
 
       const btn = document.getElementById('forgot-password-submit-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 處理緊...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 處理中...'; }
 
       try {
         const result = await window.callCloudFunction('requestPasswordReset', { loginId });
@@ -571,7 +571,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
 
       const btn = document.getElementById('reset-password-submit-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 更改緊...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 更改中...'; }
 
       try {
         await window.callCloudFunction('confirmPasswordReset', { token, newPassword: newPwd });
@@ -601,7 +601,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const toEmail = window.currentUser.contactEmail;
       if (!toEmail) { window.showToast('請先在上面填寫電郵地址，再按「儲存修改資料」', '⚠️'); return; }
       const btn = document.getElementById('resend-verify-email-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 發送緊...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 發送中...'; }
       try {
         const token = generateVerifyToken();
         await updateDoc(doc(db, 'users', auth.currentUser.uid), { emailVerifyToken: token, emailVerified: false });
@@ -665,6 +665,25 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
     };
 
+    // ===================== 👤 個人資料頁 Tab 切換 =====================
+    // 「編輯個人資料」入面分咗「個人資料」同「更改登入密碼」兩個 Tab，
+    // 純粹前端切換顯示／隱藏，唔涉及任何資料存取。
+    window.switchProfileSubtab = function(tab) {
+      const infoPanel = document.getElementById('profile-subtab-info');
+      const pwdPanel = document.getElementById('profile-subtab-password');
+      const infoBtn = document.getElementById('profile-subtab-btn-info');
+      const pwdBtn = document.getElementById('profile-subtab-btn-password');
+      if (!infoPanel || !pwdPanel || !infoBtn || !pwdBtn) return;
+
+      const isInfo = tab === 'info';
+      infoPanel.style.display = isInfo ? '' : 'none';
+      pwdPanel.style.display = isInfo ? 'none' : '';
+      infoBtn.style.background = isInfo ? 'var(--brand-100)' : 'transparent';
+      infoBtn.style.color = isInfo ? 'var(--brand-800)' : '#999';
+      pwdBtn.style.background = isInfo ? 'transparent' : 'var(--brand-100)';
+      pwdBtn.style.color = isInfo ? '#999' : 'var(--brand-800)';
+    };
+
     // ===================== 🔑 更改登入密碼 =====================
     // 「編輯個人資料」度嘅「更改密碼」表格：用戶要先打啱「目前密碼」
     // （reauthenticateWithCredential 重新驗證一次身份，Firebase Auth 對
@@ -703,7 +722,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
 
       const btn = document.getElementById('change-password-submit-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 更改緊...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 更改中...'; }
 
       try {
         const credential = EmailAuthProvider.credential(window.currentUser.email, currentPwd);
@@ -913,7 +932,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const submitBtn = document.getElementById('login-submit-btn');
       const cancelBtn = document.getElementById('login-cancel-btn');
       const originalText = submitBtn ? submitBtn.innerText : '登入';
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = '⏳ 登入緊...'; }
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = '⏳ 登入中...'; }
       if (cancelBtn) cancelBtn.disabled = true;
       try {
         await window.loginWithFirebase(email, password);
