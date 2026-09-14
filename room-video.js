@@ -22,7 +22,11 @@
       roomTotalSeconds: 0, // 呢次入房到而家嘅「總溫習時間」（順時計），閒置暫停計分期間唔會累積
       renderFrameId: null,
       currentRoomId: null,
-      currentRoomPassword: null, // 呢間房嘅密碼鎖（冇設就係 null），畀房內🔒「查看密碼」掣用
+      // 呢間房係咪有設密碼鎖（true/false）——真正密碼值而家已經唔再存喺前端
+      // 攞得到嘅地方（見 rooms/{roomId}/private/secret 同 firestore.rules），
+      // 呢度淨係記低「有冇」，畀房內🔒「查看密碼」掣決定顯唔顯示；撳掣嗰刻
+      // 先會即時呼叫 getRoomPassword 呢個 Cloud Function 攞返真正嘅密碼。
+      currentRoomHasPassword: false,
       isHost: false,
       isMicOn: false,
       cameraToggleInProgress: false,
@@ -914,19 +918,36 @@
     };
 
     // 房間工具列嗰粒🔒掣：撳一下就喺視訊溫習室正中間彈一個提示視窗，顯示返
-    // 呢間房嘅密碼，3 秒後自動消失（房主同已經輸入啱密碼先入到房嘅參加者，
-    // 都算「已經知道密碼」，純粹方便隨時查返、或者複製俾其他想入嚟嘅朋友，
-    // 唔使再問房主一次）。
+    // 呢間房嘅密碼，3 秒後自動消失（房主同已經入到房嘅參加者，都算「已經
+    // 知道密碼」，純粹方便隨時查返、或者複製俾其他想入嚟嘅朋友，唔使再問
+    // 房主一次）。
+    // ⚠️ 呢度而家改成 async：真正嘅密碼值前端已經完全攞唔到（見
+    // rooms/{roomId}/private/secret 個 Firestore 規則），撳掣嗰刻先即時
+    // 呼叫 getRoomPassword 呢個 Cloud Function（伺服器端會核實你係房主
+    // 或者已經喺 participants 名單度，先會俾你睇），攞返嚟先顯示。
     // 特登唔用 window.showToast（嗰個掛喺成個瀏覽器視窗右下角／頂部，全螢幕
     // 模式入面未必留意到），改用同 showJoinNotification 一樣嘅做法：掛喺
     // #room-active 入面、用 position:absolute 置中喺呢個房間畫面正中間——
     // 同 #room-active 本身係咪全螢幕狀態無關，兩種情況都一樣會出現喺視訊房
     // 嘅正中央（見 index.html 入面 #room-active { position:relative }）。
-    window.showRoomPasswordPopup = function() {
-      if (!state.currentRoomPassword) return; // 冇密碼嘅房，粒掣本身都會隱藏，呢度係保險檢查
+    window.showRoomPasswordPopup = async function() {
+      if (!state.currentRoomHasPassword || !state.currentRoomId) return; // 冇密碼嘅房，粒掣本身都會隱藏，呢度係保險檢查
 
       const roomActiveEl = document.getElementById('room-active');
       if (!roomActiveEl) return;
+
+      let password;
+      try {
+        const result = await window.callCloudFunction('getRoomPassword', { roomId: state.currentRoomId });
+        password = result && result.password;
+      } catch (e) {
+        window.showToast('讀取密碼失敗：' + (e.message || e), '❌');
+        return;
+      }
+      if (!password) {
+        window.showToast('讀取密碼失敗，請再試一次', '❌');
+        return;
+      }
 
       // 每次撳都清走上一個未消失嘅提示，避免連撳幾下疊埋一齊顯示
       const existing = document.getElementById('room-password-popup-overlay');
@@ -939,7 +960,7 @@
         <div style="background:rgba(20,20,20,0.85); color:#fff; padding:22px 32px; border-radius:16px; text-align:center; box-shadow:0 6px 24px rgba(0,0,0,0.35); backdrop-filter:blur(4px);">
           <div style="font-size:30px; margin-bottom:8px;">🔒</div>
           <div style="font-size:14px; opacity:0.85; margin-bottom:6px;">此溫習室的密碼為</div>
-          <div style="font-size:32px; font-weight:bold; letter-spacing:10px;">${window.escapeHtml(state.currentRoomPassword)}</div>
+          <div style="font-size:32px; font-weight:bold; letter-spacing:10px;">${window.escapeHtml(password)}</div>
         </div>
       `;
       roomActiveEl.appendChild(overlay);
@@ -1007,9 +1028,21 @@
           createdAt: createdAt,
           lastActiveAt: createdAt // 心跳時間戳，畀幽靈房自動清理機制用（見 gcStaleRooms）
         };
-        if (roomPasswordRaw) { roomData.roomPassword = roomPasswordRaw; } // 冇設密碼就唔加呢個欄位，等 UI／join 判斷邏輯簡單啲（得checking存唔存在）
+        // ⚠️ 真正嘅密碼值而家唔再存落主文件（rooms/{roomId}）度——嗰份
+        // 文件人人讀得到，放密碼落去等於冇鎖。主文件淨係記低 hasPassword
+        // 呢個布林值（畀大廳列表、房內🔒掣決定顯唔顯示用），真正密碼另外
+        // 寫落 rooms/{roomId}/private/secret，個 Firestore 規則寫死前端
+        // 完全讀唔返（見 firestore.rules），之後入房驗證／房主查看，都要
+        // 經 Cloud Functions（verifyRoomPassword／getRoomPassword）先做到。
+        if (roomPasswordRaw) { roomData.hasPassword = true; }
 
         await window.fs.setDoc(window.fs.doc(window.db, "rooms", roomId), roomData);
+        if (roomPasswordRaw) {
+          await window.fs.setDoc(window.fs.doc(window.db, "rooms", roomId, "private", "secret"), {
+            password: roomPasswordRaw,
+            hostUid: window.currentUser.uid
+          });
+        }
         closeModal('modal-create-room');
 
         await enterRoomSetup(roomId, roomName, subject, durationMins, window.currentUser.username || '匿名同學', true, createdAt, window.currentUser.uid);
@@ -1054,14 +1087,25 @@
 
         // 密碼鎖檢查：房主本人（isMyRoom）唔使輸入自己岩岩設定嘅密碼；
         // 其他人（包括透過分享連結或者大廳撳「加入房間」）如果房間有
-        // roomPassword，就要彈窗輸入啱先真正入到房。取消／輸入錯誤都
+        // hasPassword，就要彈窗輸入啱先真正入到房。取消／輸入錯誤都
         // 直接擋住，唔會扣住房間座位（joinRoomParticipants 仲未叫）。
-        if (roomCheckData && roomCheckData.roomPassword && !isMyRoom) {
+        // ⚠️ 真正嘅密碼核對而家搬咗去 Cloud Function（verifyRoomPassword）
+        // 度做，呢度嘅 roomCheckData 已經冇 roomPassword 呢個欄位（見
+        // firestore.rules，主文件唔會再存真正密碼），前端淨係傳個
+        // roomId + 輸入值畀伺服器核對，攞返 { ok: true/false }。
+        if (roomCheckData && roomCheckData.hasPassword && !isMyRoom) {
           const entered = await promptRoomPassword();
           if (entered === null) {
             return false; // 用戶自己撳咗「取消」，唔使額外提示錯誤
           }
-          if (entered !== roomCheckData.roomPassword) {
+          let verifyResult;
+          try {
+            verifyResult = await window.callCloudFunction('verifyRoomPassword', { roomId, password: entered });
+          } catch (verifyErr) {
+            window.showToast('驗證密碼失敗，請檢查網絡連線後再試', '❌');
+            return false;
+          }
+          if (!verifyResult || !verifyResult.ok) {
             window.showToast('密碼錯誤，未能加入呢個溫習室', '🚫');
             return false;
           }
@@ -1070,12 +1114,12 @@
         console.error('檢查房間封鎖名單／密碼鎖失敗:', e);
       }
 
-      // 記低呢間房嘅密碼（冇設密碼就係 null），畀房內嗰粒🔒「查看密碼」
-      // 掣用；房主同已經輸入啱密碼先入到房嘅參加者，都算「已經知道
-      // 密碼」，所以呢度唔再額外收埋，方便大家隨時查返。
-      state.currentRoomPassword = (roomCheckData && roomCheckData.roomPassword) || null;
+      // 記低呢間房係咪有密碼鎖（畀房內嗰粒🔒「查看密碼」掣決定顯唔顯示
+      // 用）——真正密碼值而家唔再存喺呢度，撳掣嗰刻先即時呼叫
+      // getRoomPassword 呢個 Cloud Function 現攞現用（見 showRoomPasswordPopup）。
+      state.currentRoomHasPassword = !!(roomCheckData && roomCheckData.hasPassword);
       const lockBtn = document.getElementById('room-password-lock-btn');
-      if (lockBtn) lockBtn.style.display = state.currentRoomPassword ? 'inline-flex' : 'none';
+      if (lockBtn) lockBtn.style.display = state.currentRoomHasPassword ? 'inline-flex' : 'none';
 
       // 房間人數上限檢查：最多 4 人同時使用同一個房間
       const canJoin = await joinRoomParticipants(roomId);
@@ -2143,7 +2187,7 @@
       state.currentRoomId = null;
       state.isHost = false;
       state.currentRoomHostUid = null;
-      state.currentRoomPassword = null;
+      state.currentRoomHasPassword = false;
       const lockBtnOnLeave = document.getElementById('room-password-lock-btn');
       if (lockBtnOnLeave) lockBtnOnLeave.style.display = 'none';
     }

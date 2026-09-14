@@ -22,6 +22,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, deleteUser, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, onSnapshot, addDoc, getDocs, increment, query, where, orderBy, limit, arrayUnion, arrayRemove, documentId, startAfter } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
     // 正式站（concenmate.com）用嘅真正 Firebase 專案 —— 有真實學生資料。
     const firebaseConfigProd = {
@@ -71,11 +72,23 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     const auth = getAuth(app);
     const db = getFirestore(app);
     const storage = getStorage(app);
+    // ⚠️ region 一定要同 functions/index.js 嘅 setGlobalOptions({ region })
+    // 一致（而家係 asia-east1），唔係嘅話前端會揾唔到個 function（404）。
+    const cloudFunctions = getFunctions(app, "asia-east1");
 
     window.db = db;
     window.fs = { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, onSnapshot, addDoc, getDocs, increment, query, where, orderBy, limit, arrayUnion, arrayRemove, documentId, startAfter };
     window.storage = storage;
     window.storageApi = { ref: storageRef, uploadBytes, getDownloadURL, deleteObject };
+
+    // 呼叫 Cloud Functions 嘅共用 helper：window.callCloudFunction('functionName', {...data})
+    // 回傳 Promise，resolve 做嗰個 function return 咗嘅 data；function 嗰邊用
+    // HttpsError 拋出嘅錯誤，呢度會變成一個帶住 .code／.message 嘅 Error。
+    window.callCloudFunction = async function(name, data) {
+      const fn = httpsCallable(cloudFunctions, name);
+      const result = await fn(data || {});
+      return result.data;
+    };
 
     // 幽靈房自動清理：房間冇人心跳（見 updateRoomHeartbeat）超過呢個時間，
     // 就當佢係冇人打理嘅幽靈房（例如房主手機突然關機、瀏覽器崩潰，嚟唔切
@@ -156,7 +169,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
               <span class="tag" style="background:#F0F6F8; color:#1E4550;">${window.escapeHtml(room.subject || '數學')}</span>
               <span style="font-size:13px; color:#3E7A8A; font-weight:bold;">🟢 直播中</span>
             </div>
-            <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">${room.roomPassword ? '🔒 ' : ''}${window.escapeHtml(room.name)}</h4>
+            <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">${room.hasPassword ? '🔒 ' : ''}${window.escapeHtml(room.name)}</h4>
             <p style="font-size:13px; color:#666;">房主：<strong>${window.escapeHtml(room.hostName || '匿名同學')}</strong></p>
             <p style="font-size:13px; color:#888; margin-top:2px;">👥 ${room.participantCount || 0}/${window.ROOM_CAPACITY || 4} 人 · 🍅 每輪專注：${room.duration || 30} 分鐘</p>
           </div>
