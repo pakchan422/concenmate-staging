@@ -9,7 +9,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.107.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.108.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1249,7 +1249,7 @@
     .landing-nav-badge { background: var(--brand-100); color: var(--brand-700); font-size: 13px; padding: 3px 9px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
     .landing-nav-tagline { font-size: 11px; font-weight: 600; letter-spacing: .03em; color: var(--brand-500); white-space: nowrap; }
     .landing-nav-actions { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
-    .landing-nav-login { font-size: 16px; font-weight: 700; color: var(--brand-700); text-decoration: none; white-space: nowrap; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
+    .landing-nav-login { font-size: 15px; font-weight: 700; color: var(--brand-700); text-decoration: none; white-space: nowrap; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
 
     .landing-hero { padding: 84px 0 104px; overflow: hidden; }
     .landing-hero-inner { display: flex; align-items: center; gap: 56px; }
@@ -1886,6 +1886,12 @@
               <div class="fs-hide-in-fullscreen" style="display:flex; align-items:center; gap:6px;">
                 <span style="font-weight:bold; font-size:16px;" id="active-room-title">DSE 衝刺專注房</span>
                 <span class="tag" style="background:#F0E9DF; color:#1E4550;" id="active-room-subject">數學</span>
+                <!-- 呢間房有設密碼鎖先會顯示（見 room-video.js 嘅 enterRoomSetup），
+                     撳一下用 toast 顯示返個密碼。圖示預設係🔒 emoji，管理員可以喺
+                     後台「功能圖示」分頁上傳自訂圖片取代（key: roomLock）。 -->
+                <button type="button" id="room-password-lock-btn" onclick="window.showRoomPasswordPopup()" title="查看房間密碼" style="display:none; align-items:center; justify-content:center; background:none; border:none; cursor:pointer; padding:2px;">
+                  <span class="nav-icon" id="nav-icon-roomLock" style="width:20px; height:20px; font-size:18px;">🔒</span>
+                </button>
               </div>
 
               <div class="room-bar-btn-group" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">

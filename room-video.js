@@ -22,6 +22,7 @@
       roomTotalSeconds: 0, // 呢次入房到而家嘅「總溫習時間」（順時計），閒置暫停計分期間唔會累積
       renderFrameId: null,
       currentRoomId: null,
+      currentRoomPassword: null, // 呢間房嘅密碼鎖（冇設就係 null），畀房內🔒「查看密碼」掣用
       isHost: false,
       isMicOn: false,
       cameraToggleInProgress: false,
@@ -912,6 +913,14 @@
       }
     };
 
+    // 房間工具列嗰粒🔒掣：撳一下就用 toast 顯示返呢間房嘅密碼（房主同
+    // 已經輸入啱密碼先入到房嘅參加者，都算「已經知道密碼」，純粹方便
+    // 隨時查返、或者複製俾其他想入嚟嘅朋友，唔使再問房主一次）。
+    window.showRoomPasswordPopup = function() {
+      if (!state.currentRoomPassword) return; // 冇密碼嘅房，粒掣本身都會隱藏，呢度係保險檢查
+      window.showToast(`🔒 呢間溫習室嘅密碼係：${state.currentRoomPassword}`, '🔑');
+    };
+
     window.handleCreateRoomSubmit = async function(e) {
       e.preventDefault();
 
@@ -998,9 +1007,12 @@
       // 曾經俾房主踢走過嘅用家唔可以再加入返呢間房（bannedUids 名單一直
       // 留喺房間文件度，唔會自動清走，見 window.kickParticipant）；
       // 同時順便喺呢一次讀取一併檢查房間密碼鎖（roomPassword）。
+      // roomCheckData 特登攞出嚟做上一層嘅變數（唔淨係喺 try 入面），
+      // 等下面「記低呢個房嘅密碼、畀房內嗰粒🔒查看掣用」嗰段都攞得到。
+      let roomCheckData = null;
       try {
         const roomCheckSnap = await window.fs.getDoc(window.fs.doc(window.db, 'rooms', roomId));
-        const roomCheckData = roomCheckSnap.exists() ? roomCheckSnap.data() : null;
+        roomCheckData = roomCheckSnap.exists() ? roomCheckSnap.data() : null;
         if (roomCheckData && Array.isArray(roomCheckData.bannedUids) && roomCheckData.bannedUids.includes(window.currentUser.uid)) {
           window.showToast('你已經給房主移出過呢間房，唔可以再加入', '🚫');
           return false;
@@ -1023,6 +1035,13 @@
       } catch (e) {
         console.error('檢查房間封鎖名單／密碼鎖失敗:', e);
       }
+
+      // 記低呢間房嘅密碼（冇設密碼就係 null），畀房內嗰粒🔒「查看密碼」
+      // 掣用；房主同已經輸入啱密碼先入到房嘅參加者，都算「已經知道
+      // 密碼」，所以呢度唔再額外收埋，方便大家隨時查返。
+      state.currentRoomPassword = (roomCheckData && roomCheckData.roomPassword) || null;
+      const lockBtn = document.getElementById('room-password-lock-btn');
+      if (lockBtn) lockBtn.style.display = state.currentRoomPassword ? 'inline-flex' : 'none';
 
       // 房間人數上限檢查：最多 4 人同時使用同一個房間
       const canJoin = await joinRoomParticipants(roomId);
@@ -2090,6 +2109,9 @@
       state.currentRoomId = null;
       state.isHost = false;
       state.currentRoomHostUid = null;
+      state.currentRoomPassword = null;
+      const lockBtnOnLeave = document.getElementById('room-password-lock-btn');
+      if (lockBtnOnLeave) lockBtnOnLeave.style.display = 'none';
     }
 
     window.wakeVideoEngine = function() {
