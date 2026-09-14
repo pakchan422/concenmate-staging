@@ -403,41 +403,43 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
     };
 
-    // 撳完驗證連結、開返網站之後嘅處理：一登入（或者本身已經登入緊）
-    // 就會 call 一次，睇下網址個 hash 有冇帶住驗證資訊
+    // 撳完驗證連結、開返網站之後嘅處理——特登唔要求撳連結嗰部裝置一定要
+    // 登入緊嗰個帳戶先做得到（以前嘅做法係前端直接 updateDoc 自己個
+    // users/{uid} 文件，Firestore 規則淨係俾用戶自己改自己，所以一定要
+    // 喺嗰部裝置登入緊先掂得到；而家改用 verifyEmailToken 呢個 Cloud
+    // Function，用 Admin SDK 核對 uid+token 岩唔岩、寫 emailVerified，
+    // 完全唔理呢部裝置有冇登入、登入緊邊個帳戶——喺手機開封信、喺電腦
+    // 撳連結，或者根本未登入過都做得到，先真正解決咗「電郵驗證一定要
+    // 撳連結嗰部裝置登入返嗰個帳戶」嘅限制）。
     window.checkEmailVerifyHashRoute = async function() {
       const match = (window.location.hash || '').match(/^#verify-email=([^:]+):([0-9a-f]+)$/);
       if (!match) return;
       const [, linkUid, token] = match;
-      if (!window.currentUser) {
-        window.showToast('請先用返那個帳戶登入，先可以完成電郵驗證', '⚠️');
-        return;
-      }
-      if (window.currentUser.uid !== linkUid) {
-        window.showToast('這個驗證連結屬於另一個帳戶，請登出並改用那個帳戶登入', '⚠️');
-        return;
-      }
-      if (window.currentUser.emailVerified) {
-        window.location.hash = '';
-        return;
-      }
-      if (window.currentUser.emailVerifyToken !== token) {
-        window.showToast('這個驗證連結已經失效，可以在「編輯個人資料」度重新發送', '⚠️');
-        window.location.hash = '';
-        return;
-      }
-      try {
-        await updateDoc(doc(db, 'users', linkUid), { emailVerified: true, emailVerifyToken: null });
-        window.currentUser.emailVerified = true;
-        window.currentUser.emailVerifyToken = null;
-        window.showToast('🎉 電郵驗證成功！', '✅');
-        if (typeof window.updateProfileEmailVerifyUI === 'function') window.updateProfileEmailVerifyUI();
-        // 驗證完成即刻解鎖返個 app，唔使用戶自己再撳多次「重新整理」
-        if (typeof window.updateUserAuthUI === 'function') window.updateUserAuthUI();
-      } catch (e) {
-        window.showToast('驗證失敗：' + (e.message || e), '❌');
-      }
       window.location.hash = '';
+      try {
+        const result = await window.callCloudFunction('verifyEmailToken', { uid: linkUid, token });
+        if (result && result.alreadyVerified) {
+          window.showToast('這個電郵地址已經驗證過了', 'ℹ️');
+        } else {
+          window.showToast('🎉 電郵驗證成功！', '✅');
+        }
+        // 如果撳連結嗰部裝置岩岩好登入緊就係嗰個帳戶本人，即刻更新返
+        // 本機狀態，唔使用戶自己再撳多次「重新整理」先解鎖到個 app
+        if (window.currentUser && window.currentUser.uid === linkUid) {
+          window.currentUser.emailVerified = true;
+          window.currentUser.emailVerifyToken = null;
+          if (typeof window.updateProfileEmailVerifyUI === 'function') window.updateProfileEmailVerifyUI();
+          if (typeof window.updateUserAuthUI === 'function') window.updateUserAuthUI();
+        }
+      } catch (e) {
+        if (e.code === 'functions/failed-precondition' || e.code === 'failed-precondition') {
+          window.showToast('這個驗證連結已經失效，可以在「編輯個人資料」中重新發送', '⚠️');
+        } else if (e.code === 'functions/not-found' || e.code === 'not-found') {
+          window.showToast('找不到這個帳戶，可能已經被刪除', '❌');
+        } else {
+          window.showToast('驗證失敗：' + (e.message || e), '❌');
+        }
+      }
     };
     window.addEventListener('hashchange', () => { window.checkEmailVerifyHashRoute(); });
 
@@ -597,7 +599,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     window.resendVerificationEmail = async function() {
       if (!window.currentUser || !auth.currentUser) return;
       const toEmail = window.currentUser.contactEmail;
-      if (!toEmail) { window.showToast('請先在上面填返個電郵地址，再撳「儲存修改資料」', '⚠️'); return; }
+      if (!toEmail) { window.showToast('請先在上面填寫電郵地址，再按「儲存修改資料」', '⚠️'); return; }
       const btn = document.getElementById('resend-verify-email-btn');
       if (btn) { btn.disabled = true; btn.innerText = '⏳ 發送緊...'; }
       try {
@@ -606,7 +608,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.currentUser.emailVerifyToken = token;
         window.currentUser.emailVerified = false;
         await window.sendVerificationEmail(toEmail, window.currentUser.username, auth.currentUser.uid, token);
-        window.showToast('已重新發送驗證電郵，記得check下你個信箱（連埋垃圾郵件夾）', '📧');
+        window.showToast('已重新發送驗證電郵，請查看你的信箱（包括垃圾郵件夾）', '📧');
         if (typeof window.updateProfileEmailVerifyUI === 'function') window.updateProfileEmailVerifyUI();
       } catch (e) {
         window.showToast('發送失敗：' + (e.message || e), '❌');
