@@ -309,7 +309,7 @@
             <p style="font-size:13px; color:#ccc; margin-top:6px;">對方鏡頭已關閉</p>
           </div>
           <div class="video-header">
-            <span class="video-tag" style="cursor:pointer;" onclick="viewUserProfile('${uid}')" title="撳一下看資料／加好友">📹 ${name || '其他用家'}</span>
+            <span class="video-tag" style="cursor:pointer;" onclick="viewUserProfile('${uid}')" title="點擊查看資料／加好友">📹 ${name || '其他用家'}</span>
             <span class="video-tag" id="remote-host-badge-${slotNum}" style="background:#D9EBEF; color:#1E4550; display:none;">👑 房主</span>
             <span class="video-tag" id="stream-status-${uid}" style="background:#3E7A8A; color:#fff;">🔗 連線中...</span>
             <div class="video-more-menu-wrap">
@@ -376,12 +376,12 @@
     // 同一間房都會俾 enterRoomSetup 擋返出去，直到呢間房執咗為止。
     window.kickParticipant = async function(targetUid, targetName) {
       if (!state.isHost || !state.currentRoomId || !window.db || !window.fs) return;
-      if (!confirm(`確定要將「${targetName}」移出這個溫習房？他之後都唔可以再加入返呢間房。`)) return;
+      if (!confirm(`確定要將「${targetName}」移出這個溫習房？他之後都不可以再加入這間房。`)) return;
       try {
         await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId), {
           bannedUids: window.fs.arrayUnion(targetUid)
         });
-        window.showToast(`已將「${targetName}」移出房間，他唔可以再加入呢間房`, '🚫');
+        window.showToast(`已將「${targetName}」移出房間，他不可以再加入這間房`, '🚫');
       } catch (e) {
         window.showToast('踢走失敗：' + (e.message || e), '❌');
       }
@@ -396,7 +396,7 @@
     // 選項，唔使額外寫多一套同步邏輯。
     window.transferHostTo = async function(targetUid, targetName) {
       if (!state.isHost || !state.currentRoomId || !window.db || !window.fs) return;
-      if (!confirm(`確定要將房主身份轉移給「${targetName}」？轉移之後你會變返做普通成員，唔會再有踢人／轉移房主的權限。`)) return;
+      if (!confirm(`確定要將房主身份轉移給「${targetName}」？轉移之後你會變回普通成員，不會再有踢人／轉移房主的權限。`)) return;
       try {
         await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId), {
           hostUid: targetUid,
@@ -466,7 +466,7 @@
     // 出嚟畀用家揀舉報原因、加補充說明
     window.openReportModal = function(targetUid, targetName) {
       if (!window.currentUser) { window.showToast('請先登入', '⚠️'); return; }
-      if (targetUid === window.currentUser.uid) { window.showToast('唔可以舉報返自己', '⚠️'); return; }
+      if (targetUid === window.currentUser.uid) { window.showToast('不可以舉報自己', '⚠️'); return; }
       pendingReportTarget = { uid: targetUid, name: targetName || '呢位同學' };
       pendingReportScreenshot = captureRemoteVideoFrame(targetUid);
 
@@ -801,7 +801,7 @@
           cleanupRoomConnections();
           document.getElementById('room-active').style.display = 'none';
           document.getElementById('room-lobby').style.display = 'block';
-          window.showToast('房主已關閉房間，你已被移返大廳', '🚪');
+          window.showToast('房主已關閉房間，你已被移至大廳', '🚪');
         } else {
           // 房主轉移：更新邊個係房主，「👑 房主」牌會由 updateHostBadge()
           // 自動掛去返正確嗰一格（自己個格或者相應嘅遠端格）
@@ -817,7 +817,7 @@
           // 俾 enterRoomSetup 嗰個檢查擋返出去，唔可以再入返嚟。
           const myUid = window.currentUser ? window.currentUser.uid : null;
           if (myUid && data && Array.isArray(data.bannedUids) && data.bannedUids.includes(myUid)) {
-            doLeaveRoom(false, '你已被房主移出這個溫習房，之後都唔可以再加入 🚫');
+            doLeaveRoom(false, '你已被房主移出這個溫習房，之後都不可以再加入 🚫');
           }
         }
       });
@@ -1081,7 +1081,7 @@
         const roomCheckSnap = await window.fs.getDoc(window.fs.doc(window.db, 'rooms', roomId));
         roomCheckData = roomCheckSnap.exists() ? roomCheckSnap.data() : null;
         if (roomCheckData && Array.isArray(roomCheckData.bannedUids) && roomCheckData.bannedUids.includes(window.currentUser.uid)) {
-          window.showToast('你已經給房主移出過呢間房，唔可以再加入', '🚫');
+          window.showToast('你已經被房主移出過這間房，不可以再加入', '🚫');
           return false;
         }
 
@@ -1106,7 +1106,7 @@
             return false;
           }
           if (!verifyResult || !verifyResult.ok) {
-            window.showToast('密碼錯誤，未能加入呢個溫習室', '🚫');
+            window.showToast('密碼錯誤，未能加入這個溫習室', '🚫');
             return false;
           }
         }
@@ -1761,11 +1761,11 @@
 
       if (!listEl) return;
       if (flashcardsCache.length === 0) {
-        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">現在仲未有溫習卡，等下老師／管理員新增啦！</p>';
+        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">現在尚未有溫習卡，請稍候老師／管理員新增！</p>';
         return;
       }
       if (visible.length === 0) {
-        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">這個篩選範圍暫時未有溫習卡，試吓揀返「全部」看看！</p>';
+        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">這個篩選範圍暫時未有溫習卡，試試選擇「全部」看看！</p>';
         return;
       }
 
@@ -1792,7 +1792,7 @@
       const now = Date.now();
       flashcardReviewQueue = getVisibleFlashcards().filter(c => (c.nextReviewAt || 0) <= now);
       if (flashcardReviewQueue.length === 0) {
-        window.showToast('現在沒有待複習的卡片，遲些再返來啦！', 'ℹ️');
+        window.showToast('現在沒有待複習的卡片，請稍後再回來！', 'ℹ️');
         return;
       }
       flashcardReviewIndex = 0;
@@ -1985,7 +1985,7 @@
       // 一直等到用家自己撳「是，我仍在學習」為止先恢復
       state.awardingPaused = true;
       updateTimerDisplay();
-      window.showToast('偵測到你可能唔在，已暫停計分。撳「是，我仍在學習」即可恢復', '⏸️');
+      window.showToast('偵測到你可能不在，已暫停計分。按「是，我仍在學習」即可恢復', '⏸️');
     }
 
     // 淨係解除暫停狀態、閂返彈窗，唔會有額外 +2 PTS 獎勵——畀開返鏡頭
@@ -2631,7 +2631,7 @@
       if (!state.isMicOn && state.micCooldownUntil && Date.now() < state.micCooldownUntil) {
         const remainSec = Math.max(0, Math.ceil((state.micCooldownUntil - Date.now()) / 1000));
         const mins = Math.ceil(remainSec / 60);
-        window.showToast(`咪仲喺冷卻緊，大約 ${mins} 分鐘後先可以再開咪 🧊`, '⏳');
+        window.showToast(`麥克風仍在冷卻中，大約 ${mins} 分鐘後才可以再開啟 🧊`, '⏳');
         return;
       }
 
@@ -2708,7 +2708,7 @@
           if (state.isMicOn && state.mediaStream) {
             state.isMicOn = false;
             state.mediaStream.getAudioTracks().forEach(track => track.enabled = false);
-            window.showToast('開咪已滿 3 分鐘，已幫你自動收埋，專心返去溫習啦！咪掣進入 5 分鐘冷卻 🧊', '⏳');
+            window.showToast('開啟麥克風已滿 3 分鐘，已為你自動關閉，請專心繼續溫習！麥克風按鈕進入 5 分鐘冷卻 🧊', '⏳');
             // 額外彈出一個唔會自動關閉嘅提示視窗（書面語），確保學生真正留意到，
             // 唔止係一閃即逝嘅 toast——要學生主動按掣確認先關得閉。
             openModal('modal-mic-limit-reminder');

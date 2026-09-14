@@ -460,7 +460,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       try {
         const roomSnap = await getDoc(doc(db, 'rooms', roomId));
         if (!roomSnap.exists()) {
-          window.showToast('呢個溫習室已經唔存在（可能已經解散或者連結已經失效）', '🚫');
+          window.showToast('這個溫習室已經不存在（可能已經解散或連結已經失效）', '🚫');
           window.location.hash = '';
           return;
         }
@@ -630,7 +630,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (window.currentUser.emailVerified) {
           window.showToast('🎉 電郵已驗證，歡迎使用 ConcenMate！', '✅');
         } else {
-          window.showToast('都仲未驗證到喎，記得check清楚封信、撳埋入面個連結', '📧');
+          window.showToast('尚未完成驗證，請檢查郵件並點擊當中的連結', '📧');
         }
         window.updateUserAuthUI();
       } catch (e) {
@@ -713,7 +713,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         return;
       }
       if (newPwd !== confirmPwd) {
-        window.showToast('兩次輸入嘅新密碼不一致，請重新檢查', '⚠️');
+        window.showToast('兩次輸入的新密碼不一致，請重新檢查', '⚠️');
         return;
       }
       if (newPwd === currentPwd) {
@@ -730,7 +730,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         await updatePassword(auth.currentUser, newPwd);
         const form = document.getElementById('change-password-form');
         if (form) form.reset();
-        window.showToast('🎉 密碼已成功更改！下次登入記得用返新密碼', '✅');
+        window.showToast('🎉 密碼已成功更改！下次登入請使用新密碼', '✅');
       } catch (error) {
         if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
           window.showToast('目前密碼輸入錯誤，請再試一次', '❌');
@@ -812,7 +812,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.closeModal('modal-register');
         window.updateUserAuthUI();
         if (newProfile.contactEmail) {
-          window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」，記住他來登入。仲要撳埋寄了去你電郵的驗證連結，先可以正式開始用`, "✨");
+          window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」，請記住以用作登入。另外請點擊已寄至你電郵的驗證連結，才能正式開始使用`, "✨");
         } else {
           window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」，記住他來登入`, "✨");
         }
@@ -822,7 +822,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         // 嗰個 Auth 帳號，否則會留低一個冇對應 Firestore 資料嘅「孤兒」帳號
         console.error('註冊寫入 Firestore 失敗，清理返啱啱建立的 Auth 帳號:', error);
         try { await deleteUser(userCredential.user); } catch (e2) { /* 清理失敗都唔緊要，唔好擋住原本嘅錯誤訊息 */ }
-        window.showToast("註冊失敗，可能個帳號 ID 啱啱給人用了，換一個再試：" + error.message, "❌");
+        window.showToast("註冊失敗，帳號 ID 可能剛被使用，請換一個再試：" + error.message, "❌");
       }
     };
 
@@ -955,7 +955,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const contactEmail = contactEmailInput ? contactEmailInput.value.trim() : (window.currentUser.contactEmail || '');
 
       if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-        window.showToast('聯絡電郵格式唔啱，請檢查後再試', '⚠️');
+        window.showToast('聯絡電郵格式不正確，請檢查後再試', '⚠️');
         return;
       }
 
