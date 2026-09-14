@@ -9,7 +9,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.113.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.114.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -2519,12 +2519,52 @@
           <label style="font-size:13px; font-weight:bold; color:#555;">密碼 (Password)</label>
           <input type="password" id="login-password" class="input-field" required placeholder="請輸入密碼">
         </div>
+        <div style="text-align:right;">
+          <span style="font-size:12px; color:#888; cursor:pointer; text-decoration:underline;" onclick="closeModal('modal-login'); openModal('modal-forgot-password');">忘記密碼？</span>
+        </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
           <span style="font-size:13px; color:#3E7A8A; cursor:pointer;" onclick="closeModal('modal-login'); openModal('modal-register');">還沒有帳號？點此註冊</span>
           <div style="display:flex; gap:6px;">
             <button class="btn btn-outline" type="button" id="login-cancel-btn" onclick="closeModal('modal-login')">取消</button>
             <button class="btn btn-primary" type="submit" id="login-submit-btn">登入</button>
           </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-forgot-password" style="display:none;">
+    <div class="modal-box">
+      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">🔑 忘記密碼</h3>
+      <p style="font-size:13px; color:#777; text-align:center; margin-top:6px;">輸入你嘅帳號 ID，如果呢個帳戶已經登記咗電郵，我哋會寄一個重設密碼嘅連結去嗰個電郵信箱</p>
+      <form onsubmit="handleForgotPasswordSubmit(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+        <div>
+          <label style="font-size:13px; font-weight:bold; color:#555;">帳號 ID</label>
+          <input type="text" id="forgot-account-id" class="input-field" required placeholder="例如：student001">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:10px;">
+          <button class="btn btn-outline" type="button" onclick="closeModal('modal-forgot-password')">取消</button>
+          <button class="btn btn-primary" type="submit" id="forgot-password-submit-btn">📧 寄出重設密碼連結</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-reset-password" style="display:none;">
+    <div class="modal-box">
+      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">🔑 設定新密碼</h3>
+      <form id="reset-password-form" onsubmit="handleResetPasswordSubmit(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+        <div>
+          <label style="font-size:13px; font-weight:bold; color:#555;">新密碼</label>
+          <input type="password" id="reset-new-password" class="input-field" required minlength="6" placeholder="請輸入 6 位或以上的新密碼">
+        </div>
+        <div>
+          <label style="font-size:13px; font-weight:bold; color:#555;">確認新密碼</label>
+          <input type="password" id="reset-confirm-password" class="input-field" required minlength="6" placeholder="再次輸入新密碼">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:10px;">
+          <button class="btn btn-outline" type="button" onclick="closeModal('modal-reset-password')">取消</button>
+          <button class="btn btn-primary" type="submit" id="reset-password-submit-btn">🔑 確認重設密碼</button>
         </div>
       </form>
     </div>
