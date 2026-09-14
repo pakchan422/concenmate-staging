@@ -9,7 +9,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.109.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.110.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -420,6 +420,13 @@
         display: flex;
         flex-direction: column;
         align-items: stretch;
+        /* 一定要用 flex-start（唔跟返基本 .room-bar 個 justify-content:
+           space-between）：呢個直向窄條而家得返 2 件直屬 flex item（🔒 鎖
+           icon + .room-bar-btn-group），如果用 space-between，得返兩件
+           item 就會俾拉到「一件貼頂、一件貼底」，中間爆出一大嚿冇嘢嘅
+           空白（見用戶反映嘅全螢幕截圖）。改用 flex-start 令啲掣／資訊
+           由上至下逐個貼實排落嚟，唔留空隙。 */
+        justify-content: flex-start;
         gap: 8px;
         overflow-y: auto;
         margin-bottom: 0;

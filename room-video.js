@@ -938,7 +938,7 @@
       overlay.innerHTML = `
         <div style="background:rgba(20,20,20,0.85); color:#fff; padding:22px 32px; border-radius:16px; text-align:center; box-shadow:0 6px 24px rgba(0,0,0,0.35); backdrop-filter:blur(4px);">
           <div style="font-size:30px; margin-bottom:8px;">🔒</div>
-          <div style="font-size:14px; opacity:0.85; margin-bottom:6px;">呢間溫習室嘅密碼係</div>
+          <div style="font-size:14px; opacity:0.85; margin-bottom:6px;">此溫習室的密碼為</div>
           <div style="font-size:32px; font-weight:bold; letter-spacing:10px;">${window.escapeHtml(state.currentRoomPassword)}</div>
         </div>
       `;
