@@ -529,7 +529,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         // 提示——避免俾人攞嚟逐個帳號 ID 咁試，反過嚟推斷邊個 ID 已經
         // 有人用咗（呢個 app 嘅 usernames collection 本身雖然已經可以
         // get 得到，但都冇必要喺呢度畀多一重確認）。
-        window.showToast('如果呢個帳號 ID 存在並且已登記電郵，重設密碼連結已經寄咗去嗰個電郵信箱，記得check埋垃圾郵件夾', '📧');
+        window.showToast('如果此帳號 ID 存在並已登記電郵，重設密碼連結已經寄至該電郵信箱，請查看垃圾郵件夾', '📧');
         window.closeModal('modal-forgot-password');
       } catch (error) {
         window.showToast('處理失敗：' + (error.message || error), '❌');
@@ -560,11 +560,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const newPwd = document.getElementById('reset-new-password').value;
       const confirmPwd = document.getElementById('reset-confirm-password').value;
       if (!newPwd || newPwd.length < 6) {
-        window.showToast('新密碼最少要 6 位', '⚠️');
+        window.showToast('新密碼最少需要 6 位', '⚠️');
         return;
       }
       if (newPwd !== confirmPwd) {
-        window.showToast('兩次輸入嘅新密碼不一致', '⚠️');
+        window.showToast('兩次輸入的新密碼不一致', '⚠️');
         return;
       }
 
@@ -577,7 +577,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         const form = document.getElementById('reset-password-form');
         if (form) form.reset();
         window.closeModal('modal-reset-password');
-        window.showToast('🎉 密碼已成功重設！而家可以用新密碼登入喇', '✅');
+        window.showToast('🎉 密碼已成功重設！現在可以使用新密碼登入', '✅');
         window.openModal('modal-login');
       } catch (error) {
         if (error.code === 'functions/not-found' || error.code === 'not-found') {
