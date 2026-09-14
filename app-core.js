@@ -336,6 +336,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (typeof window.checkJoinRoomHashRoute === 'function') {
         window.checkJoinRoomHashRoute();
       }
+      // 忘記密碼嗰個 reset-password hash route 特登唔理登入定登出都要行——
+      // 用戶就係因為唔記得密碼、登入唔到先撳連結入嚟，唔可以好似其他
+      // hash route 咁要求「先登入先處理」
+      if (typeof window.checkPasswordResetHashRoute === 'function') {
+        window.checkPasswordResetHashRoute();
+      }
     });
 
     // ===================== 📧 電郵驗證 =====================
@@ -372,6 +378,28 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         });
       } catch (e) {
         console.error('寄驗證電郵失敗:', e);
+      }
+    };
+
+    // 沿用返上面嗰個 EmailJS 樣式（同一個 template），淨係將連結換做
+    // 「#reset-password=token」——呢個樣式原本嘅文字係寫緊「驗證電郵」，
+    // 用嚟寄重設密碼連結措辭上未必100%啱，如果想要更貼切嘅文字，可以
+    // 喺 EmailJS 度另開一個新樣式，再改返呢度用嗰個 TEMPLATE_ID。
+    window.sendPasswordResetEmail = async function(toEmail, username, token) {
+      if (!toEmail) return;
+      if (!window.EMAILJS_CONFIGURED || typeof emailjs === 'undefined') {
+        console.warn('EmailJS 未設定，沒有寄到重設密碼電郵給', toEmail, '（見 index.html 頭段「電郵驗證設定」）');
+        return;
+      }
+      const resetLink = `${window.location.origin}${window.location.pathname}#reset-password=${token}`;
+      try {
+        await emailjs.send(window.EMAILJS_SERVICE_ID, window.EMAILJS_TEMPLATE_ID, {
+          to_email: toEmail,
+          to_name: username || '同學',
+          verify_link: resetLink
+        });
+      } catch (e) {
+        console.error('寄重設密碼電郵失敗:', e);
       }
     };
 
@@ -454,6 +482,115 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
     };
     window.addEventListener('hashchange', () => { window.checkJoinRoomHashRoute(); });
+
+    // ===================== 🔑 忘記密碼（電郵重設） =====================
+    // 帳號 ID 登入制度入面，Firebase Auth 真正嘅 email 係合成嘅
+    // `{id}@concenmate.local`（唔係用戶會睇到嘅嘢），所以完全冇辦法用
+    // Firebase 內建嘅 sendPasswordResetEmail()——嗰個一定會寄去嗰個合成、
+    // 唔存在嘅地址。要做到「用戶忘記密碼、自己憑登記電郵重設」，一定要
+    // 自己砌一套：
+    //   1) requestPasswordReset（Cloud Function）：畀個帳號 ID，用 Admin
+    //      SDK 查返 uid、登記電郵，生成一個一次性 token，存落
+    //      passwordResets/{token}（Firestore 規則寫死前端完全讀寫唔到，
+    //      淨係 Cloud Functions 嘅 Admin SDK 先掂得到）。因為呢一步用戶
+    //      仲未登入（冇 auth.uid），Firestore 規則做唔到「淨係自己改自己
+    //      個人資料」嗰種限制，一定要搬去 Cloud Function 用 Admin SDK 做。
+    //   2) 前端攞返 Cloud Function 傳返嚟嘅 token + 登記電郵，沿用返
+    //      window.sendVerificationEmail() 嗰個 EmailJS 樣式寄一封帶住
+    //      「#reset-password=token」連結嘅電郵（呢個樣式原本文字係講緊
+    //      「驗證電郵」，唔係度身訂造嘅「重設密碼」措辭，但暫時沿用一樣
+    //      嘅寄信方式，日後想要更貼切嘅文字可以喺 EmailJS 開多一個新樣式）。
+    //   3) 用戶撳個連結開返網站，唔使登入（都登入唔到，佢就係唔記得咗
+    //      密碼）就見到「設定新密碼」嘅彈窗，輸入新密碼提交後 call
+    //      confirmPasswordReset（Cloud Function），用 Admin SDK 嘅
+    //      admin.auth().updateUser() 強制幫佢個帳戶設定新密碼（呢一步都
+    //      一定要 Admin SDK，因為前端 SDK 淨係可以幫「而家已經登入緊」
+    //      嘅用戶改自己密碼，改唔到第二個未登入用戶嘅密碼）。
+    //   token 30 分鐘後失效、用完即棄，防止連結流出去俾第二個人執到都
+    //   仲用得。
+    // ⚠️ v1 限制：同 verifyRoomPassword 一樣未有速率限制，理論上可以
+    // 短時間內連環噉打 requestPasswordReset 嚟濫發電郵，日後想加固可以
+    // 喺 Cloud Function 度加返「同一帳號 ID／同一 IP 幾多分鐘內只可以
+    // 攞幾次」嘅計數器。
+    window.handleForgotPasswordSubmit = async function(e) {
+      e.preventDefault();
+      const loginId = (document.getElementById('forgot-account-id').value || '').trim();
+      if (!loginId) return;
+
+      const btn = document.getElementById('forgot-password-submit-btn');
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 處理緊...'; }
+
+      try {
+        const result = await window.callCloudFunction('requestPasswordReset', { loginId });
+        if (result && result.contactEmail && result.token) {
+          await window.sendPasswordResetEmail(result.contactEmail, result.username, result.token);
+        }
+        // 唔理呢個帳號 ID 實際存唔存在、有冇登記電郵，都顯示返一樣嘅
+        // 提示——避免俾人攞嚟逐個帳號 ID 咁試，反過嚟推斷邊個 ID 已經
+        // 有人用咗（呢個 app 嘅 usernames collection 本身雖然已經可以
+        // get 得到，但都冇必要喺呢度畀多一重確認）。
+        window.showToast('如果呢個帳號 ID 存在並且已登記電郵，重設密碼連結已經寄咗去嗰個電郵信箱，記得check埋垃圾郵件夾', '📧');
+        window.closeModal('modal-forgot-password');
+      } catch (error) {
+        window.showToast('處理失敗：' + (error.message || error), '❌');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '📧 寄出重設密碼連結'; }
+      }
+    };
+
+    // 撳完重設密碼連結、開返網站之後嘅處理——特登唔理會使用者而家有冇
+    // 登入（都好可能未登入，佢就係唔記得密碼先入嚟呢度），直接彈個
+    // 「設定新密碼」嘅視窗畀佢輸入
+    window.checkPasswordResetHashRoute = function() {
+      const match = (window.location.hash || '').match(/^#reset-password=([0-9a-f]+)$/);
+      if (!match) return;
+      window.pendingPasswordResetToken = match[1];
+      window.location.hash = '';
+      window.openModal('modal-reset-password');
+    };
+    window.addEventListener('hashchange', () => { window.checkPasswordResetHashRoute(); });
+
+    window.handleResetPasswordSubmit = async function(e) {
+      e.preventDefault();
+      const token = window.pendingPasswordResetToken;
+      if (!token) {
+        window.showToast('重設密碼連結已經失效，請重新申請', '⚠️');
+        return;
+      }
+      const newPwd = document.getElementById('reset-new-password').value;
+      const confirmPwd = document.getElementById('reset-confirm-password').value;
+      if (!newPwd || newPwd.length < 6) {
+        window.showToast('新密碼最少要 6 位', '⚠️');
+        return;
+      }
+      if (newPwd !== confirmPwd) {
+        window.showToast('兩次輸入嘅新密碼不一致', '⚠️');
+        return;
+      }
+
+      const btn = document.getElementById('reset-password-submit-btn');
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ 更改緊...'; }
+
+      try {
+        await window.callCloudFunction('confirmPasswordReset', { token, newPassword: newPwd });
+        window.pendingPasswordResetToken = null;
+        const form = document.getElementById('reset-password-form');
+        if (form) form.reset();
+        window.closeModal('modal-reset-password');
+        window.showToast('🎉 密碼已成功重設！而家可以用新密碼登入喇', '✅');
+        window.openModal('modal-login');
+      } catch (error) {
+        if (error.code === 'functions/not-found' || error.code === 'not-found') {
+          window.showToast('連結已經失效或者已經用過，請重新申請一次', '⚠️');
+        } else if (error.code === 'functions/deadline-exceeded' || error.message === '連結已過期') {
+          window.showToast('連結已經過期（30 分鐘內有效），請重新申請一次', '⚠️');
+        } else {
+          window.showToast('重設密碼失敗：' + (error.message || error), '❌');
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '🔑 確認重設密碼'; }
+      }
+    };
 
     // 「編輯個人資料」度嘅「重新發送驗證電郵」掣：改咗電郵、或者第一封
     // 冇收到，都可以隨時重新整多個新 token 再寄一次
