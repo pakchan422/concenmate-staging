@@ -9,7 +9,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.106.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.107.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -2591,6 +2591,12 @@
           <p style="font-size:13px; color:#999; margin-top:4px;">每輪專注完會自動小休 5 分鐘，之後再自動開始新一輪專注，一直循環到退房為止；每一輪專注途中仲會拆做 4 個小目標，每達成一個都會提示鼓勵一下</p>
         </div>
 
+        <div>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">🔒 房間密碼鎖（4 位數字，留空則不設密碼）</label>
+          <input type="text" id="modal-room-password" class="input-field" maxlength="4" inputmode="numeric" pattern="[0-9]{0,4}" placeholder="例如 1234">
+          <p style="font-size:13px; color:#999; margin-top:4px;">設定之後，只有輸入正確密碼嘅同學先可以加入呢個溫習室，適合想同指定朋友私下溫習嘅情況；房間喺公開大廳依然睇得到，但會加上 🔒 標示。</p>
+        </div>
+
         <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
           <button class="btn btn-outline" type="button" onclick="closeModal('modal-create-room')">取消</button>
           <button class="btn btn-primary" type="submit" id="btn-create-room-submit">🚀 立即建立並廣播</button>
@@ -2780,6 +2786,22 @@
       <button class="btn btn-primary" type="button" onclick="confirmStillHere()" style="width:100%; padding:12px;">
         ✅ 是，我仍在學習
       </button>
+    </div>
+  </div>
+
+  <!-- 溫習室密碼鎖：加入一個已設密碼嘅溫習室（無論係喺公開大廳撳「加入房間」，
+       定係透過分享連結加入）之前彈出，要求輸入 4 位數字密碼，正確先真正入到房。
+       房主本人（isMyRoom）唔會見到呢個視窗。 -->
+  <div class="modal-backdrop" id="modal-room-password-check" style="display:none;">
+    <div class="modal-box" style="text-align:center;">
+      <div style="font-size:32px; margin-bottom:8px;">🔒</div>
+      <h3 style="font-size:16px; font-weight:bold; margin-bottom:6px;">呢個溫習室已上鎖</h3>
+      <p style="font-size:13px; color:#666; margin-bottom:14px;">請向房主查詢密碼，並輸入 4 位數字密碼先可以加入。</p>
+      <input type="text" id="room-password-check-input" class="input-field" maxlength="4" inputmode="numeric" pattern="[0-9]{0,4}" style="text-align:center; font-size:22px; letter-spacing:10px;" placeholder="••••" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.confirmRoomPasswordCheck();}">
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn btn-outline" type="button" style="flex:1;" onclick="window.cancelRoomPasswordCheck()">取消</button>
+        <button class="btn btn-primary" type="button" style="flex:1;" onclick="window.confirmRoomPasswordCheck()">✅ 確認加入</button>
+      </div>
     </div>
   </div>
 
