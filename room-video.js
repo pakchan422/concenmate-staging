@@ -1510,24 +1510,19 @@
         updateGoalBarDisplay();
       }
 
-      // 寫入 Firestore（atomic increment，就算多頁面同時開都唔會出問題）——
-      // 呢度純粹係背景持久化，就算失敗都唔會影響用家而家見到嘅畫面
+      // 寫入伺服器：而家改用 Cloud Function（awardStudyPoints）做，用
+      // Admin SDK + Firestore transaction 原子咁加分，同時將「呢次可以
+      // 攞幾多分」鎖死喺伺服器嘅白名單入面，唔再單靠前端話寫幾多就幾
+      // 多——同扭蛋扣分（spendGachaPoints）一樣嘅硬化模式。呢度純粹係
+      // 背景持久化，就算失敗都唔會影響用家而家見到嘅畫面（本機已經即
+      // 時更新咗）。
       try {
-        const userRef = window.fs.doc(window.db, "users", window.currentUser.uid);
-        const updatePayload = {
-          points: window.fs.increment(pointsAmount),
-          exp: window.fs.increment(expGain)
-        };
-        if (hoursIncrement > 0) {
-          updatePayload.hours = window.fs.increment(hoursIncrement);
-          if (isNewDay) {
-            updatePayload.todayMinutes = 1;
-            updatePayload.todayDate = getTodayDateStr();
-          } else {
-            updatePayload.todayMinutes = window.fs.increment(1);
-          }
-        }
-        await window.fs.updateDoc(userRef, updatePayload);
+        await window.callCloudFunction('awardStudyPoints', {
+          points: pointsAmount,
+          hoursIncrement,
+          isNewDay,
+          todayDateStr: hoursIncrement > 0 ? getTodayDateStr() : undefined
+        });
       } catch (e) {
         console.warn("積分同步到 Firestore 失敗（畫面已經即時更新，唔影響使用；下次成功寫入時會追返）:", e);
       }
