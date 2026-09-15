@@ -381,10 +381,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
     };
 
-    // 沿用返上面嗰個 EmailJS 樣式（同一個 template），淨係將連結換做
-    // 「#reset-password=token」——呢個樣式原本嘅文字係寫緊「驗證電郵」，
-    // 用嚟寄重設密碼連結措辭上未必100%啱，如果想要更貼切嘅文字，可以
-    // 喺 EmailJS 度另開一個新樣式，再改返呢度用嗰個 TEMPLATE_ID。
+    // 如果喺 index.html 頭段填咗 EMAILJS_PASSWORD_RESET_TEMPLATE_ID（忘記
+    // 密碼專用範本），就用嗰個；未填（留空）就 fallback 沿用返電郵驗證
+    // 嗰個共用範本，確保冇填新範本之前呢個功能都繼續正常運作。
     window.sendPasswordResetEmail = async function(toEmail, username, token) {
       if (!toEmail) return;
       if (!window.EMAILJS_CONFIGURED || typeof emailjs === 'undefined') {
@@ -392,8 +391,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         return;
       }
       const resetLink = `${window.location.origin}${window.location.pathname}#reset-password=${token}`;
+      const templateId = window.EMAILJS_PASSWORD_RESET_TEMPLATE_ID || window.EMAILJS_TEMPLATE_ID;
       try {
-        await emailjs.send(window.EMAILJS_SERVICE_ID, window.EMAILJS_TEMPLATE_ID, {
+        await emailjs.send(window.EMAILJS_SERVICE_ID, templateId, {
           to_email: toEmail,
           to_name: username || '同學',
           verify_link: resetLink
