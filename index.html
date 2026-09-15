@@ -9,7 +9,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.119.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.120.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -71,12 +71,22 @@
        填咗之後，新註冊嘅同學一提交表格就會即刻收到驗證電郵。冇填之前
        （即係仲係下面嘅 PASTE_ 開頭嗰啲預設值），註冊流程完全唔受影響、
        唔會出錯畀用戶睇到，淨係唔會有電郵寄出（瀏覽器 console 度會見到
-       一句提示，方便你自己核對設定咗未）。 -->
+       一句提示，方便你自己核對設定咗未）。
+
+       ⚠️ 忘記密碼專用範本（可選）：EMAILJS_PASSWORD_RESET_TEMPLATE_ID
+       —— 「忘記密碼」寄出嘅重設密碼連結，預設沿用返上面嗰個驗證電郵
+       範本（文字寫緊「驗證電郵」，措辭上唔完全貼切）。如果想要一個文
+       字更貼切嘅獨立範本，喺 EmailJS 度另開一個新範本（一樣要用到
+       {{to_email}}、{{to_name}}、{{verify_link}} 呢三個變數），攞到新
+       嘅 Template ID 之後填落下面 EMAILJS_PASSWORD_RESET_TEMPLATE_ID
+       嗰行就得；留空（''）嘅話會自動 fallback 用返上面嘅共用範本，唔
+       會影響現有功能。 -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
     window.EMAILJS_PUBLIC_KEY = 'E0MyD_oGUm6yVjJKe';
     window.EMAILJS_SERVICE_ID = 'service_armrtdv';
     window.EMAILJS_TEMPLATE_ID = 'template_nms9igc';
+    window.EMAILJS_PASSWORD_RESET_TEMPLATE_ID = 'template_m2u8ioh'; // 忘記密碼專用範本 ID（可選，留空會 fallback 用返上面嗰個）
     window.EMAILJS_CONFIGURED = false; // 呢個由下面自動判斷，唔使手動改
     (function initEmailJS() {
       try {
