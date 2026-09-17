@@ -341,6 +341,298 @@
       }
     };
 
+    // ===================== Instagram 式溫習相片 =====================
+    // 每日限發佈一張溫習相片，一定要在視訊溫習室累積溫習滿 15 分鐘先解鎖
+    // （見 room-video.js 嘅 awardStudyPoint 點樣更新 todayMinutes／todayDate）。
+    // 「我的帳號」資料卡入面嘅發佈掣同相片牆、以及查看其他同學資料卡入面
+    // 嘅相片牆同追蹤掣，共用返呢一組函數。
+
+    // Firestore 儲存嘅 dateStr 係 YYYY-MM-DD，畫面顯示要求 DD/MM/YYYY
+    // （例如 18/09/2026），呢個函數負責轉換。
+    function formatPhotoDateLabel(dateStr) {
+      const parts = String(dateStr || '').split('-');
+      if (parts.length !== 3) return '';
+      const [yyyy, mm, dd] = parts;
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function photoTileHtml(photoUrl, dateStr) {
+      const dateLabel = formatPhotoDateLabel(dateStr);
+      const safeUrl = String(photoUrl || '').replace(/'/g, "%27");
+      return `
+        <div style="position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:#eee; cursor:zoom-in;" onclick="openLightbox('${safeUrl}')">
+          <img src="${photoUrl}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" alt="溫習相片">
+          <span style="position:absolute; right:4px; bottom:4px; background:rgba(0,0,0,.55); color:#fff; font-size:10px; padding:1px 5px; border-radius:4px;">${dateLabel}</span>
+        </div>`;
+    }
+
+    // 每個相片牆（自己／查看其他人）各自獨立記住分頁狀態：睇緊邊個
+    // uid、揭到邊一份文件（cursorDoc，Firestore startAfter 用）、係咪
+    // 已經去到最後一頁。
+    const _photoPaging = {
+      myacc: { uid: null, cursorDoc: null, done: false, loading: false },
+      pop: { uid: null, cursorDoc: null, done: false, loading: false }
+    };
+
+    // 讀取指定用戶嘅溫習相片，每頁 9 張（Firestore query：uid == 指定用戶
+    // AND 按 createdAt 由新到舊），reset=true 即係重新由第一頁開始（撳開
+    // 資料卡嗰陣），reset=false 即係撳「更多」揭下一頁。
+    async function loadUserPhotos(context, uid, reset) {
+      if (!window.db || !window.fs || !uid) return;
+      const state = _photoPaging[context];
+      if (!state) return;
+      if (reset || state.uid !== uid) {
+        state.uid = uid;
+        state.cursorDoc = null;
+        state.done = false;
+      }
+      if (state.done || state.loading) return;
+      state.loading = true;
+
+      const gridId = context === 'myacc' ? 'myacc-photo-grid' : 'pop-photo-grid';
+      const moreBtnId = context === 'myacc' ? 'myacc-photo-more-btn' : 'pop-photo-more-btn';
+      const emptyId = context === 'myacc' ? 'myacc-photo-empty' : 'pop-photo-empty';
+      const grid = document.getElementById(gridId);
+      const moreBtn = document.getElementById(moreBtnId);
+      const emptyEl = document.getElementById(emptyId);
+
+      if (reset && grid) grid.innerHTML = '';
+      if (reset && emptyEl) emptyEl.style.display = 'none';
+      if (moreBtn) moreBtn.style.display = 'none';
+
+      try {
+        const { collection, query, where, orderBy, limit, startAfter, getDocs } = window.fs;
+        const clauses = [collection(window.db, 'studyPhotos'), where('uid', '==', uid), orderBy('createdAt', 'desc')];
+        if (state.cursorDoc) clauses.push(startAfter(state.cursorDoc));
+        clauses.push(limit(9));
+        const snap = await getDocs(query(...clauses));
+
+        if (reset && snap.empty && emptyEl) emptyEl.style.display = 'block';
+
+        let html = '';
+        snap.forEach(docSnap => {
+          const p = docSnap.data();
+          html += photoTileHtml(p.photoUrl, p.dateStr);
+        });
+        if (grid) grid.insertAdjacentHTML('beforeend', html);
+
+        if (!snap.empty) state.cursorDoc = snap.docs[snap.docs.length - 1];
+        state.done = snap.size < 9;
+        if (moreBtn) moreBtn.style.display = state.done ? 'none' : 'block';
+      } catch (e) {
+        console.error('讀取溫習相片失敗:', e);
+      } finally {
+        state.loading = false;
+      }
+    }
+    window.loadUserPhotos = loadUserPhotos;
+
+    window.loadMorePhotos = function(context) {
+      const state = _photoPaging[context];
+      if (!state || !state.uid) return;
+      loadUserPhotos(context, state.uid, false);
+    };
+
+    // 判斷自己而家可唔可以發佈今日溫習相片：要今日未發佈過，並且視訊
+    // 溫習室今日累積溫習分鐘數（todayMinutes，配合 todayDate 判斷係咪
+    // 真係「今日」）要滿 15 分鐘。呢個係前端提示用，真正嘅把關喺
+    // postStudyPhoto 呢個 Cloud Function 度（伺服器用香港時區重新驗證）。
+    const STUDY_PHOTO_MIN_MINUTES = 15;
+    function getStudyPhotoGateState() {
+      if (!window.currentUser) return { ok: false, reason: '請先登入會員' };
+      const today = getTodayDateStr();
+      if (window.currentUser.lastPhotoPostDate === today) {
+        return { ok: false, reason: '今日已經發佈過一張溫習相片，請明天再發佈' };
+      }
+      const todayMinutes = (window.currentUser.todayDate === today) ? (window.currentUser.todayMinutes || 0) : 0;
+      if (todayMinutes < STUDY_PHOTO_MIN_MINUTES) {
+        return { ok: false, reason: `需要在視訊溫習室累積溫習滿 ${STUDY_PHOTO_MIN_MINUTES} 分鐘，先可以發佈當日溫習相片（現時：${todayMinutes} 分鐘）` };
+      }
+      return { ok: true };
+    }
+    window.getStudyPhotoGateState = getStudyPhotoGateState;
+
+    // 更新「我的帳號」資料卡入面發佈掣嘅視覺狀態：未符合條件就顯示為
+    // 灰咗（disable 嘅視覺效果），但依然可以撳——撳落去會彈出提示，
+    // 解釋仲欠幾多分鐘先可以上傳（跟使用者嘅要求：「撳落去會顯示需要
+    // 溫夠15分鐘先可以上傳當日溫習相片」）。
+    function updatePhotoUploadButtonState() {
+      const btn = document.getElementById('myacc-photo-upload-btn');
+      if (!btn) return;
+      const state = getStudyPhotoGateState();
+      if (state.ok) {
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.innerText = '➕ 發佈今日溫習相片';
+      } else {
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        btn.innerText = '🔒 發佈今日溫習相片';
+      }
+    }
+    window.updatePhotoUploadButtonState = updatePhotoUploadButtonState;
+
+    window.handlePostPhotoButtonClick = function() {
+      const state = getStudyPhotoGateState();
+      if (!state.ok) {
+        window.showToast(state.reason, '🔒');
+        return;
+      }
+      const input = document.getElementById('myacc-photo-input');
+      if (input) input.click();
+    };
+
+    // 更新「我的帳號」資料卡入面嘅相片數／粉絲數／追蹤中人數，並且順便
+    // 靜靜地去 Firestore 攞返最新數字（呢幾個計數欄位淨係由 Cloud
+    // Function 更新，本機快取有機會落後於實際情況，例如喺另一部裝置
+        // 有人啱啱追蹤咗自己）。
+    async function updateMyAccountPhotoStats() {
+      if (!window.currentUser) return;
+      const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      setText('myacc-photo-count', window.currentUser.photoCount || 0);
+      setText('myacc-follower-count', window.currentUser.followerCount || 0);
+      setText('myacc-following-count', window.currentUser.followingCount || 0);
+      updatePhotoUploadButtonState();
+
+      if (!window.db || !window.fs || !window.currentUser.uid) return;
+      try {
+        const snap = await window.fs.getDoc(window.fs.doc(window.db, 'users', window.currentUser.uid));
+        if (!snap.exists()) return;
+        const u = snap.data();
+        window.currentUser.photoCount = u.photoCount || 0;
+        window.currentUser.followerCount = u.followerCount || 0;
+        window.currentUser.followingCount = u.followingCount || 0;
+        window.currentUser.todayMinutes = u.todayMinutes || 0;
+        window.currentUser.todayDate = u.todayDate || '';
+        window.currentUser.lastPhotoPostDate = u.lastPhotoPostDate || '';
+        setText('myacc-photo-count', window.currentUser.photoCount);
+        setText('myacc-follower-count', window.currentUser.followerCount);
+        setText('myacc-following-count', window.currentUser.followingCount);
+        updatePhotoUploadButtonState();
+      } catch (e) {
+        console.warn('刷新溫習相片統計失敗:', e);
+      }
+    }
+    window.updateMyAccountPhotoStats = updateMyAccountPhotoStats;
+
+    // 揀完相片之後：先喺瀏覽器度用 canvas 縮圖（最長邊唔超過 1024px）、
+    // 壓縮做 JPEG，先傳個 base64 去 postStudyPhoto 呢個 Cloud Function——
+    // 函數入面會重新驗證今日發佈次數／15 分鐘門檻，再用 Google Cloud
+    // Vision 嘅 SafeSearch 檢測相片內容，通過先會真正寫入 Storage／
+    // Firestore，所以呢度一定要等 callCloudFunction 嘅 Promise
+    // resolve／reject 先知道結果。
+    window.handleStudyPhotoFileSelected = async function(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (!window.currentUser) { window.showToast('請先登入會員', '⚠️'); return; }
+
+      const btn = document.getElementById('myacc-photo-upload-btn');
+      if (btn) { btn.style.opacity = '0.6'; btn.style.cursor = 'wait'; btn.innerText = '⏳ 上傳中…'; }
+
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const img = new Image();
+          const objectUrl = URL.createObjectURL(file);
+          img.onload = () => {
+            const maxSide = 1024;
+            let width = img.width;
+            let height = img.height;
+            if (width > maxSide || height > maxSide) {
+              const scale = maxSide / Math.max(width, height);
+              width = Math.round(width * scale);
+              height = Math.round(height * scale);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            URL.revokeObjectURL(objectUrl);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          };
+          img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('圖片載入失敗，請更換其他相片')); };
+          img.src = objectUrl;
+        });
+
+        const result = await window.callCloudFunction('postStudyPhoto', { image: dataUrl });
+        const today = getTodayDateStr();
+        window.currentUser.photoCount = (window.currentUser.photoCount || 0) + 1;
+        window.currentUser.lastPhotoPostDate = today;
+
+        const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+        setText('myacc-photo-count', window.currentUser.photoCount);
+
+        const grid = document.getElementById('myacc-photo-grid');
+        if (grid) grid.insertAdjacentHTML('afterbegin', photoTileHtml(result.photoUrl, today));
+        const emptyEl = document.getElementById('myacc-photo-empty');
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        window.showToast('溫習相片已成功發佈！', '📸');
+      } catch (err) {
+        const code = err && (err.code || '');
+        if (typeof code === 'string' && code.indexOf('failed-precondition') !== -1) {
+          window.showToast(err.message || '尚未符合發佈條件', '🔒');
+        } else if (typeof code === 'string' && code.indexOf('resource-exhausted') !== -1) {
+          window.showToast(err.message || '操作次數過多，請稍後再試', '⏳');
+        } else if (typeof code === 'string' && code.indexOf('invalid-argument') !== -1) {
+          window.showToast(err.message || '相片不符合要求，請更換其他相片', '🚫');
+        } else {
+          window.showToast('發佈失敗：' + (err.message || err), '❌');
+        }
+      } finally {
+        event.target.value = '';
+        if (btn) { btn.style.cursor = 'pointer'; }
+        updatePhotoUploadButtonState();
+      }
+    };
+
+    // ===================== Follow（追蹤書伴） =====================
+    // 單向追蹤，同現有「夥伴與讀書會」嗰個雙向好友系統完全獨立。
+    async function renderFollowButton(targetUid, targetUserData) {
+      const wrap = document.getElementById('pop-follow-btn-wrap');
+      if (!wrap || !window.currentUser || !window.db || !window.fs) return;
+      wrap.innerHTML = '';
+      try {
+        const followId = `${window.currentUser.uid}_${targetUid}`;
+        const snap = await window.fs.getDoc(window.fs.doc(window.db, 'follows', followId));
+        if (snap.exists()) {
+          wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}')">✅ 已追蹤（撳此取消）</button>`;
+        } else {
+          wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}')">➕ 追蹤書伴</button>`;
+        }
+      } catch (e) {
+        console.error('讀取追蹤狀態失敗:', e);
+      }
+    }
+    window.renderFollowButton = renderFollowButton;
+
+    window.followUserAction = async function(targetUid) {
+      if (!window.currentUser) { window.showToast('請先登入', '🔒'); return; }
+      try {
+        await window.callCloudFunction('followUser', { targetUid });
+        const wrap = document.getElementById('pop-follow-btn-wrap');
+        if (wrap) wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}')">✅ 已追蹤（撳此取消）</button>`;
+        const countEl = document.getElementById('pop-follower-count');
+        if (countEl) countEl.innerText = (parseInt(countEl.innerText, 10) || 0) + 1;
+        window.showToast('已追蹤呢位書伴！', '🤝');
+      } catch (e) {
+        window.showToast('追蹤失敗：' + (e.message || e), '❌');
+      }
+    };
+
+    window.unfollowUserAction = async function(targetUid) {
+      if (!window.currentUser) return;
+      try {
+        await window.callCloudFunction('unfollowUser', { targetUid });
+        const wrap = document.getElementById('pop-follow-btn-wrap');
+        if (wrap) wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}')">➕ 追蹤書伴</button>`;
+        const countEl = document.getElementById('pop-follower-count');
+        if (countEl) countEl.innerText = Math.max(0, (parseInt(countEl.innerText, 10) || 0) - 1);
+        window.showToast('已取消追蹤', 'ℹ️');
+      } catch (e) {
+        window.showToast('取消追蹤失敗：' + (e.message || e), '❌');
+      }
+    };
+
     // ===================== 水獺寵物系統 =====================
     // 「肚餓／餵食」個 Tamagotchi 機制已經應用戶要求整個移除（唔再有
     // 飽足度、唔再有餵食按鈕），主頁「我的水獺」呢張卡而家淨係顯示靜態
@@ -927,6 +1219,9 @@
       const expBar = document.getElementById('myacc-exp-bar');
       if (expBar) expBar.style.width = info.pctToNext + '%';
       setText('myacc-exp-text', `${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 升級`);
+
+      if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
+      if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('myacc', u.uid, true);
 
       openModal('modal-my-account');
     }
@@ -2007,6 +2302,14 @@
       });
       if (nameEl) nameEl.innerText = '載入中…';
       if (actionsEl) actionsEl.innerHTML = '';
+      const popPhotoGridEl = document.getElementById('pop-photo-grid');
+      if (popPhotoGridEl) popPhotoGridEl.innerHTML = '';
+      const popPhotoMoreBtn = document.getElementById('pop-photo-more-btn');
+      if (popPhotoMoreBtn) popPhotoMoreBtn.style.display = 'none';
+      const popPhotoEmptyEl = document.getElementById('pop-photo-empty');
+      if (popPhotoEmptyEl) popPhotoEmptyEl.style.display = 'none';
+      const popFollowWrap = document.getElementById('pop-follow-btn-wrap');
+      if (popFollowWrap) popFollowWrap.innerHTML = '';
       openModal('modal-view-profile');
 
       if (!window.db || !window.fs) return;
@@ -2017,7 +2320,14 @@
           return;
         }
         const u = snap.data();
-        document.getElementById('pop-user-avatar').innerText = (u.username || '同').charAt(0).toUpperCase();
+        const avatarEl = document.getElementById('pop-user-avatar');
+        if (avatarEl) {
+          if (u.avatarBase64) {
+            avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; cursor:zoom-in;" alt="會員頭像" onclick="openLightbox('${u.avatarBase64}')">`;
+          } else {
+            avatarEl.innerText = (u.username || '同').charAt(0).toUpperCase();
+          }
+        }
         if (nameEl) nameEl.innerText = u.username || '同學';
         document.getElementById('pop-user-verified').innerText = u.loginId ? ('🆔 ' + u.loginId) : '';
         document.getElementById('pop-user-school').innerText = u.school || '未填寫';
@@ -2025,6 +2335,12 @@
         document.getElementById('pop-user-fav').innerText = u.favSubjects || '未填寫';
         document.getElementById('pop-user-dislike').innerText = u.dislikeSubjects || '未填寫';
         document.getElementById('pop-user-hours').innerText = (parseFloat(u.hours) || 0).toFixed(1) + " 小時";
+        const popPhotoCountEl = document.getElementById('pop-photo-count');
+        if (popPhotoCountEl) popPhotoCountEl.innerText = u.photoCount || 0;
+        const popFollowerCountEl = document.getElementById('pop-follower-count');
+        if (popFollowerCountEl) popFollowerCountEl.innerText = u.followerCount || 0;
+        if (typeof window.renderFollowButton === 'function') await renderFollowButton(uid, u);
+        if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('pop', uid, true);
         await renderFriendActionButtons(uid, u);
       } catch (e) {
         console.error('讀取用戶資料失敗:', e);

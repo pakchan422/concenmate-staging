@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.128.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.129.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -2815,6 +2815,17 @@
 
       <div id="pop-user-friend-actions" style="margin-bottom:12px; min-height:20px;"></div>
 
+      <!-- Instagram 式溫習相片：相片數／粉絲數 + 追蹤掣 + 相片牆（每頁 9 張，
+           撳「更多」先載入下一頁，避免一次過讀取太多相片） -->
+      <div style="display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:10px; font-size:13px; color:#555;">
+        <div><strong id="pop-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>相片</div>
+        <div><strong id="pop-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>粉絲</div>
+      </div>
+      <div id="pop-follow-btn-wrap" style="margin-bottom:12px;"></div>
+      <div id="pop-photo-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px;"></div>
+      <p id="pop-photo-empty" style="font-size:13px; color:#999; margin-bottom:8px; display:none;">呢位同學仲未發佈過溫習相片</p>
+      <button id="pop-photo-more-btn" class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px; padding:6px; margin-bottom:12px; display:none;" onclick="loadMorePhotos('pop')">📷 更多</button>
+
       <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile')">關閉資料卡</button>
     </div>
   </div>
@@ -2880,6 +2891,21 @@
         <div><strong>⏱️ 累積時數：</strong><span id="myacc-hours">0.0 小時</span></div>
         <div><strong>🪙 積分：</strong><span id="myacc-points">0 PTS</span></div>
       </div>
+
+      <!-- Instagram 式溫習相片：自己嘅相片數／粉絲數／追蹤中人數 + 每日一張
+           嘅發佈掣（要在視訊溫習室累積溫習滿 15 分鐘先解鎖）+ 相片牆 -->
+      <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:10px; font-size:13px; color:#555;">
+        <div><strong id="myacc-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>相片</div>
+        <div><strong id="myacc-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>粉絲</div>
+        <div><strong id="myacc-following-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>追蹤中</div>
+      </div>
+
+      <input type="file" id="myacc-photo-input" accept="image/*" style="display:none;" onchange="handleStudyPhotoFileSelected(event)">
+      <button id="myacc-photo-upload-btn" class="btn btn-primary" type="button" style="width:100%; justify-content:center; margin-bottom:10px;" onclick="handlePostPhotoButtonClick()">➕ 發佈今日溫習相片</button>
+
+      <div id="myacc-photo-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px;"></div>
+      <p id="myacc-photo-empty" style="font-size:13px; color:#999; margin-bottom:8px; display:none;">你仲未發佈過溫習相片</p>
+      <button id="myacc-photo-more-btn" class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px; padding:6px; margin-bottom:12px; display:none;" onclick="loadMorePhotos('myacc')">📷 更多</button>
 
       <div style="display:flex; flex-direction:column; gap:8px;">
         <button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="goEditProfileFromAccountModal()">✏️ 編輯個人資料</button>
