@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.130.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.130.2"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1688,7 +1688,7 @@
           <!-- ── Hero 歡迎列 ── -->
           <div class="home-hero">
             <div class="home-hero-left">
-              <img src="logo.png" width="52" height="52" alt="ConcenMate"
+              <img id="home-hero-avatar" src="logo.png" width="52" height="52" alt="ConcenMate"
                 style="border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid rgba(255,255,255,.4);">
               <div>
                 <div class="home-hero-greeting">你好，<span id="home-username">同學</span>👋</div>
@@ -2597,9 +2597,16 @@
 
         </section>
 
-        <!-- 溫習日記：Instagram 式嘅個人溫習相片頁面（相片牆／粉絲／追蹤），
-             獨立做返一個分頁，唔再擠喺「我的帳號」資料卡入面。 -->
+        <!-- 溫習日記：Instagram 式嘅個人溫習相片頁面（相片牆／粉絲／追蹤）。
+             預設顯示自己嘅溫習日記；如果係由「查看朋友資料卡」入面撳
+             「查看溫習日記」入嚟，就會顯示緊嗰位朋友嘅溫習日記（見
+             openDiaryView()），呢陣會隱藏發佈掣、顯示追蹤掣同「返回我的
+             溫習日記」連結。 -->
         <section id="tab-diary" class="tab-content">
+
+          <div id="diary-back-to-self" style="display:none; margin-bottom:10px;">
+            <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="switchTab('diary', null, null)">← 返回我的溫習日記</button>
+          </div>
 
           <div class="card" style="text-align:center;">
             <div class="avatar-circle" style="margin:0 auto 10px; width:64px; height:64px; font-size:26px; background:var(--brand-500); border-color:var(--brand-200);" id="diary-avatar">A</div>
@@ -2611,15 +2618,19 @@
               <div><strong id="diary-following-count" style="font-size:16px; color:var(--brand-800);">0</strong><br>追蹤中</div>
             </div>
 
-            <input type="file" id="diary-photo-input" accept="image/*" style="display:none;" onchange="handleStudyPhotoFileSelected(event)">
-            <button id="diary-photo-upload-btn" class="btn btn-primary" type="button" style="width:100%; justify-content:center; margin-bottom:6px;" onclick="handlePostPhotoButtonClick()">➕ 發佈今日溫習相片</button>
-            <p style="font-size:12px; color:#999;">每日限發佈一張，需在視訊溫習室累積溫習滿 15 分鐘，先可以發佈</p>
+            <div id="diary-follow-btn-wrap" style="display:none; margin-bottom:10px;"></div>
+
+            <div id="diary-upload-section">
+              <input type="file" id="diary-photo-input" accept="image/*" style="display:none;" onchange="handleStudyPhotoFileSelected(event)">
+              <button id="diary-photo-upload-btn" class="btn btn-primary" type="button" style="width:100%; justify-content:center; margin-bottom:6px;" onclick="handlePostPhotoButtonClick()">➕ 發佈今日溫習相片</button>
+              <p style="font-size:12px; color:#999;">每日限發佈一張，需條件：在視訊溫習室累積溫習滿 15 分鐘</p>
+            </div>
           </div>
 
           <div class="card">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">📔 我的溫習相片</h3>
+            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;" id="diary-photos-heading">📔 我的溫習相片</h3>
             <div id="diary-photo-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px;"></div>
-            <p id="diary-photo-empty" style="font-size:13px; color:#999; text-align:center; padding:10px; display:none;">你仲未發佈過溫習相片</p>
+            <p id="diary-photo-empty" style="font-size:13px; color:#999; text-align:center; padding:10px; display:none;">仲未發佈過溫習相片</p>
             <button id="diary-photo-more-btn" class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px; padding:6px; display:none;" onclick="loadMorePhotos('diary')">📷 更多</button>
           </div>
 
@@ -2846,16 +2857,15 @@
 
       <div id="pop-user-friend-actions" style="margin-bottom:12px; min-height:20px;"></div>
 
-      <!-- Instagram 式溫習相片：相片數／粉絲數 + 追蹤掣 + 相片牆（每頁 9 張，
-           撳「更多」先載入下一頁，避免一次過讀取太多相片） -->
+      <!-- Instagram 式溫習相片：呢度淨係顯示簡要數字 + 追蹤掣，撳「查看
+           溫習日記」先去獨立嘅「溫習日記」分頁睇呢位同學嘅完整相片牆
+           （見 tab-diary 同 openDiaryView()）。 -->
       <div style="display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:10px; font-size:13px; color:#555;">
         <div><strong id="pop-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>相片</div>
         <div><strong id="pop-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>粉絲</div>
       </div>
-      <div id="pop-follow-btn-wrap" style="margin-bottom:12px;"></div>
-      <div id="pop-photo-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px;"></div>
-      <p id="pop-photo-empty" style="font-size:13px; color:#999; margin-bottom:8px; display:none;">呢位同學仲未發佈過溫習相片</p>
-      <button id="pop-photo-more-btn" class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px; padding:6px; margin-bottom:12px; display:none;" onclick="loadMorePhotos('pop')">📷 更多</button>
+      <div id="pop-follow-btn-wrap" style="margin-bottom:8px;"></div>
+      <div id="pop-diary-btn-wrap" style="margin-bottom:12px;"></div>
 
       <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile')">關閉資料卡</button>
     </div>
@@ -2923,14 +2933,14 @@
         <div><strong>🪙 積分：</strong><span id="myacc-points">0 PTS</span></div>
       </div>
 
-      <!-- Instagram 式溫習相片：資料卡度淨係顯示簡要數字，撳「查看溫習日記」
-           先去返獨立嘅「溫習日記」分頁睇相片牆／發佈相片（見 tab-diary）。 -->
-      <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:10px; font-size:13px; color:#555;">
+      <!-- Instagram 式溫習相片：自己嘅完整相片牆／發佈相片已經有側邊欄
+           「📔 溫習日記」分頁可以直接去到，呢度資料卡淨係顯示簡要數字，
+           唔再重複擺多一個入口掣。 -->
+      <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; font-size:13px; color:#555;">
         <div><strong id="myacc-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>相片</div>
         <div><strong id="myacc-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>粉絲</div>
         <div><strong id="myacc-following-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>追蹤中</div>
       </div>
-      <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; margin-bottom:10px;" onclick="closeModal('modal-my-account'); switchTab('diary');">📔 查看溫習日記</button>
 
       <div style="display:flex; flex-direction:column; gap:8px;">
         <button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="goEditProfileFromAccountModal()">✏️ 編輯個人資料</button>

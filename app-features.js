@@ -79,7 +79,7 @@
     // 好難追蹤邊個分頁實際會觸發乜嘢。而家已經全部整合返喺呢一個函數
     // 度，日後想加/減邊個分頁一開會做啲乜，直接嚟呢度改，唔好再加新
     // 一層 wrapper。
-    function switchTab(tabId, btn) {
+    function switchTab(tabId, btn, diaryUid) {
       if (!window.currentUser) {
         openModal('modal-login');
         return;
@@ -117,12 +117,11 @@
       // 「個人資料」分頁一開就載入中獎記錄
       if (tabId === 'profile' && typeof window.loadMyGachaHistory === 'function') window.loadMyGachaHistory();
 
-      // 「溫習日記」分頁一開就更新返頭像／用戶名／相片粉絲數字，並且
-      // 由第一頁重新載入自己嘅溫習相片牆
-      if (tabId === 'diary' && window.currentUser) {
-        if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
-        if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
-        if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('diary', window.currentUser.uid, true);
+      // 「溫習日記」分頁一開：冇傳 diaryUid（或傳咗自己個 uid）就顯示自己
+      // 嘅溫習日記，傳咗第二人個 uid（由朋友資料卡度撳「查看溫習日記」
+      // 入嚟）就顯示緊嗰位朋友嘅溫習日記（見 openDiaryView()）
+      if (tabId === 'diary' && typeof window.openDiaryView === 'function') {
+        window.openDiaryView(diaryUid || null);
       }
     }
     window.switchTab = switchTab;
@@ -295,11 +294,13 @@
           el.innerText = initial;
         }
       });
-      // 主頁側邊嘅圓形品牌 Logo：登入咗並且上傳過頭像嘅話，用返自己個
-      // 頭像顯示（代替固定嘅 ConcenMate 品牌圖示），冇上傳就維持顯示
-      // 品牌 Logo。
-      const headerLogoImg = document.getElementById('header-logo-img');
-      if (headerLogoImg) headerLogoImg.src = avatarSrc || 'logo.png';
+      // 注意：頁首最左上角嗰個圓形 Logo（#header-logo-img）一定要維持顯示
+      // ConcenMate 品牌 Logo，唔可以換做頭像——嗰個位置係網站身份標誌，
+      // 唔係用戶個人資料嘅顯示位。真正應該顯示用戶頭像嘅係主頁 Hero
+      // 歡迎列「你好，OOO👋」旁邊嗰個圓形圖示（#home-hero-avatar）：
+      // 上傳過頭像就顯示返自己個頭像，冇上傳就維持顯示品牌 Logo。
+      const homeHeroAvatar = document.getElementById('home-hero-avatar');
+      if (homeHeroAvatar) homeHeroAvatar.src = avatarSrc || 'logo.png';
     }
     window.renderUserAvatar = renderUserAvatar;
 
@@ -710,18 +711,27 @@
     };
 
     // ===================== Follow（追蹤書伴） =====================
-    // 單向追蹤，同現有「夥伴與讀書會」嗰個雙向好友系統完全獨立。
-    async function renderFollowButton(targetUid, targetUserData) {
-      const wrap = document.getElementById('pop-follow-btn-wrap');
+    // 單向追蹤，同現有「夥伴與讀書會」嗰個雙向好友系統完全獨立。呢組
+    // 函數兩個地方共用：查看朋友資料卡（wrapId='pop-follow-btn-wrap'）
+    // 同「溫習日記」分頁顯示緊朋友嘅日記（wrapId='diary-follow-btn-wrap'），
+    // 所以每個掣嘅 onclick 都要記住自己所屬嗰個 wrapId，等按完之後識得
+    // 更新返啱嘅按鈕同啱嘅粉絲數字。
+    function _followCountIdFor(wrapId) {
+      return wrapId === 'diary-follow-btn-wrap' ? 'diary-follower-count' : 'pop-follower-count';
+    }
+
+    async function renderFollowButton(targetUid, targetUserData, wrapId) {
+      wrapId = wrapId || 'pop-follow-btn-wrap';
+      const wrap = document.getElementById(wrapId);
       if (!wrap || !window.currentUser || !window.db || !window.fs) return;
       wrap.innerHTML = '';
       try {
         const followId = `${window.currentUser.uid}_${targetUid}`;
         const snap = await window.fs.getDoc(window.fs.doc(window.db, 'follows', followId));
         if (snap.exists()) {
-          wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}')">✅ 已追蹤（撳此取消）</button>`;
+          wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">✅ 已追蹤（撳此取消）</button>`;
         } else {
-          wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}')">➕ 追蹤書伴</button>`;
+          wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">➕ 追蹤書伴</button>`;
         }
       } catch (e) {
         console.error('讀取追蹤狀態失敗:', e);
@@ -729,13 +739,14 @@
     }
     window.renderFollowButton = renderFollowButton;
 
-    window.followUserAction = async function(targetUid) {
+    window.followUserAction = async function(targetUid, wrapId) {
+      wrapId = wrapId || 'pop-follow-btn-wrap';
       if (!window.currentUser) { window.showToast('請先登入', '🔒'); return; }
       try {
         await window.callCloudFunction('followUser', { targetUid });
-        const wrap = document.getElementById('pop-follow-btn-wrap');
-        if (wrap) wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}')">✅ 已追蹤（撳此取消）</button>`;
-        const countEl = document.getElementById('pop-follower-count');
+        const wrap = document.getElementById(wrapId);
+        if (wrap) wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">✅ 已追蹤（撳此取消）</button>`;
+        const countEl = document.getElementById(_followCountIdFor(wrapId));
         if (countEl) countEl.innerText = (parseInt(countEl.innerText, 10) || 0) + 1;
         window.showToast('已追蹤呢位書伴！', '🤝');
       } catch (e) {
@@ -743,19 +754,98 @@
       }
     };
 
-    window.unfollowUserAction = async function(targetUid) {
+    window.unfollowUserAction = async function(targetUid, wrapId) {
+      wrapId = wrapId || 'pop-follow-btn-wrap';
       if (!window.currentUser) return;
       try {
         await window.callCloudFunction('unfollowUser', { targetUid });
-        const wrap = document.getElementById('pop-follow-btn-wrap');
-        if (wrap) wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}')">➕ 追蹤書伴</button>`;
-        const countEl = document.getElementById('pop-follower-count');
+        const wrap = document.getElementById(wrapId);
+        if (wrap) wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">➕ 追蹤書伴</button>`;
+        const countEl = document.getElementById(_followCountIdFor(wrapId));
         if (countEl) countEl.innerText = Math.max(0, (parseInt(countEl.innerText, 10) || 0) - 1);
         window.showToast('已取消追蹤', 'ℹ️');
       } catch (e) {
         window.showToast('取消追蹤失敗：' + (e.message || e), '❌');
       }
     };
+
+    // ===================== 「溫習日記」分頁：自己 vs 睇朋友 =====================
+    // 由側邊欄「📔 溫習日記」入嚟就係睇自己（uid 唔傳／等於自己），由朋友
+    // 資料卡度嗰粒「📔 查看溫習日記」入嚟就係睇緊嗰位朋友（傳咗佢個
+    // uid）。兩種情況共用返呢個分頁嘅 HTML，淨係內容同顯示邊幾個區塊
+    // 唔同（例如朋友嗰邊冇「發佈相片」掣，多咗「追蹤」掣同「返回我的
+    // 溫習日記」連結）。
+    let _diaryViewUid = null;
+
+    async function openDiaryView(uid) {
+      _diaryViewUid = (uid && window.currentUser && uid !== window.currentUser.uid) ? uid : null;
+
+      const backWrap = document.getElementById('diary-back-to-self');
+      const uploadSection = document.getElementById('diary-upload-section');
+      const followWrap = document.getElementById('diary-follow-btn-wrap');
+      const headingEl = document.getElementById('diary-photos-heading');
+
+      if (!_diaryViewUid) {
+        // 睇自己
+        if (backWrap) backWrap.style.display = 'none';
+        if (uploadSection) uploadSection.style.display = 'block';
+        if (followWrap) { followWrap.style.display = 'none'; followWrap.innerHTML = ''; }
+        if (headingEl) headingEl.innerText = '📔 我的溫習相片';
+        if (!window.currentUser) return;
+        if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
+        if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
+        if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('diary', window.currentUser.uid, true);
+        return;
+      }
+
+      // 睇緊朋友嘅溫習日記
+      if (backWrap) backWrap.style.display = 'block';
+      if (uploadSection) uploadSection.style.display = 'none';
+      if (followWrap) followWrap.style.display = 'block';
+      if (headingEl) headingEl.innerText = '📔 溫習相片';
+
+      const avatarEl = document.getElementById('diary-avatar');
+      const usernameEl = document.getElementById('diary-username');
+      if (avatarEl) avatarEl.innerText = '…';
+      if (usernameEl) usernameEl.innerText = '載入中…';
+      const gridEl = document.getElementById('diary-photo-grid');
+      if (gridEl) gridEl.innerHTML = '';
+      const emptyEl = document.getElementById('diary-photo-empty');
+      if (emptyEl) emptyEl.style.display = 'none';
+      const moreBtnEl = document.getElementById('diary-photo-more-btn');
+      if (moreBtnEl) moreBtnEl.style.display = 'none';
+      const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      setText('diary-photo-count', 0);
+      setText('diary-follower-count', 0);
+      setText('diary-following-count', 0);
+
+      if (!window.db || !window.fs) return;
+      try {
+        const snap = await window.fs.getDoc(window.fs.doc(window.db, 'users', _diaryViewUid));
+        if (!snap.exists()) {
+          if (usernameEl) usernameEl.innerText = '找不到呢位用家';
+          return;
+        }
+        const u = snap.data();
+        if (usernameEl) usernameEl.innerText = u.username || '同學';
+        if (avatarEl) {
+          if (u.avatarBase64) {
+            avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; cursor:zoom-in;" alt="會員頭像" onclick="openLightbox('${u.avatarBase64}', true)">`;
+          } else {
+            avatarEl.innerText = (u.username || '同').charAt(0).toUpperCase();
+          }
+        }
+        setText('diary-photo-count', u.photoCount || 0);
+        setText('diary-follower-count', u.followerCount || 0);
+        setText('diary-following-count', u.followingCount || 0);
+        if (typeof window.renderFollowButton === 'function') await renderFollowButton(_diaryViewUid, u, 'diary-follow-btn-wrap');
+        if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('diary', _diaryViewUid, true);
+      } catch (e) {
+        console.error('讀取溫習日記失敗:', e);
+        if (usernameEl) usernameEl.innerText = '載入失敗';
+      }
+    }
+    window.openDiaryView = openDiaryView;
 
     // ===================== 水獺寵物系統 =====================
     // 「肚餓／餵食」個 Tamagotchi 機制已經應用戶要求整個移除（唔再有
@@ -1255,6 +1345,7 @@
         if (homeUser) homeUser.innerText = displayName;
         if (homeHours) homeHours.innerText = formatHoursMinutes(window.currentUser.hours);
         if (homePts) homePts.innerText = window.currentUser.points ?? 0;
+        if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
 
         // 溫習日曆／連續溫習日數：淨係靠「有冇入過視訊溫習室」呢個記錄
         // 計，同「本日時數」（分鐘數）完全獨立
@@ -2433,14 +2524,10 @@
       });
       if (nameEl) nameEl.innerText = '載入中…';
       if (actionsEl) actionsEl.innerHTML = '';
-      const popPhotoGridEl = document.getElementById('pop-photo-grid');
-      if (popPhotoGridEl) popPhotoGridEl.innerHTML = '';
-      const popPhotoMoreBtn = document.getElementById('pop-photo-more-btn');
-      if (popPhotoMoreBtn) popPhotoMoreBtn.style.display = 'none';
-      const popPhotoEmptyEl = document.getElementById('pop-photo-empty');
-      if (popPhotoEmptyEl) popPhotoEmptyEl.style.display = 'none';
       const popFollowWrap = document.getElementById('pop-follow-btn-wrap');
       if (popFollowWrap) popFollowWrap.innerHTML = '';
+      const popDiaryWrap = document.getElementById('pop-diary-btn-wrap');
+      if (popDiaryWrap) popDiaryWrap.innerHTML = '';
       openModal('modal-view-profile');
 
       if (!window.db || !window.fs) return;
@@ -2471,7 +2558,9 @@
         const popFollowerCountEl = document.getElementById('pop-follower-count');
         if (popFollowerCountEl) popFollowerCountEl.innerText = u.followerCount || 0;
         if (typeof window.renderFollowButton === 'function') await renderFollowButton(uid, u);
-        if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('pop', uid, true);
+        // 完整嘅相片牆搬咗去獨立嘅「溫習日記」分頁顯示，呢度淨係擺一粒
+        // 掣，撳落去就去嗰個分頁睇呢位同學嘅溫習日記（見 openDiaryView()）
+        if (popDiaryWrap) popDiaryWrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile'); switchTab('diary', null, '${uid}');">📔 查看溫習日記</button>`;
         await renderFriendActionButtons(uid, u);
       } catch (e) {
         console.error('讀取用戶資料失敗:', e);
