@@ -116,6 +116,14 @@
 
       // 「個人資料」分頁一開就載入中獎記錄
       if (tabId === 'profile' && typeof window.loadMyGachaHistory === 'function') window.loadMyGachaHistory();
+
+      // 「溫習日記」分頁一開就更新返頭像／用戶名／相片粉絲數字，並且
+      // 由第一頁重新載入自己嘅溫習相片牆
+      if (tabId === 'diary' && window.currentUser) {
+        if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
+        if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
+        if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('diary', window.currentUser.uid, true);
+      }
     }
     window.switchTab = switchTab;
 
@@ -273,55 +281,162 @@
       if (!window.currentUser) return;
       const initial = (window.currentUser.username || 'U').charAt(0).toUpperCase();
       const avatarSrc = window.currentUser.avatarBase64;
-      ['prof-avatar-preview', 'myacc-avatar'].forEach(id => {
+      ['prof-avatar-preview', 'myacc-avatar', 'diary-avatar'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         if (avatarSrc) {
-          // 「我的帳號」資料卡嗰個頭像圈可以撳大睇（複用返 QA 相片嗰個
-          // lightbox），編輯頁面嗰個細預覽圈就唔使畀人撳（揀相／換相已
-          // 經有專用嘅「更換頭像」掣，撳個預覽圈冇意義）。
-          const clickable = id === 'myacc-avatar';
-          el.innerHTML = `<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; ${clickable ? 'cursor:zoom-in;' : ''}" alt="會員頭像"${clickable ? ` onclick="openLightbox('${avatarSrc}')"` : ''}>`;
+          // 「我的帳號」資料卡同「溫習日記」分頁嗰兩個頭像圈可以撳大睇
+          // （複用返 QA 相片嗰個 lightbox，並以圓形顯示），編輯頁面嗰個
+          // 細預覽圈就唔使畀人撳（揀相／換相已經有專用嘅「更換頭像」
+          // 掣，撳個預覽圈冇意義）。
+          const clickable = id === 'myacc-avatar' || id === 'diary-avatar';
+          el.innerHTML = `<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; ${clickable ? 'cursor:zoom-in;' : ''}" alt="會員頭像"${clickable ? ` onclick="openLightbox('${avatarSrc}', true)"` : ''}>`;
         } else {
           el.innerText = initial;
         }
       });
+      // 主頁側邊嘅圓形品牌 Logo：登入咗並且上傳過頭像嘅話，用返自己個
+      // 頭像顯示（代替固定嘅 ConcenMate 品牌圖示），冇上傳就維持顯示
+      // 品牌 Logo。
+      const headerLogoImg = document.getElementById('header-logo-img');
+      if (headerLogoImg) headerLogoImg.src = avatarSrc || 'logo.png';
     }
     window.renderUserAvatar = renderUserAvatar;
 
-    // 揀完相片之後：先喺瀏覽器度用 canvas 置中裁切做正方形、縮細至
-    // 240x240、壓縮做 JPEG，先傳個 base64 去 uploadAvatar 呢個 Cloud
-    // Function——函數入面會用 Google Cloud Vision 嘅 SafeSearch 檢測
-    // 相片內容，通過先會真正寫入 Firestore，所以呢度一定要等
-    // callCloudFunction 嘅 Promise resolve／reject 先知道結果。
-    window.handleAvatarFileSelected = async function(event) {
+    // ===================== 頭像調整（拖曳定位 + 縮放）=====================
+    // 揀完相片之後，唔再自動置中裁切，而係彈出一個調整視窗俾用戶自己拖
+    // 曳相片位置、用滑桿縮放，自己揀邊部分擺入個圓形頭像入面，先至輸出
+    // 240x240 嘅正方形 JPEG，傳去 uploadAvatar 呢個 Cloud Function（入面
+    // 會用 Google Cloud Vision 嘅 SafeSearch 檢測相片內容，通過先會真正
+    // 寫入 Firestore）。
+    let _avatarCropState = null;
+
+    window.handleAvatarFileSelected = function(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
       if (!window.currentUser) { window.showToast('請先登入會員', '⚠️'); return; }
+      openAvatarCropModal(URL.createObjectURL(file));
+    };
+
+    function openAvatarCropModal(objectUrl) {
+      const img = new Image();
+      img.onload = () => {
+        const VP = 260; // 同 index.html 入面 #avatar-crop-viewport 嘅寬／高一致
+        const naturalW = img.naturalWidth;
+        const naturalH = img.naturalHeight;
+        const baseScale = Math.max(VP / naturalW, VP / naturalH); // 令相片喺 zoom=1 嗰陣就啱啱好蓋滿個圓形，冇留白
+        _avatarCropState = {
+          img, objectUrl, naturalW, naturalH, VP, baseScale,
+          zoom: 1, offsetX: 0, offsetY: 0,
+          dragging: false, dragStartX: 0, dragStartY: 0, startOffsetX: 0, startOffsetY: 0,
+          _cx: 0, _cy: 0, _displayScale: baseScale
+        };
+        const imgEl = document.getElementById('avatar-crop-img');
+        imgEl.src = objectUrl;
+        imgEl.style.width = naturalW + 'px';
+        imgEl.style.height = naturalH + 'px';
+        const zoomSlider = document.getElementById('avatar-crop-zoom');
+        if (zoomSlider) zoomSlider.value = 100;
+        initAvatarCropDragHandlers();
+        renderAvatarCropTransform();
+        openModal('modal-avatar-crop');
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        window.showToast('圖片載入失敗，請更換其他相片', '🚫');
+      };
+      img.src = objectUrl;
+    }
+
+    // 根據目前嘅縮放／拖曳位移，計算相片應該點樣顯示（CSS transform），
+    // 並且將「相片一定要蓋滿個圓形視窗、唔可以露出空白」呢個限制夾實
+    // 落去（clamp cx／cy）。_cx／_cy／_displayScale 會暫存低嚟，等
+    // confirmAvatarCrop() 用嚟計返實際裁切範圍。
+    function renderAvatarCropTransform() {
+      const s = _avatarCropState;
+      if (!s) return;
+      const displayScale = s.baseScale * s.zoom;
+      const dispW = s.naturalW * displayScale;
+      const dispH = s.naturalH * displayScale;
+      const minX = s.VP - dispW; // <= 0
+      const minY = s.VP - dispH;
+      const cx0 = (s.VP - dispW) / 2;
+      const cy0 = (s.VP - dispH) / 2;
+      let cx = Math.min(0, Math.max(minX, cx0 + s.offsetX));
+      let cy = Math.min(0, Math.max(minY, cy0 + s.offsetY));
+      s._cx = cx;
+      s._cy = cy;
+      s._displayScale = displayScale;
+      const imgEl = document.getElementById('avatar-crop-img');
+      if (imgEl) imgEl.style.transform = `translate(${cx}px, ${cy}px) scale(${displayScale})`;
+    }
+
+    function initAvatarCropDragHandlers() {
+      const vp = document.getElementById('avatar-crop-viewport');
+      if (!vp || vp._dragHandlersBound) return;
+      vp._dragHandlersBound = true;
+      vp.addEventListener('pointerdown', (e) => {
+        if (!_avatarCropState) return;
+        _avatarCropState.dragging = true;
+        _avatarCropState.dragStartX = e.clientX;
+        _avatarCropState.dragStartY = e.clientY;
+        _avatarCropState.startOffsetX = _avatarCropState.offsetX;
+        _avatarCropState.startOffsetY = _avatarCropState.offsetY;
+        vp.setPointerCapture(e.pointerId);
+        vp.style.cursor = 'grabbing';
+      });
+      vp.addEventListener('pointermove', (e) => {
+        if (!_avatarCropState || !_avatarCropState.dragging) return;
+        _avatarCropState.offsetX = _avatarCropState.startOffsetX + (e.clientX - _avatarCropState.dragStartX);
+        _avatarCropState.offsetY = _avatarCropState.startOffsetY + (e.clientY - _avatarCropState.dragStartY);
+        renderAvatarCropTransform();
+      });
+      const endDrag = () => {
+        if (!_avatarCropState) return;
+        _avatarCropState.dragging = false;
+        vp.style.cursor = 'grab';
+      };
+      vp.addEventListener('pointerup', endDrag);
+      vp.addEventListener('pointercancel', endDrag);
+      vp.addEventListener('pointerleave', endDrag);
+    }
+
+    window.onAvatarCropZoomChange = function(val) {
+      if (!_avatarCropState) return;
+      _avatarCropState.zoom = (parseInt(val, 10) || 100) / 100;
+      renderAvatarCropTransform();
+    };
+
+    window.cancelAvatarCrop = function() {
+      closeModal('modal-avatar-crop');
+      if (_avatarCropState && _avatarCropState.objectUrl) URL.revokeObjectURL(_avatarCropState.objectUrl);
+      _avatarCropState = null;
+      const input = document.getElementById('prof-avatar-input');
+      if (input) input.value = '';
+    };
+
+    window.confirmAvatarCrop = async function() {
+      const s = _avatarCropState;
+      if (!s) return;
+
+      const outputSize = 240; // 統一輸出正方形頭像
+      const canvas = document.createElement('canvas');
+      canvas.width = outputSize;
+      canvas.height = outputSize;
+      const sx = -s._cx / s._displayScale;
+      const sy = -s._cy / s._displayScale;
+      const sSize = s.VP / s._displayScale;
+      canvas.getContext('2d').drawImage(s.img, sx, sy, sSize, sSize, 0, 0, outputSize, outputSize);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      closeModal('modal-avatar-crop');
+      URL.revokeObjectURL(s.objectUrl);
+      _avatarCropState = null;
 
       const preview = document.getElementById('prof-avatar-preview');
       if (preview) preview.innerText = '⏳';
 
       try {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const img = new Image();
-          const objectUrl = URL.createObjectURL(file);
-          img.onload = () => {
-            const size = 240; // 統一輸出正方形頭像
-            const minSide = Math.min(img.width, img.height);
-            const sx = (img.width - minSide) / 2;
-            const sy = (img.height - minSide) / 2;
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            canvas.getContext('2d').drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-            URL.revokeObjectURL(objectUrl);
-            resolve(canvas.toDataURL('image/jpeg', 0.8));
-          };
-          img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('圖片載入失敗，請更換其他相片')); };
-          img.src = objectUrl;
-        });
-
         await window.callCloudFunction('uploadAvatar', { image: dataUrl });
         window.currentUser.avatarBase64 = dataUrl;
         renderUserAvatar();
@@ -337,7 +452,8 @@
         }
         renderUserAvatar();
       } finally {
-        event.target.value = '';
+        const input = document.getElementById('prof-avatar-input');
+        if (input) input.value = '';
       }
     };
 
@@ -370,7 +486,7 @@
     // uid、揭到邊一份文件（cursorDoc，Firestore startAfter 用）、係咪
     // 已經去到最後一頁。
     const _photoPaging = {
-      myacc: { uid: null, cursorDoc: null, done: false, loading: false },
+      diary: { uid: null, cursorDoc: null, done: false, loading: false },
       pop: { uid: null, cursorDoc: null, done: false, loading: false }
     };
 
@@ -389,9 +505,9 @@
       if (state.done || state.loading) return;
       state.loading = true;
 
-      const gridId = context === 'myacc' ? 'myacc-photo-grid' : 'pop-photo-grid';
-      const moreBtnId = context === 'myacc' ? 'myacc-photo-more-btn' : 'pop-photo-more-btn';
-      const emptyId = context === 'myacc' ? 'myacc-photo-empty' : 'pop-photo-empty';
+      const gridId = context === 'diary' ? 'diary-photo-grid' : 'pop-photo-grid';
+      const moreBtnId = context === 'diary' ? 'diary-photo-more-btn' : 'pop-photo-more-btn';
+      const emptyId = context === 'diary' ? 'diary-photo-empty' : 'pop-photo-empty';
       const grid = document.getElementById(gridId);
       const moreBtn = document.getElementById(moreBtnId);
       const emptyEl = document.getElementById(emptyId);
@@ -452,23 +568,26 @@
     }
     window.getStudyPhotoGateState = getStudyPhotoGateState;
 
-    // 更新「我的帳號」資料卡入面發佈掣嘅視覺狀態：未符合條件就顯示為
-    // 灰咗（disable 嘅視覺效果），但依然可以撳——撳落去會彈出提示，
-    // 解釋仲欠幾多分鐘先可以上傳（跟使用者嘅要求：「撳落去會顯示需要
-    // 溫夠15分鐘先可以上傳當日溫習相片」）。
+    // 更新發佈掣嘅視覺狀態（「我的帳號」資料卡同「溫習日記」分頁各自有
+    // 一粒，兩粒都要同步更新）：未符合條件就顯示為灰咗（disable 嘅視覺
+    // 效果），但依然可以撳——撳落去會彈出提示，解釋仲欠幾多分鐘先可以
+    // 上傳（跟使用者嘅要求：「撳落去會顯示需要溫夠15分鐘先可以上傳當
+    // 日溫習相片」）。
     function updatePhotoUploadButtonState() {
-      const btn = document.getElementById('myacc-photo-upload-btn');
-      if (!btn) return;
       const state = getStudyPhotoGateState();
-      if (state.ok) {
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
-        btn.innerText = '➕ 發佈今日溫習相片';
-      } else {
-        btn.style.opacity = '0.5';
-        btn.style.cursor = 'not-allowed';
-        btn.innerText = '🔒 發佈今日溫習相片';
-      }
+      ['diary-photo-upload-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        if (state.ok) {
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.innerText = '➕ 發佈今日溫習相片';
+        } else {
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+          btn.innerText = '🔒 發佈今日溫習相片';
+        }
+      });
     }
     window.updatePhotoUploadButtonState = updatePhotoUploadButtonState;
 
@@ -478,21 +597,28 @@
         window.showToast(state.reason, '🔒');
         return;
       }
-      const input = document.getElementById('myacc-photo-input');
+      const input = document.getElementById('diary-photo-input');
       if (input) input.click();
     };
 
-    // 更新「我的帳號」資料卡入面嘅相片數／粉絲數／追蹤中人數，並且順便
-    // 靜靜地去 Firestore 攞返最新數字（呢幾個計數欄位淨係由 Cloud
-    // Function 更新，本機快取有機會落後於實際情況，例如喺另一部裝置
-        // 有人啱啱追蹤咗自己）。
+    // 更新「我的帳號」資料卡（簡要數字）同「溫習日記」分頁（完整標頭）
+    // 入面嘅相片數／粉絲數／追蹤中人數，並且順便靜靜地去 Firestore 攞返
+    // 最新數字（呢幾個計數欄位淨係由 Cloud Function 更新，本機快取有機
+    // 會落後於實際情況，例如喺另一部裝置有人啱啱追蹤咗自己）。
     async function updateMyAccountPhotoStats() {
       if (!window.currentUser) return;
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-      setText('myacc-photo-count', window.currentUser.photoCount || 0);
-      setText('myacc-follower-count', window.currentUser.followerCount || 0);
-      setText('myacc-following-count', window.currentUser.followingCount || 0);
-      updatePhotoUploadButtonState();
+      const applyStats = () => {
+        setText('myacc-photo-count', window.currentUser.photoCount || 0);
+        setText('myacc-follower-count', window.currentUser.followerCount || 0);
+        setText('myacc-following-count', window.currentUser.followingCount || 0);
+        setText('diary-photo-count', window.currentUser.photoCount || 0);
+        setText('diary-follower-count', window.currentUser.followerCount || 0);
+        setText('diary-following-count', window.currentUser.followingCount || 0);
+        setText('diary-username', window.currentUser.username || '同學');
+        updatePhotoUploadButtonState();
+      };
+      applyStats();
 
       if (!window.db || !window.fs || !window.currentUser.uid) return;
       try {
@@ -505,10 +631,7 @@
         window.currentUser.todayMinutes = u.todayMinutes || 0;
         window.currentUser.todayDate = u.todayDate || '';
         window.currentUser.lastPhotoPostDate = u.lastPhotoPostDate || '';
-        setText('myacc-photo-count', window.currentUser.photoCount);
-        setText('myacc-follower-count', window.currentUser.followerCount);
-        setText('myacc-following-count', window.currentUser.followingCount);
-        updatePhotoUploadButtonState();
+        applyStats();
       } catch (e) {
         console.warn('刷新溫習相片統計失敗:', e);
       }
@@ -526,7 +649,7 @@
       if (!file) return;
       if (!window.currentUser) { window.showToast('請先登入會員', '⚠️'); return; }
 
-      const btn = document.getElementById('myacc-photo-upload-btn');
+      const btn = document.getElementById('diary-photo-upload-btn');
       if (btn) { btn.style.opacity = '0.6'; btn.style.cursor = 'wait'; btn.innerText = '⏳ 上傳中…'; }
 
       try {
@@ -560,10 +683,11 @@
 
         const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
         setText('myacc-photo-count', window.currentUser.photoCount);
+        setText('diary-photo-count', window.currentUser.photoCount);
 
-        const grid = document.getElementById('myacc-photo-grid');
+        const grid = document.getElementById('diary-photo-grid');
         if (grid) grid.insertAdjacentHTML('afterbegin', photoTileHtml(result.photoUrl, today));
-        const emptyEl = document.getElementById('myacc-photo-empty');
+        const emptyEl = document.getElementById('diary-photo-empty');
         if (emptyEl) emptyEl.style.display = 'none';
 
         window.showToast('溫習相片已成功發佈！', '📸');
@@ -1220,8 +1344,10 @@
       if (expBar) expBar.style.width = info.pctToNext + '%';
       setText('myacc-exp-text', `${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 升級`);
 
+      // 「溫習日記」獨立做咗一個分頁（tab-diary），呢度資料卡淨係顯示
+      // 簡要數字（相片／粉絲／追蹤中），撳「查看溫習日記」先真正載入
+      // 相片牆——所以呢度唔使再喺開資料卡嗰陣就攞相片。
       if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
-      if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('myacc', u.uid, true);
 
       openModal('modal-my-account');
     }
@@ -1618,9 +1744,14 @@
       } catch(e) { window.showToast('儲存失敗', '❌'); }
     };
 
-    window.openLightbox = function(src) {
+    // circular=true 專門畀頭像用：燈箱入面個相片會用圓形裁切顯示，配合
+    // 頭像本身係圓形嘅設計；一般相片（QA 相片、溫習相片）唔傳呢個參數，
+    // 維持返原本矩形顯示。
+    window.openLightbox = function(src, circular) {
       const lb = document.getElementById('qa-lightbox');
-      document.getElementById('qa-lightbox-img').src = src;
+      const img = document.getElementById('qa-lightbox-img');
+      img.src = src;
+      img.classList.toggle('lightbox-img-circle', !!circular);
       lb.style.display = 'flex';
     };
 
@@ -2323,7 +2454,7 @@
         const avatarEl = document.getElementById('pop-user-avatar');
         if (avatarEl) {
           if (u.avatarBase64) {
-            avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; cursor:zoom-in;" alt="會員頭像" onclick="openLightbox('${u.avatarBase64}')">`;
+            avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; cursor:zoom-in;" alt="會員頭像" onclick="openLightbox('${u.avatarBase64}', true)">`;
           } else {
             avatarEl.innerText = (u.username || '同').charAt(0).toUpperCase();
           }
