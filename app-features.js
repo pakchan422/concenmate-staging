@@ -300,7 +300,16 @@
       // 歡迎列「你好，OOO👋」旁邊嗰個圓形圖示（#home-hero-avatar）：
       // 上傳過頭像就顯示返自己個頭像，冇上傳就維持顯示品牌 Logo。
       const homeHeroAvatar = document.getElementById('home-hero-avatar');
-      if (homeHeroAvatar) homeHeroAvatar.src = avatarSrc || 'logo.png';
+      if (homeHeroAvatar) {
+        homeHeroAvatar.src = avatarSrc || 'logo.png';
+        if (avatarSrc) {
+          homeHeroAvatar.style.cursor = 'zoom-in';
+          homeHeroAvatar.onclick = () => openLightbox(avatarSrc, true);
+        } else {
+          homeHeroAvatar.style.cursor = 'default';
+          homeHeroAvatar.onclick = null;
+        }
+      }
     }
     window.renderUserAvatar = renderUserAvatar;
 
@@ -1416,7 +1425,6 @@
       if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
       setText('myacc-username', u.username || '同學');
       setText('myacc-loginid', u.loginId ? ('🆔 ' + u.loginId) : '🆔 未設定');
-      setText('myacc-email', u.email || '—');
       setText('myacc-school', u.school || '未填寫');
       setText('myacc-grade', u.grade || '未填寫');
       setText('myacc-fav', u.favSubjects || '未填寫');

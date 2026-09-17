@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.130.2"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.130.3"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -2913,8 +2913,16 @@
     <div class="modal-box" style="text-align:center;">
       <div class="avatar-circle" style="margin:0 auto 10px; width:64px; height:64px; font-size:26px; background:var(--brand-500); border-color:var(--brand-200);" id="myacc-avatar">A</div>
       <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);" id="myacc-username">同學</h3>
-      <p style="font-size:13px; color:#888; margin-bottom:2px;" id="myacc-loginid"></p>
-      <p style="font-size:13px; color:#888; margin-bottom:8px;" id="myacc-email"></p>
+      <p style="font-size:13px; color:#888; margin-bottom:8px;" id="myacc-loginid"></p>
+
+      <!-- Instagram 式溫習相片：自己嘅完整相片牆／發佈相片已經有側邊欄
+           「📔 溫習日記」分頁可以直接去到，呢度資料卡淨係顯示簡要數字，
+           唔再重複擺多一個入口掣。 -->
+      <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; font-size:13px; color:#555;">
+        <div><strong id="myacc-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>相片</div>
+        <div><strong id="myacc-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>粉絲</div>
+        <div><strong id="myacc-following-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>追蹤中</div>
+      </div>
 
       <div style="margin-bottom:12px;">
         <div id="myacc-level-badge" style="font-size:15px; font-weight:bold;">🌱 Lv.1 溫習新手</div>
@@ -2931,15 +2939,6 @@
         <div><strong>💔 討厭學科：</strong><span id="myacc-dislike">未填寫</span></div>
         <div><strong>⏱️ 累積時數：</strong><span id="myacc-hours">0.0 小時</span></div>
         <div><strong>🪙 積分：</strong><span id="myacc-points">0 PTS</span></div>
-      </div>
-
-      <!-- Instagram 式溫習相片：自己嘅完整相片牆／發佈相片已經有側邊欄
-           「📔 溫習日記」分頁可以直接去到，呢度資料卡淨係顯示簡要數字，
-           唔再重複擺多一個入口掣。 -->
-      <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; font-size:13px; color:#555;">
-        <div><strong id="myacc-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>相片</div>
-        <div><strong id="myacc-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>粉絲</div>
-        <div><strong id="myacc-following-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>追蹤中</div>
       </div>
 
       <div style="display:flex; flex-direction:column; gap:8px;">
