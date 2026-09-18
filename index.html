@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.131.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.131.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1611,7 +1611,7 @@
   <!-- 全站置頂嘅「今日目標 + 等級／EXP」合併狀態列：唔理揭緊邊個分頁都見到，登入先顯示 -->
   <div id="global-status-bar" style="display:none; background:linear-gradient(135deg, #4A8FA0, #7DB8C5); padding:6px 16px;">
     <div style="max-width:480px; margin:0 auto; display:flex; align-items:stretch; gap:10px;">
-      <div style="flex:1; min-width:0; cursor:pointer;" onclick="switchTab('home')" title="看你今日的溫習目標">
+      <div style="flex:1; min-width:0;">
         <div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px;">
           <span style="font-size:13px; font-weight:700; color:#fff; white-space:nowrap;">🎯 今日目標</span>
           <span id="global-goal-label" style="font-size:13px; color:rgba(255,255,255,.9); white-space:nowrap;">0/60分鐘</span>
@@ -1845,52 +1845,25 @@
                 </div>
               </button>
 
-              <!-- 次要功能 2×2 格 -->
-              <div class="home-secondary-grid">
-
-                <button class="home-sec-card" onclick="switchTab('qa')">
-                  <div class="home-sec-head">
-                    <span class="home-sec-icon">❓</span>
-                    <span class="home-sec-badge" id="home-qa-badge" style="display:none;"></span>
+              <!-- 溫習日曆（細 widget）：原本擺喺右欄，而家搬咗上嚟呢個
+                   位置（代替原本嘅 5 格快捷功能——嗰 5 格同側邊欄嘅分頁
+                   選單完全重複，所以已經移除）。淨係要有入過視訊溫習室
+                   （唔理幾多分鐘）當日就算有溫習，畫個細細嘅月曆俾用家
+                   睇返自己邊幾日有溫習過 -->
+              <div class="home-side-card" id="study-calendar-card" style="padding:10px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                  <span style="font-size:13px; font-weight:700; color:var(--brand-800);">📅 溫習日曆</span>
+                  <div style="display:flex; align-items:center; gap:2px;">
+                    <button type="button" class="study-calendar-nav-btn" onclick="window.shiftStudyCalendarMonth(-1)">‹</button>
+                    <span id="study-calendar-month-label" style="font-size:13px; font-weight:bold; color:var(--brand-700); min-width:46px; text-align:center;">--</span>
+                    <button type="button" class="study-calendar-nav-btn" onclick="window.shiftStudyCalendarMonth(1)">›</button>
                   </div>
-                  <div class="home-sec-title">疑難解答區</div>
-                  <div class="home-sec-desc">發問 · 回答 · 共同進步</div>
-                </button>
-
-                <button class="home-sec-card" onclick="switchTab('store')">
-                  <div class="home-sec-head">
-                    <span class="home-sec-icon">🎰</span>
-                    <span class="home-sec-badge" id="home-gacha-badge" style="display:none; background:#4A8FA0; color:white;">可扭蛋</span>
-                  </div>
-                  <div class="home-sec-title">時數扭蛋機</div>
-                  <div class="home-sec-desc">用積分抽取學習大獎</div>
-                </button>
-
-                <button class="home-sec-card" onclick="switchTab('social')">
-                  <div class="home-sec-head">
-                    <span class="home-sec-icon">👥</span>
-                    <span class="home-sec-badge" id="home-social-badge" style="display:none;"></span>
-                  </div>
-                  <div class="home-sec-title">夥伴與讀書會</div>
-                  <div class="home-sec-desc">找書友，一齊讀</div>
-                </button>
-
-                <button class="home-sec-card" onclick="switchTab('vip')">
-                  <div class="home-sec-head">
-                    <span class="home-sec-icon">👑</span>
-                  </div>
-                  <div class="home-sec-title">溫習資源</div>
-                  <div class="home-sec-desc">精選筆記及升級方案</div>
-                </button>
-
-                <button class="home-sec-card" onclick="switchTab('study')">
-                  <div class="home-sec-head">
-                    <span class="home-sec-icon">🗂</span>
-                  </div>
-                  <div class="home-sec-title">學科溫習卡</div>
-                  <div class="home-sec-desc">間隔重複記憶法溫習</div>
-                </button>
-
+                </div>
+                <div id="study-calendar-grid" class="study-calendar-grid"></div>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; padding-top:7px; border-top:1px solid #eee; font-size:13px; color:#888;">
+                  <span>🔥 <b id="study-calendar-streak" style="color:var(--brand-800);">0</b> 連續</span>
+                  <span>📚 <b id="study-calendar-total" style="color:var(--brand-800);">0</b> 總日數</span>
+                </div>
               </div>
             </div>
 
@@ -1908,34 +1881,6 @@
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:13px; color:#aaa;">
                   <span>0 min</span><span>60 min</span>
-                </div>
-              </div>
-
-              <!-- 溫習日曆（細 widget）：淨係要有入過視訊溫習室（唔理幾多
-                   分鐘）當日就算有溫習，畫個細細嘅月曆俾用家睇返自己邊
-                   幾日有溫習過 -->
-              <div class="home-side-card" id="study-calendar-card" style="padding:10px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-                  <span style="font-size:13px; font-weight:700; color:var(--brand-800);">📅 溫習日曆</span>
-                  <div style="display:flex; align-items:center; gap:2px;">
-                    <button type="button" class="study-calendar-nav-btn" onclick="window.shiftStudyCalendarMonth(-1)">‹</button>
-                    <span id="study-calendar-month-label" style="font-size:13px; font-weight:bold; color:var(--brand-700); min-width:46px; text-align:center;">--</span>
-                    <button type="button" class="study-calendar-nav-btn" onclick="window.shiftStudyCalendarMonth(1)">›</button>
-                  </div>
-                </div>
-                <div id="study-calendar-grid" class="study-calendar-grid"></div>
-                <div style="display:flex; justify-content:space-between; margin-top:8px; padding-top:7px; border-top:1px solid #eee; font-size:13px; color:#888;">
-                  <span>🔥 <b id="study-calendar-streak" style="color:var(--brand-800);">0</b> 連續</span>
-                  <span>📚 <b id="study-calendar-total" style="color:var(--brand-800);">0</b> 總日數</span>
-                </div>
-              </div>
-
-              <!-- 快捷入口 -->
-              <div class="home-side-card" style="padding:10px;">
-                <div style="font-size:13px; font-weight:700; color:#aaa; margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em;">快速功能</div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                  <button class="home-quick-btn" onclick="switchTab('profile')">👤 編輯個人資料</button>
-                  <button class="home-quick-btn" onclick="switchTab('verification')">🎓 學生身份驗證</button>
                 </div>
               </div>
 
