@@ -138,6 +138,8 @@
       // 「🚩 舉報處理」個紅點徽章唔理管理員而家揀緊邊個分頁都要見到，
       // 所以一入管理後台就開始聽，唔使等真係撳入嗰個分頁先識更新
       if (typeof window.startAdminReportsBadgeListener === 'function') window.startAdminReportsBadgeListener();
+      // 「🎓 導師申請」個紅點徽章同上，唔理揀緊邊個分頁都要見到
+      if (typeof window.startAdminTutorsBadgeListener === 'function') window.startAdminTutorsBadgeListener();
 
       switchAdminTab(currentAdminTab || 'gacha');
     }
@@ -162,6 +164,7 @@
       else if (tab === 'flashcards') renderAdminFlashcardsTab();
       else if (tab === 'reports') renderAdminReportsTab();
       else if (tab === 'icons') renderAdminNavIconsTab();
+      else if (tab === 'tutors') renderAdminTutorsTab();
     };
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -1695,6 +1698,204 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
       });
     }
     window.loadNavIconsFromFirestore = loadNavIconsFromFirestore;
+
+    // ===================== 🎓 導師申請審批（Phase A：導師 PDF 筆記商店） =====================
+    // 呢個分頁分兩部分：(1) 導師申請（含待審批／歷史記錄），(2) 已批准
+    // 嘅導師名單（可以喺度停權／解除停權）。審批動作全部經 Cloud
+    // Functions（見 functions/index.js 嘅 approveTutorApplication／
+    // rejectTutorApplication／suspendTutor／reinstateTutor），呢度純粹
+    // 負責顯示同觸發呼叫，唔會直接寫 Firestore（tutorApplications／
+    // tutors 兩個 collection 嘅前端寫入權限喺 firestore.rules 已經鎖死）。
+    let adminTutorsBadgeUnsubscribe = null;
+    let adminTutorAppsUnsubscribe = null;
+    let adminTutorsListUnsubscribe = null;
+    let adminTutorApps = [];
+    let adminTutorsList = [];
+
+    // 「🎓 導師申請」個紅點徽章同「🚩 舉報處理」個做法一樣，唔理管理員
+    // 而家揀緊邊個分頁都要見到，一入管理後台就開始聽
+    window.startAdminTutorsBadgeListener = function() {
+      if (!window.db || !window.fs) return;
+      if (adminTutorsBadgeUnsubscribe) return;
+      try {
+        const q = window.fs.query(
+          window.fs.collection(window.db, 'tutorApplications'),
+          window.fs.where('status', '==', 'pending')
+        );
+        adminTutorsBadgeUnsubscribe = window.fs.onSnapshot(q, (snapshot) => {
+          const badge = document.getElementById('admin-tutors-badge');
+          if (!badge) return;
+          const count = snapshot.size;
+          badge.innerText = String(count);
+          badge.style.display = count > 0 ? 'inline-block' : 'none';
+        }, (err) => {
+          console.error('監聽導師申請數量失敗：', err);
+        });
+      } catch (e) {
+        console.error('啟動導師申請 badge listener 失敗：', e);
+      }
+    };
+
+    function buildAdminTutorAppCardHtml(docSnap) {
+      const a = docSnap.data();
+      const uid = docSnap.id;
+      const status = a.status || 'pending';
+      const statusLabel = status === 'pending' ? '⏳ 待審批' : (status === 'approved' ? '✅ 已批准' : '❌ 已駁回');
+      const statusColor = status === 'pending' ? '#C0524A' : (status === 'approved' ? '#2F6B3A' : '#999');
+      const when = a.submittedAt ? new Date(a.submittedAt).toLocaleString('zh-HK') : '—';
+      const subjectsHtml = (a.subjectsIntended || [])
+        .map(s => `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtml(s)}</span>`)
+        .join('');
+      return `
+        <div class="admin-card" style="${status !== 'pending' ? 'opacity:.65;' : ''}">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+            <span style="font-weight:700; color:${statusColor}; font-size:13px;">${statusLabel}</span>
+            <span style="font-size:13px; color:#999;">${escapeHtml(when)}</span>
+          </div>
+          <p style="font-size:13px; margin-bottom:3px;"><b>顯示名稱：</b>${escapeHtml(a.displayName || '—')}</p>
+          <p style="font-size:13px; color:#666; margin-bottom:3px;">${escapeHtml(a.bio || '（未填寫自我介紹）')}</p>
+          <p style="font-size:13px; margin-bottom:3px;">${subjectsHtml || '（未填寫科目）'}</p>
+          <p style="font-size:13px; color:#888; margin-bottom:3px;"><b>聯絡方式：</b>${escapeHtml(a.contactInfo || '—')}</p>
+          <p style="font-size:12px; color:#aaa; margin-bottom:3px;">🆔 ${escapeHtml(uid)}</p>
+          ${status === 'rejected' && a.rejectionReason ? `<p style="font-size:13px; color:#8a2f2f; background:#FBEAEA; border-radius:6px; padding:6px 8px; margin-bottom:3px;">駁回原因：${escapeHtml(a.rejectionReason)}</p>` : ''}
+          ${status === 'pending' ? `
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+              <button class="btn btn-primary" style="font-size:13px; padding:4px 9px;" onclick="window.adminApproveTutorApp('${uid}')">✅ 批准</button>
+              <button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminRejectTutorApp('${uid}')">❌ 駁回</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function buildAdminTutorCardHtml(docSnap) {
+      const t = docSnap.data();
+      const uid = docSnap.id;
+      const status = t.status || 'active';
+      const statusLabel = status === 'active' ? '🟢 正常' : '🚫 已停權';
+      const statusColor = status === 'active' ? '#2F6B3A' : '#C0524A';
+      const subjectsHtml = (t.subjectsIntended || [])
+        .map(s => `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtml(s)}</span>`)
+        .join('');
+      return `
+        <div class="admin-card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+            <span style="font-weight:700; color:${statusColor}; font-size:13px;">${statusLabel}</span>
+            <span style="font-size:12px; color:#aaa;">🆔 ${escapeHtml(uid)}</span>
+          </div>
+          <p style="font-size:13px; margin-bottom:3px;"><b>${escapeHtml(t.displayName || '—')}</b></p>
+          <p style="font-size:13px; color:#666; margin-bottom:3px;">${escapeHtml(t.bio || '')}</p>
+          <p style="font-size:13px; margin-bottom:3px;">${subjectsHtml}</p>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+            ${status === 'active'
+              ? `<button class="btn btn-red" style="font-size:13px; padding:4px 9px;" onclick="window.adminSuspendTutor('${uid}')">🚫 停權</button>`
+              : `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminReinstateTutor('${uid}')">♻️ 解除停權</button>`}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAdminTutorsListUI() {
+      const container = document.getElementById('admin-tab-tutors');
+      if (!container) return;
+
+      const pendingApps = adminTutorApps.filter(d => (d.data().status || 'pending') === 'pending');
+      const otherApps = adminTutorApps.filter(d => (d.data().status || 'pending') !== 'pending');
+
+      const pendingHtml = pendingApps.length
+        ? pendingApps.map(buildAdminTutorAppCardHtml).join('')
+        : '<div class="admin-card" style="text-align:center; color:#999;">目前沒有待審批的導師申請</div>';
+
+      const tutorsHtml = adminTutorsList.length
+        ? adminTutorsList.map(buildAdminTutorCardHtml).join('')
+        : '<div class="admin-card" style="text-align:center; color:#999;">目前還沒有任何已批准的導師</div>';
+
+      const historyHtml = otherApps.length ? otherApps.map(buildAdminTutorAppCardHtml).join('') : '';
+
+      container.innerHTML = `
+        <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:4px 0 8px;">⏳ 待審批申請</h4>
+        ${pendingHtml}
+        <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:18px 0 8px;">🎓 導師名單</h4>
+        ${tutorsHtml}
+        ${historyHtml ? `<h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:18px 0 8px;">📜 申請歷史（已批准／已駁回）</h4>${historyHtml}` : ''}
+      `;
+    }
+
+    function renderAdminTutorsTab() {
+      const container = document.getElementById('admin-tab-tutors');
+      if (!container || !window.db || !window.fs) return;
+      container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中導師申請...</p>';
+
+      if (adminTutorAppsUnsubscribe) adminTutorAppsUnsubscribe();
+      if (adminTutorsListUnsubscribe) adminTutorsListUnsubscribe();
+      adminTutorApps = [];
+      adminTutorsList = [];
+
+      const appsQ = window.fs.query(
+        window.fs.collection(window.db, 'tutorApplications'),
+        window.fs.orderBy('submittedAt', 'desc'),
+        window.fs.limit(100)
+      );
+      adminTutorAppsUnsubscribe = window.fs.onSnapshot(appsQ, (snapshot) => {
+        adminTutorApps = snapshot.docs;
+        renderAdminTutorsListUI();
+      }, (err) => {
+        container.innerHTML = `<div class="admin-card" style="color:#c0392b;">載入導師申請失敗：${err.message || err}</div>`;
+      });
+
+      const tutorsQ = window.fs.query(
+        window.fs.collection(window.db, 'tutors'),
+        window.fs.orderBy('createdAt', 'desc'),
+        window.fs.limit(100)
+      );
+      adminTutorsListUnsubscribe = window.fs.onSnapshot(tutorsQ, (snapshot) => {
+        adminTutorsList = snapshot.docs;
+        renderAdminTutorsListUI();
+      }, (err) => {
+        console.error('載入導師名單失敗：', err);
+      });
+    }
+    window.renderAdminTutorsTab = renderAdminTutorsTab;
+
+    window.adminApproveTutorApp = async function(uid) {
+      if (!confirm('確定批准呢個導師申請？批准之後該用戶會即刻獲得導師身份。')) return;
+      try {
+        await window.callCloudFunction('approveTutorApplication', { targetUid: uid });
+        window.showToast('已批准導師申請', '✅');
+      } catch (err) {
+        window.showToast('批准失敗：' + (err.message || err), '❌');
+      }
+    };
+
+    window.adminRejectTutorApp = async function(uid) {
+      const reason = prompt('駁回原因（會顯示畀申請人睇，可以留空）：', '');
+      if (reason === null) return; // 撳咗取消
+      try {
+        await window.callCloudFunction('rejectTutorApplication', { targetUid: uid, rejectionReason: reason });
+        window.showToast('已駁回導師申請', '🗂️');
+      } catch (err) {
+        window.showToast('駁回失敗：' + (err.message || err), '❌');
+      }
+    };
+
+    window.adminSuspendTutor = async function(uid) {
+      if (!confirm('確定停權呢位導師？佢已上架嘅筆記會自動下架（Phase C 上線後生效），但已購買嘅學生保留下載權。')) return;
+      try {
+        await window.callCloudFunction('suspendTutor', { targetUid: uid });
+        window.showToast('已停權該導師', '🚫');
+      } catch (err) {
+        window.showToast('停權失敗：' + (err.message || err), '❌');
+      }
+    };
+
+    window.adminReinstateTutor = async function(uid) {
+      try {
+        await window.callCloudFunction('reinstateTutor', { targetUid: uid });
+        window.showToast('已解除停權', '✅');
+      } catch (err) {
+        window.showToast('解除停權失敗：' + (err.message || err), '❌');
+      }
+    };
 
     // 頁面一載入就檢查一次（處理直接開 #admin 網址嘅情況）
     checkAdminHashRoute();

@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.131.3"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.132.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -2901,10 +2901,41 @@
         <div><strong>🪙 積分：</strong><span id="myacc-points">0 PTS</span></div>
       </div>
 
+      <!-- 導師身份狀態／申請入口：內容由 updateMyAccountTutorStatus() 動態
+           產生（未申請／審批中／已被拒／已經係導師 四種狀態） -->
+      <div id="myacc-tutor-area" style="margin-bottom:10px;"></div>
+
       <div style="display:flex; flex-direction:column; gap:8px;">
         <button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="goEditProfileFromAccountModal()">✏️ 編輯個人資料</button>
         <button class="btn btn-red" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account'); logoutWithFirebase();">🚪 登出帳號</button>
         <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎓 導師身份申請表格（Phase A：導師 PDF 筆記商店，第一階段）
+       由 myacc-tutor-area 入面嘅「申請成為導師」掣觸發，交咗之後
+       就要等管理員喺後台審批，暫時未有任何後續功能（上傳筆記等）。 -->
+  <div class="modal-backdrop" id="modal-tutor-apply" style="display:none;">
+    <div class="modal-box" style="max-width:420px;">
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">🎓 申請成為導師</h3>
+      <p style="font-size:13px; color:#888; margin-bottom:14px;">通過審批之後，你就可以喺導師後台管理科目、上傳付費筆記畀其他同學購買。填好以下資料交俾管理員審批。</p>
+
+      <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">顯示名稱</label>
+      <input id="tutor-apply-name" class="input-field" type="text" maxlength="40" placeholder="學生會見到嘅導師名稱" style="width:100%; margin-bottom:10px;">
+
+      <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">自我介紹</label>
+      <textarea id="tutor-apply-bio" class="input-field" rows="3" maxlength="500" placeholder="簡單介紹自己嘅教學背景、經驗" style="width:100%; margin-bottom:10px; resize:vertical;"></textarea>
+
+      <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">想教嘅科目（用逗號分隔，例如：數學, 英文）</label>
+      <input id="tutor-apply-subjects" class="input-field" type="text" maxlength="200" placeholder="數學, 英文" style="width:100%; margin-bottom:10px;">
+
+      <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">聯絡方式（管理員審批用，唔會公開）</label>
+      <input id="tutor-apply-contact" class="input-field" type="text" maxlength="200" placeholder="例如電郵或電話" style="width:100%; margin-bottom:14px;">
+
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="closeModal('modal-tutor-apply')">取消</button>
+        <button class="btn btn-primary" type="button" id="tutor-apply-submit-btn" style="flex:1; justify-content:center;" onclick="submitTutorApplication()">送出申請</button>
       </div>
     </div>
   </div>
@@ -3133,6 +3164,7 @@
         <button class="btn btn-outline admin-tab-btn" data-tab="flashcards" onclick="switchAdminTab('flashcards')">🗂 溫習卡管理</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="reports" onclick="switchAdminTab('reports')">🚩 舉報處理 <span id="admin-reports-badge" style="display:none; background:#C0524A; color:#fff; border-radius:99px; font-size:13px; padding:1px 6px; margin-left:3px;">0</span></button>
         <button class="btn btn-outline admin-tab-btn" data-tab="icons" onclick="switchAdminTab('icons')">🖼 功能圖示</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="tutors" onclick="switchAdminTab('tutors')">🎓 導師申請 <span id="admin-tutors-badge" style="display:none; background:#C0524A; color:#fff; border-radius:99px; font-size:13px; padding:1px 6px; margin-left:3px;">0</span></button>
       </div>
 
       <div id="admin-tab-gacha" class="admin-tab-panel"></div>
@@ -3143,6 +3175,7 @@
       <div id="admin-tab-flashcards" class="admin-tab-panel" style="display:none;"></div>
       <div id="admin-tab-reports" class="admin-tab-panel" style="display:none;"></div>
       <div id="admin-tab-icons" class="admin-tab-panel" style="display:none;"></div>
+      <div id="admin-tab-tutors" class="admin-tab-panel" style="display:none;"></div>
 
     </div>
   </div>
