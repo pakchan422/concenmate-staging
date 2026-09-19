@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.132.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.133.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1639,14 +1639,22 @@
     <aside>
       <div>
         <button class="nav-btn active" id="nav-btn-home" type="button" onclick="switchTab('home', this)"><span class="nav-icon" id="nav-icon-home">🏠</span> <span class="nav-text">主頁</span></button>
-        <button class="nav-btn" id="nav-btn-room" type="button" onclick="switchTab('room', this)"><span class="nav-icon" id="nav-icon-room">📹</span> <span class="nav-text">視訊溫習室</span></button>
-        <button class="nav-btn" id="nav-btn-study" type="button" onclick="switchTab('study', this)"><span class="nav-icon" id="nav-icon-study">🗂</span> <span class="nav-text">學科溫習卡</span></button>
-        <button class="nav-btn" id="nav-btn-qa" type="button" onclick="switchTab('qa', this)"><span class="nav-icon" id="nav-icon-qa">❓</span> <span class="nav-text">疑難解答區</span></button>
-        <button class="nav-btn" id="nav-btn-vip" type="button" onclick="switchTab('vip', this)"><span class="nav-icon" id="nav-icon-vip">👑</span> <span class="nav-text">溫習資源</span></button>
-        <button class="nav-btn" id="nav-btn-store" type="button" onclick="switchTab('store', this)"><span class="nav-icon" id="nav-icon-store">🎁</span> <span class="nav-text">時數扭蛋機</span></button>
-        <button class="nav-btn" id="nav-btn-social" type="button" onclick="switchTab('social', this)"><span class="nav-icon" id="nav-icon-social">👥</span> <span class="nav-text">夥伴與讀書會</span> <span class="home-sec-badge" id="nav-social-badge" style="display:none; margin-left:auto;"></span></button>
-        <button class="nav-btn" id="nav-btn-diary" type="button" onclick="switchTab('diary', this)"><span class="nav-icon" id="nav-icon-diary">📔</span> <span class="nav-text">溫習日記</span></button>
-        <button class="nav-btn" id="nav-btn-verification" type="button" onclick="switchTab('verification', this)"><span class="nav-icon" id="nav-icon-verification">🎓</span> <span class="nav-text">學生身份驗證</span></button>
+        <!-- 以下呢一批係「學生／Admin」帳戶先見到嘅功能，導師帳戶登入
+             之後會由 applyRoleBasedSidebar()（tutor-panel.js）將佢哋全部
+             隱藏，淨係留低「主頁」＋「管理教材」兩項——導師介面同學生
+             介面要完全分開，唔應該見到溫習卡／扭蛋機呢類學生專屬功能。
+             加咗 class="student-only-nav" 方便嗰個 function 一次過搵晒。 -->
+        <button class="nav-btn student-only-nav" id="nav-btn-room" type="button" onclick="switchTab('room', this)"><span class="nav-icon" id="nav-icon-room">📹</span> <span class="nav-text">視訊溫習室</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-study" type="button" onclick="switchTab('study', this)"><span class="nav-icon" id="nav-icon-study">🗂</span> <span class="nav-text">學科溫習卡</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-qa" type="button" onclick="switchTab('qa', this)"><span class="nav-icon" id="nav-icon-qa">❓</span> <span class="nav-text">疑難解答區</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-vip" type="button" onclick="switchTab('vip', this)"><span class="nav-icon" id="nav-icon-vip">👑</span> <span class="nav-text">溫習資源</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-store" type="button" onclick="switchTab('store', this)"><span class="nav-icon" id="nav-icon-store">🎁</span> <span class="nav-text">時數扭蛋機</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-social" type="button" onclick="switchTab('social', this)"><span class="nav-icon" id="nav-icon-social">👥</span> <span class="nav-text">夥伴與讀書會</span> <span class="home-sec-badge" id="nav-social-badge" style="display:none; margin-left:auto;"></span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-diary" type="button" onclick="switchTab('diary', this)"><span class="nav-icon" id="nav-icon-diary">📔</span> <span class="nav-text">溫習日記</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-verification" type="button" onclick="switchTab('verification', this)"><span class="nav-icon" id="nav-icon-verification">🎓</span> <span class="nav-text">學生身份驗證</span></button>
+        <!-- 導師帳戶專用：淨係批核通過（role==='tutor'）先會顯示，見
+             applyRoleBasedSidebar()。 -->
+        <button class="nav-btn" id="nav-btn-tutor-materials" type="button" onclick="switchTab('tutor-materials', this)" style="display:none;"><span class="nav-icon">🗂️</span> <span class="nav-text">管理教材</span></button>
       </div>
     </aside>
 
@@ -2394,6 +2402,47 @@
             <p style="font-size:13px; color:#aaa; line-height:1.7; max-width:320px; margin:0 auto;">
               功能仍在開發中，敬請期待！
             </p>
+          </div>
+        </section>
+
+        <!-- 🎓 導師專用：管理教材（科目／課題／PDF 筆記）。內容全部由
+             tutor-panel.js 嘅 renderTutorMaterialsTab() 動態產生，呢度
+             淨係擺幾個掛勾用嘅容器。 -->
+        <section id="tab-tutor-materials" class="tab-content">
+          <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550;">
+            <h2 style="font-size:18px; font-weight:bold;">🗂️ 管理教材</h2>
+            <p style="font-size:13px; color:#3E5A63; margin-top:4px;">管理你嘅科目、課題分類，同上架俾學生購買嘅 PDF 筆記</p>
+          </div>
+
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📚 我的科目</h3>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorSubject(window.getSelectedTutorSubjectId())">🗑️ 刪除目前科目</button>
+                <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.promptCreateTutorSubject()">＋ 新增科目</button>
+              </div>
+            </div>
+            <div id="tutor-subject-tabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+          </div>
+
+          <div class="card" id="tutor-topics-card" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📑 課題</h3>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorTopic(window.getSelectedTutorTopicId())">🗑️ 刪除目前課題</button>
+                <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.promptCreateTutorTopic()">＋ 新增課題</button>
+              </div>
+            </div>
+            <div id="tutor-topic-tabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+          </div>
+
+          <div class="card" id="tutor-notes-card" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📄 教材</h3>
+              <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.openTutorNoteUploadForm()">⬆️ 上傳教材</button>
+            </div>
+            <div id="tutor-note-upload-panel" style="display:none; background:var(--brand-50); border:1px solid var(--brand-200); border-radius:10px; padding:12px; margin-bottom:12px;"></div>
+            <div id="tutor-notes-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;"></div>
           </div>
         </section>
 
@@ -3221,6 +3270,7 @@
   </div>
 
   <script src="admin-panel.js"></script>
+  <script src="tutor-panel.js"></script>
 
 </body>
 </html>

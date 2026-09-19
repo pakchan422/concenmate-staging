@@ -123,6 +123,12 @@
       if (tabId === 'diary' && typeof window.openDiaryView === 'function') {
         window.openDiaryView(diaryUid || null);
       }
+
+      // 「管理教材」分頁（導師專用）一開就即刻載入呢位導師自己嘅科目
+      // ／課題／教材清單，函式定義喺 tutor-panel.js
+      if (tabId === 'tutor-materials' && typeof window.renderTutorMaterialsTab === 'function') {
+        window.renderTutorMaterialsTab();
+      }
     }
     window.switchTab = switchTab;
 
@@ -1511,6 +1517,11 @@
         document.getElementById('prof-dislike').value = window.currentUser.dislikeSubjects || '';
         if (typeof window.updateProfileEmailVerifyUI === 'function') window.updateProfileEmailVerifyUI();
         if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
+
+        // 導師帳戶（role==='tutor'）嘅側邊欄同學生／Admin 完全唔同，淨係
+        // 得返「主頁」＋「管理教材」——呢個 function 定義喺
+        // tutor-panel.js，負責隱藏晒其他學生專屬分頁、顯示返「管理教材」。
+        if (typeof window.applyRoleBasedSidebar === 'function') window.applyRoleBasedSidebar();
 
         switchTab('home');
       } else {

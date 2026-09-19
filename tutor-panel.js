@@ -1,0 +1,450 @@
+// ConcenMate · tutor-panel.js
+// ------------------------------------------------------------
+// 導師後台（Phase B／C：科目、課題、PDF 筆記管理）。同 admin-panel.js
+// 一樣唔係 ES module，同其他 <script> 區塊共用全域 scope，喺
+// index.html 尾段用 <script src="tutor-panel.js"> 載入，一定要喺
+// app-core.js／app-features.js 之後，因為要用到佢哋已經定義好嘅
+// window.db／window.fs／window.storage／window.storageApi／
+// window.callCloudFunction／window.currentUser 等物件。
+//
+// 呢個檔案負責兩件事：
+//   1. applyRoleBasedSidebar() —— 導師帳戶（role==='tutor'）登入之後，
+//      將側邊欄由學生嗰一套（視訊溫習室／學科溫習卡…）完全換做淨係
+//      「主頁」＋「管理教材」兩項，同學生／Admin 介面徹底分開。
+//   2. 「管理教材」分頁本身：科目 → 課題 → 教材（PDF 筆記）三層架構，
+//      教材支援上傳、揀預覽頁、定價、刪除。實際嘅 PDF 檔案處理（讀
+//      頁數、抽頁產生預覽版）全部喺 functions/index.js 嘅
+//      beginTutorNoteUpload／registerTutorNoteUpload／
+//      selectTutorNotePreviewPages／deleteTutorNote 度做，呢度淨係
+//      負責前端顯示同觸發呼叫。
+
+// ===================== 側邊欄按帳戶類型切換 =====================
+window.applyRoleBasedSidebar = function() {
+  const isTutor = !!(window.currentUser && window.currentUser.role === 'tutor');
+  document.querySelectorAll('.student-only-nav').forEach((btn) => {
+    btn.style.display = isTutor ? 'none' : '';
+  });
+  const tutorBtn = document.getElementById('nav-btn-tutor-materials');
+  if (tutorBtn) tutorBtn.style.display = isTutor ? '' : 'none';
+};
+
+(function() {
+  // ===================== 內部狀態 =====================
+  let tutorSubjects = [];
+  let tutorTopics = [];
+  let tutorNotes = [];
+  let selectedSubjectId = null;
+  let selectedTopicId = null;
+  let subjectsUnsub = null;
+  let topicsUnsub = null;
+  let notesUnsub = null;
+  let lastRegisteredNoteId = null; // 上傳完成、等緊揀預覽頁嗰份教材
+
+  function escapeHtmlLocal(str) {
+    return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function centsToDollarStr(cents) {
+    return 'HK$' + ((cents || 0) / 100).toFixed(2);
+  }
+
+  // ===================== 分頁入口 =====================
+  window.renderTutorMaterialsTab = function() {
+    if (!window.currentUser || window.currentUser.role !== 'tutor' || !window.db || !window.fs) return;
+    loadTutorSubjects();
+  };
+
+  // ===================== 科目 =====================
+  function loadTutorSubjects() {
+    if (subjectsUnsub) subjectsUnsub();
+    const q = window.fs.query(
+      window.fs.collection(window.db, 'tutorSubjects'),
+      window.fs.where('tutorUid', '==', window.currentUser.uid),
+      window.fs.orderBy('createdAt', 'asc')
+    );
+    subjectsUnsub = window.fs.onSnapshot(q, (snapshot) => {
+      tutorSubjects = snapshot.docs;
+      if (selectedSubjectId && !tutorSubjects.some((d) => d.id === selectedSubjectId)) {
+        selectedSubjectId = null;
+        selectedTopicId = null;
+      }
+      renderTutorSubjectTabsUI();
+      if (!selectedSubjectId && tutorSubjects.length > 0) {
+        window.selectTutorSubject(tutorSubjects[0].id);
+      } else if (!selectedSubjectId) {
+        document.getElementById('tutor-topics-card').style.display = 'none';
+        document.getElementById('tutor-notes-card').style.display = 'none';
+      }
+    }, (err) => {
+      const el = document.getElementById('tutor-subject-tabs');
+      if (el) el.innerHTML = `<p style="color:#c0392b; font-size:13px;">載入科目失敗：${escapeHtmlLocal(err.message || err)}</p>`;
+    });
+  }
+
+  function renderTutorSubjectTabsUI() {
+    const container = document.getElementById('tutor-subject-tabs');
+    if (!container) return;
+    if (tutorSubjects.length === 0) {
+      container.innerHTML = '<p style="font-size:13px; color:#999;">仲未有任何科目，撳「＋ 新增科目」開始。</p>';
+      return;
+    }
+    container.innerHTML = tutorSubjects.map((d) => {
+      const s = d.data();
+      const active = d.id === selectedSubjectId;
+      return `<button class="btn ${active ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="window.selectTutorSubject('${d.id}')">${escapeHtmlLocal(s.name)}</button>`;
+    }).join('');
+  }
+
+  window.selectTutorSubject = function(subjectId) {
+    selectedSubjectId = subjectId;
+    selectedTopicId = null;
+    renderTutorSubjectTabsUI();
+    document.getElementById('tutor-topics-card').style.display = 'block';
+    document.getElementById('tutor-notes-card').style.display = 'none';
+    loadTutorTopics(subjectId);
+  };
+
+  window.promptCreateTutorSubject = async function() {
+    const name = (prompt('新科目名稱（例如：數學）：', '') || '').trim();
+    if (!name) return;
+    try {
+      const ref = await window.fs.addDoc(window.fs.collection(window.db, 'tutorSubjects'), {
+        tutorUid: window.currentUser.uid,
+        name: name.slice(0, 30),
+        createdAt: Date.now(),
+      });
+      window.selectTutorSubject(ref.id);
+      window.showToast('已新增科目', '✅');
+    } catch (err) {
+      window.showToast('新增科目失敗：' + (err.message || err), '❌');
+    }
+  };
+
+  window.getSelectedTutorSubjectId = function() { return selectedSubjectId; };
+  window.getSelectedTutorTopicId = function() { return selectedTopicId; };
+
+  window.deleteTutorSubject = async function(subjectId) {
+    if (!subjectId) { window.showToast('請先揀一個科目', '⚠️'); return; }
+    const topicsSnap = await window.fs.getDocs(window.fs.query(
+      window.fs.collection(window.db, 'tutorTopics'),
+      window.fs.where('subjectId', '==', subjectId)
+    ));
+    if (!topicsSnap.empty) {
+      window.showToast('這個科目底下仲有課題，請先刪走全部課題', '⚠️');
+      return;
+    }
+    if (!confirm('確定刪除這個科目？')) return;
+    try {
+      await window.fs.deleteDoc(window.fs.doc(window.db, 'tutorSubjects', subjectId));
+      window.showToast('已刪除科目', '✅');
+    } catch (err) {
+      window.showToast('刪除失敗：' + (err.message || err), '❌');
+    }
+  };
+
+  // ===================== 課題 =====================
+  function loadTutorTopics(subjectId) {
+    if (topicsUnsub) topicsUnsub();
+    const q = window.fs.query(
+      window.fs.collection(window.db, 'tutorTopics'),
+      window.fs.where('subjectId', '==', subjectId),
+      window.fs.orderBy('createdAt', 'asc')
+    );
+    topicsUnsub = window.fs.onSnapshot(q, (snapshot) => {
+      tutorTopics = snapshot.docs;
+      if (selectedTopicId && !tutorTopics.some((d) => d.id === selectedTopicId)) {
+        selectedTopicId = null;
+      }
+      renderTutorTopicTabsUI();
+      if (!selectedTopicId && tutorTopics.length > 0) {
+        window.selectTutorTopic(tutorTopics[0].id);
+      } else if (!selectedTopicId) {
+        document.getElementById('tutor-notes-card').style.display = 'none';
+      }
+    }, (err) => {
+      const el = document.getElementById('tutor-topic-tabs');
+      if (el) el.innerHTML = `<p style="color:#c0392b; font-size:13px;">載入課題失敗：${escapeHtmlLocal(err.message || err)}</p>`;
+    });
+  }
+
+  function renderTutorTopicTabsUI() {
+    const container = document.getElementById('tutor-topic-tabs');
+    if (!container) return;
+    if (tutorTopics.length === 0) {
+      container.innerHTML = '<p style="font-size:13px; color:#999;">呢個科目仲未有任何課題，撳「＋ 新增課題」開始。</p>';
+      return;
+    }
+    container.innerHTML = tutorTopics.map((d) => {
+      const t = d.data();
+      const active = d.id === selectedTopicId;
+      return `<button class="btn ${active ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="window.selectTutorTopic('${d.id}')">${escapeHtmlLocal(t.name)}</button>`;
+    }).join('');
+  }
+
+  window.selectTutorTopic = function(topicId) {
+    selectedTopicId = topicId;
+    renderTutorTopicTabsUI();
+    document.getElementById('tutor-notes-card').style.display = 'block';
+    document.getElementById('tutor-note-upload-panel').style.display = 'none';
+    loadTutorNotes(topicId);
+  };
+
+  window.promptCreateTutorTopic = async function() {
+    if (!selectedSubjectId) { window.showToast('請先揀一個科目', '⚠️'); return; }
+    const name = (prompt('新課題名稱（例如：三角函數）：', '') || '').trim();
+    if (!name) return;
+    try {
+      const ref = await window.fs.addDoc(window.fs.collection(window.db, 'tutorTopics'), {
+        tutorUid: window.currentUser.uid,
+        subjectId: selectedSubjectId,
+        name: name.slice(0, 30),
+        createdAt: Date.now(),
+      });
+      window.selectTutorTopic(ref.id);
+      window.showToast('已新增課題', '✅');
+    } catch (err) {
+      window.showToast('新增課題失敗：' + (err.message || err), '❌');
+    }
+  };
+
+  window.deleteTutorTopic = async function(topicId) {
+    if (!topicId) { window.showToast('請先揀一個課題', '⚠️'); return; }
+    const notesSnap = await window.fs.getDocs(window.fs.query(
+      window.fs.collection(window.db, 'tutorNotes'),
+      window.fs.where('topicId', '==', topicId)
+    ));
+    if (!notesSnap.empty) {
+      window.showToast('這個課題底下仲有教材，請先刪走全部教材', '⚠️');
+      return;
+    }
+    if (!confirm('確定刪除這個課題？')) return;
+    try {
+      await window.fs.deleteDoc(window.fs.doc(window.db, 'tutorTopics', topicId));
+      window.showToast('已刪除課題', '✅');
+    } catch (err) {
+      window.showToast('刪除失敗：' + (err.message || err), '❌');
+    }
+  };
+
+  // ===================== 教材（PDF 筆記） =====================
+  function loadTutorNotes(topicId) {
+    if (notesUnsub) notesUnsub();
+    const q = window.fs.query(
+      window.fs.collection(window.db, 'tutorNotes'),
+      window.fs.where('topicId', '==', topicId),
+      window.fs.orderBy('createdAt', 'asc')
+    );
+    notesUnsub = window.fs.onSnapshot(q, (snapshot) => {
+      tutorNotes = snapshot.docs;
+      renderTutorNotesGridUI();
+    }, (err) => {
+      const el = document.getElementById('tutor-notes-grid');
+      if (el) el.innerHTML = `<p style="color:#c0392b; font-size:13px;">載入教材失敗：${escapeHtmlLocal(err.message || err)}</p>`;
+    });
+  }
+
+  const NOTE_STATUS_LABEL = {
+    draft: '⏳ 上傳中',
+    awaiting_preview_selection: '📑 待揀預覽頁',
+    published: '✅ 已上架',
+    delisted: '🚫 已下架（導師停權）',
+    removed: '🗑️ 已下架',
+  };
+
+  function buildTutorNoteCardHtml(docSnap) {
+    const n = docSnap.data();
+    const id = docSnap.id;
+    const statusLabel = NOTE_STATUS_LABEL[n.status] || n.status;
+    return `
+      <div class="admin-card" style="margin-bottom:0;">
+        <div style="font-size:12px; color:#999; margin-bottom:4px;">${escapeHtmlLocal(statusLabel)}</div>
+        <div style="font-weight:700; font-size:14px; color:var(--brand-800); margin-bottom:2px;">${escapeHtmlLocal(n.title)}</div>
+        <div style="font-size:12px; color:#888; margin-bottom:6px; min-height:16px;">${escapeHtmlLocal(n.description || '')}</div>
+        <div style="font-size:13px; color:#3E7A8A; font-weight:700;">${centsToDollarStr(n.priceCents)}</div>
+        <div style="font-size:12px; color:#aaa; margin:4px 0;">${n.pageCount ? (n.pageCount + ' 頁') : '頁數計算中…'}${n.previewPages && n.previewPages.length ? '　預覽頁：' + n.previewPages.join(', ') : ''}</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+          ${n.status === 'awaiting_preview_selection' || n.status === 'published'
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.openTutorPreviewPicker('${id}', ${n.pageCount || 0})">📑 揀預覽頁</button>`
+            : ''}
+          <button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.promptEditTutorNote('${id}')">✏️ 編輯</button>
+          <button class="btn btn-red" style="font-size:12px; padding:4px 8px;" onclick="window.deleteTutorNoteConfirm('${id}')">🗑️ 刪除</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderTutorNotesGridUI() {
+    const container = document.getElementById('tutor-notes-grid');
+    if (!container) return;
+    if (tutorNotes.length === 0) {
+      container.innerHTML = '<p style="font-size:13px; color:#999; grid-column:1/-1;">呢個課題仲未有任何教材，撳「⬆️ 上傳教材」開始。</p>';
+      return;
+    }
+    container.innerHTML = tutorNotes.map(buildTutorNoteCardHtml).join('');
+  }
+
+  // ---------- 上傳流程 ----------
+  window.openTutorNoteUploadForm = function() {
+    if (!selectedTopicId) { window.showToast('請先揀一個課題', '⚠️'); return; }
+    const panel = document.getElementById('tutor-note-upload-panel');
+    if (!panel) return;
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">⬆️ 上傳新教材</h4>
+      <label style="font-size:13px; font-weight:bold; color:#555;">標題 *</label>
+      <input id="tutor-note-title" class="input-field" type="text" maxlength="80" style="width:100%; margin-bottom:8px;" placeholder="例如：三角函數重點筆記">
+      <label style="font-size:13px; font-weight:bold; color:#555;">簡介</label>
+      <textarea id="tutor-note-desc" class="input-field" rows="2" maxlength="1000" style="width:100%; margin-bottom:8px; resize:vertical;" placeholder="簡單講吓呢份筆記有咩內容"></textarea>
+      <label style="font-size:13px; font-weight:bold; color:#555;">定價（HKD）*</label>
+      <input id="tutor-note-price" class="input-field" type="number" min="0" step="1" style="width:100%; margin-bottom:8px;" placeholder="例如：30">
+      <label style="font-size:13px; font-weight:bold; color:#555;">PDF 檔案 *（上限 50MB）</label>
+      <input id="tutor-note-file" type="file" accept="application/pdf" style="width:100%; margin-bottom:10px;">
+      <p id="tutor-note-upload-progress" style="font-size:13px; color:#888; margin-bottom:8px;"></p>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline" type="button" onclick="document.getElementById('tutor-note-upload-panel').style.display='none';">取消</button>
+        <button class="btn btn-primary" type="button" id="tutor-note-upload-btn" onclick="window.submitTutorNoteUpload()">送出</button>
+      </div>
+    `;
+  };
+
+  window.submitTutorNoteUpload = async function() {
+    const title = (document.getElementById('tutor-note-title').value || '').trim();
+    const description = (document.getElementById('tutor-note-desc').value || '').trim();
+    const priceDollar = parseFloat(document.getElementById('tutor-note-price').value);
+    const fileInput = document.getElementById('tutor-note-file');
+    const file = fileInput.files && fileInput.files[0];
+    const progressEl = document.getElementById('tutor-note-upload-progress');
+    const btn = document.getElementById('tutor-note-upload-btn');
+
+    if (!title) { window.showToast('請填寫標題', '⚠️'); return; }
+    if (Number.isNaN(priceDollar) || priceDollar < 0) { window.showToast('請填寫正確的定價', '⚠️'); return; }
+    if (!file) { window.showToast('請選擇 PDF 檔案', '⚠️'); return; }
+    if (file.type !== 'application/pdf') { window.showToast('只可以上傳 PDF 檔案', '⚠️'); return; }
+    if (file.size > 50 * 1024 * 1024) { window.showToast('檔案不可以超過 50MB', '⚠️'); return; }
+
+    const priceCents = Math.round(priceDollar * 100);
+    if (btn) { btn.disabled = true; btn.innerText = '處理中…'; }
+
+    try {
+      if (progressEl) progressEl.innerText = '正在建立教材紀錄…';
+      const beginResult = await window.callCloudFunction('beginTutorNoteUpload', {
+        subjectId: selectedSubjectId,
+        topicId: selectedTopicId,
+        title,
+        description,
+        priceCents,
+      });
+      const noteId = beginResult.noteId;
+
+      if (progressEl) progressEl.innerText = '正在上傳 PDF 檔案…';
+      const storagePath = `tutor_notes/${window.currentUser.uid}/${noteId}/full.pdf`;
+      const fileRef = window.storageApi.ref(window.storage, storagePath);
+      await window.storageApi.uploadBytes(fileRef, file, { contentType: 'application/pdf' });
+
+      if (progressEl) progressEl.innerText = '正在讀取頁數…';
+      const registerResult = await window.callCloudFunction('registerTutorNoteUpload', { noteId });
+
+      document.getElementById('tutor-note-upload-panel').style.display = 'none';
+      window.showToast('教材上傳成功！請選擇預覽頁', '✅');
+      window.openTutorPreviewPicker(noteId, registerResult.pageCount);
+    } catch (err) {
+      window.showToast('上傳失敗：' + (err.message || err), '❌');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerText = '送出'; }
+    }
+  };
+
+  // ---------- 揀預覽頁 ----------
+  window.openTutorPreviewPicker = function(noteId, pageCount) {
+    if (!pageCount || pageCount < 1) { window.showToast('呢份教材仲未完成頁數讀取，請稍後再試', '⚠️'); return; }
+    lastRegisteredNoteId = noteId;
+    const panel = document.getElementById('tutor-note-upload-panel');
+    if (!panel) return;
+
+    const checkboxes = Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => `
+      <label style="display:inline-flex; align-items:center; gap:4px; font-size:13px; border:1px solid #E5EEF0; border-radius:6px; padding:4px 8px; margin:2px;">
+        <input type="checkbox" value="${p}" class="tutor-preview-page-checkbox" onchange="window.enforceTutorPreviewPageLimit()"> 第 ${p} 頁
+      </label>
+    `).join('');
+
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">📑 選擇預覽頁（最多 3 頁，共 ${pageCount} 頁）</h4>
+      <p style="font-size:12px; color:#888; margin-bottom:8px;">學生喺購買前可以睇到呢幾頁嘅內容，揀最能夠展示筆記質素嘅頁數。</p>
+      <div id="tutor-preview-page-list" style="max-height:220px; overflow-y:auto; margin-bottom:10px;">${checkboxes}</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline" type="button" onclick="document.getElementById('tutor-note-upload-panel').style.display='none';">遲些再揀</button>
+        <button class="btn btn-primary" type="button" id="tutor-preview-confirm-btn" onclick="window.confirmTutorPreviewPages()">確認並發佈</button>
+      </div>
+    `;
+  };
+
+  window.enforceTutorPreviewPageLimit = function() {
+    const boxes = Array.from(document.querySelectorAll('.tutor-preview-page-checkbox'));
+    const checked = boxes.filter((b) => b.checked);
+    if (checked.length > 3) {
+      checked[checked.length - 1].checked = false;
+      window.showToast('預覽頁最多只可以揀 3 頁', '⚠️');
+    }
+  };
+
+  window.confirmTutorPreviewPages = async function() {
+    const pages = Array.from(document.querySelectorAll('.tutor-preview-page-checkbox'))
+      .filter((b) => b.checked)
+      .map((b) => parseInt(b.value, 10));
+    if (pages.length === 0) { window.showToast('請至少選擇一頁作為預覽', '⚠️'); return; }
+
+    const btn = document.getElementById('tutor-preview-confirm-btn');
+    if (btn) { btn.disabled = true; btn.innerText = '處理中…'; }
+    try {
+      await window.callCloudFunction('selectTutorNotePreviewPages', { noteId: lastRegisteredNoteId, pages });
+      document.getElementById('tutor-note-upload-panel').style.display = 'none';
+      window.showToast('教材已經發佈！', '🎉');
+    } catch (err) {
+      window.showToast('設定預覽頁失敗：' + (err.message || err), '❌');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerText = '確認並發佈'; }
+    }
+  };
+
+  // ---------- 編輯／刪除 ----------
+  window.promptEditTutorNote = async function(noteId) {
+    const docSnap = tutorNotes.find((d) => d.id === noteId);
+    if (!docSnap) return;
+    const n = docSnap.data();
+
+    const newTitle = (prompt('標題：', n.title || '') || '').trim();
+    if (!newTitle) return;
+    const newDesc = prompt('簡介：', n.description || '');
+    if (newDesc === null) return;
+    const newPriceStr = prompt('定價（HKD）：', ((n.priceCents || 0) / 100).toFixed(2));
+    if (newPriceStr === null) return;
+    const newPriceDollar = parseFloat(newPriceStr);
+    if (Number.isNaN(newPriceDollar) || newPriceDollar < 0) {
+      window.showToast('定價格式不正確，已取消更新', '⚠️');
+      return;
+    }
+
+    try {
+      await window.fs.updateDoc(window.fs.doc(window.db, 'tutorNotes', noteId), {
+        title: newTitle.slice(0, 80),
+        description: (newDesc || '').trim().slice(0, 1000),
+        priceCents: Math.round(newPriceDollar * 100),
+        updatedAt: Date.now(),
+      });
+      window.showToast('已更新教材資料', '✅');
+    } catch (err) {
+      window.showToast('更新失敗：' + (err.message || err), '❌');
+    }
+  };
+
+  window.deleteTutorNoteConfirm = async function(noteId) {
+    if (!confirm('確定刪除這份教材？已上傳的 PDF 檔案會一併刪除，這個操作無法復原。')) return;
+    try {
+      await window.callCloudFunction('deleteTutorNote', { noteId });
+      window.showToast('已刪除教材', '🗑️');
+    } catch (err) {
+      window.showToast('刪除失敗：' + (err.message || err), '❌');
+    }
+  };
+})();
