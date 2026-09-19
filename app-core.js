@@ -781,6 +781,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         await setDoc(doc(db, 'usernames', idLower), { uid, authEmail, createdAt: Date.now() });
 
         const verifyToken = generateVerifyToken();
+        // ⚠️ 導師帳號（accountType === 'tutor'）喺呢一步都係先建立一個
+        // 同學生帳號結構完全一樣嘅 users/{uid} 文件（school／grade 呢類
+        // 學生專屬欄位留空就得，唔係硬性需要）——「導師」呢個身份本身
+        // 唔係喺呢度賦予嘅，而係下面另外呼叫 applyTutorRole 建立一份
+        // 待審批嘅 tutorApplications 文件，一定要管理員批准後
+        // approveTutorApplication 先會將 role 改做 'tutor'（見
+        // firestore.rules 同 functions/index.js）。呢個帳戶喺批核之前
+        // 同一般學生帳戶冇分別，可以正常使用平台其他功能。
         const newProfile = {
           uid: uid,
           email: authEmail,
@@ -789,8 +797,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           emailVerified: false,
           emailVerifyToken: verifyToken,
           username: profileData.username,
-          school: profileData.school,
-          grade: profileData.grade,
+          school: profileData.school || '',
+          grade: profileData.grade || '',
           favSubjects: profileData.favSubjects || '無',
           dislikeSubjects: profileData.dislikeSubjects || '無',
           hours: "0.0",
@@ -809,9 +817,36 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           window.sendVerificationEmail(newProfile.contactEmail, newProfile.username, uid, verifyToken);
         }
 
+        // 揀咗「🎓 我是導師」嗰邊嘅話，帳戶一建立好就即刻連同表格填低
+        // 嘅資料一併送出導師申請（呼叫返同「我的帳戶」入面嗰個申請掣
+        // 完全一樣嘅 applyTutorRole），唔使佢哋註冊完再走多一步。呢一步
+        // 就算失敗（例如網絡問題）都唔應該累事個帳戶註冊唔到，所以
+        // 用 try/catch 包住，失敗嘅話事後仲可以喺「我的帳戶」補交。
+        let tutorApplySucceeded = null;
+        if (profileData.accountType === 'tutor') {
+          try {
+            await window.callCloudFunction('applyTutorRole', {
+              displayName: profileData.username,
+              bio: profileData.tutorBio || '',
+              subjectsIntended: profileData.tutorSubjects || [],
+              contactInfo: profileData.contactEmail || '',
+            });
+            tutorApplySucceeded = true;
+          } catch (applyErr) {
+            console.error('註冊時自動送出導師申請失敗：', applyErr);
+            tutorApplySucceeded = false;
+          }
+        }
+
         window.closeModal('modal-register');
         window.updateUserAuthUI();
-        if (newProfile.contactEmail) {
+        if (profileData.accountType === 'tutor') {
+          if (tutorApplySucceeded) {
+            window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」。導師身份申請已經一併送出，請等候管理員審批，審批結果會喺「我的帳戶」顯示`, "🎓");
+          } else {
+            window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」。不過導師申請未能送出，請登入後喺「我的帳戶」重新申請`, "⚠️");
+          }
+        } else if (newProfile.contactEmail) {
           window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」，請記住以用作登入。另外請點擊已寄至你電郵的驗證連結，才能正式開始使用`, "✨");
         } else {
           window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」，記住他來登入`, "✨");
@@ -892,16 +927,41 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (typeof window.stopRoomInvitesListener === 'function') window.stopRoomInvitesListener();
     };
 
+    // 註冊表格嘅「🎒 我是學生」／「🎓 我是導師」切換：揀導師嗰邊會顯示
+    // 導師申請專用欄位（自我介紹、想教嘅科目），同時隱藏埋學生專用嘅
+    // 學校／年級／喜愛學科／討厭學科——並且將呢兩組欄位嘅 required
+    // 屬性同步切換，否則揀咗導師之後，瀏覽器仍然會因為個隱藏咗嘅
+    // 「學校名稱」欄位冇填而唔畀交表。
+    window.setRegisterAccountType = function(type) {
+      const typeInput = document.getElementById('reg-account-type');
+      if (typeInput) typeInput.value = type;
+
+      const studentBtn = document.getElementById('reg-type-student-btn');
+      const tutorBtn = document.getElementById('reg-type-tutor-btn');
+      const studentFields = document.getElementById('register-student-fields');
+      const tutorFields = document.getElementById('register-tutor-fields');
+      const tutorHint = document.getElementById('reg-type-tutor-hint');
+      const isTutor = type === 'tutor';
+
+      if (studentBtn) studentBtn.className = 'btn ' + (isTutor ? 'btn-outline' : 'btn-primary');
+      if (tutorBtn) tutorBtn.className = 'btn ' + (isTutor ? 'btn-primary' : 'btn-outline');
+      if (studentFields) studentFields.style.display = isTutor ? 'none' : 'block';
+      if (tutorFields) tutorFields.style.display = isTutor ? 'block' : 'none';
+      if (tutorHint) tutorHint.style.display = isTutor ? 'block' : 'none';
+
+      const schoolInput = document.getElementById('reg-school');
+      const subjectsInput = document.getElementById('reg-tutor-subjects');
+      if (schoolInput) schoolInput.required = !isTutor;
+      if (subjectsInput) subjectsInput.required = isTutor;
+    };
+
     window.handleRegisterSubmit = function(e) {
       e.preventDefault();
+      const accountType = (document.getElementById('reg-account-type').value === 'tutor') ? 'tutor' : 'student';
       const loginId = document.getElementById('reg-account-id').value.trim();
       const password = document.getElementById('reg-password').value;
       const passwordConfirm = document.getElementById('reg-password-confirm').value;
       const username = document.getElementById('reg-username').value.trim();
-      const school = document.getElementById('reg-school').value.trim();
-      const grade = document.getElementById('reg-grade').value;
-      const favSubjects = document.getElementById('reg-fav').value.trim();
-      const dislikeSubjects = document.getElementById('reg-dislike').value.trim();
       const contactEmail = document.getElementById('reg-contact-email').value.trim();
 
       // 兩次密碼輸入要完全一致先俾提交，避免同學打錯字自己都唔知，
@@ -923,9 +983,26 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         return;
       }
 
-      window.registerWithFirebase(loginId, password, {
-        username, school, grade, favSubjects, dislikeSubjects, contactEmail
-      });
+      if (accountType === 'student') {
+        const school = document.getElementById('reg-school').value.trim();
+        const grade = document.getElementById('reg-grade').value;
+        const favSubjects = document.getElementById('reg-fav').value.trim();
+        const dislikeSubjects = document.getElementById('reg-dislike').value.trim();
+        window.registerWithFirebase(loginId, password, {
+          accountType, username, school, grade, favSubjects, dislikeSubjects, contactEmail
+        });
+      } else {
+        const tutorBio = document.getElementById('reg-tutor-bio').value.trim();
+        const tutorSubjectsRaw = document.getElementById('reg-tutor-subjects').value.trim();
+        const tutorSubjects = tutorSubjectsRaw.split(/[,，、]/).map(s => s.trim()).filter(Boolean);
+        if (tutorSubjects.length === 0) {
+          window.showToast('請至少填寫一個想教的科目', '⚠️');
+          return;
+        }
+        window.registerWithFirebase(loginId, password, {
+          accountType, username, contactEmail, tutorBio, tutorSubjects
+        });
+      }
     };
 
     window.handleLoginSubmit = async function(e) {
