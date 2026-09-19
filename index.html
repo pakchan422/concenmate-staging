@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.134.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.134.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -3061,6 +3061,21 @@
         <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="closeModal('modal-tutor-edit-note')">取消</button>
         <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="window.confirmTutorEditNote()">儲存</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 🎓 導師 PDF 預覽（整份文件／學生視角）：用 iframe 喺頁面內直接顯示
+       PDF，唔使開新分頁。大部分瀏覽器（Chrome／Safari／Firefox）嘅
+       <iframe src="PDF網址"> 都會自動用返瀏覽器內建嘅 PDF viewer
+       顯示，唔使額外載入 pdf.js。關閉嗰陣要記得清空 iframe.src，
+       否則個PDF會留喺記憶體度持續佔用資源。 -->
+  <div class="modal-backdrop" id="modal-pdf-preview" style="display:none;">
+    <div class="modal-box" style="max-width:960px; width:92vw; height:88vh; display:flex; flex-direction:column; padding:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+        <h3 id="pdf-preview-title" style="font-size:16px; font-weight:bold; color:var(--brand-800); margin:0;">📄 預覽</h3>
+        <button class="btn btn-outline" type="button" style="padding:4px 10px;" onclick="window.closePdfPreviewModal()">✕ 關閉</button>
+      </div>
+      <iframe id="pdf-preview-iframe" style="flex:1; width:100%; border:1px solid #E5EEF0; border-radius:8px; background:#f5f5f5;"></iframe>
     </div>
   </div>
 

@@ -405,6 +405,9 @@ window.applyRoleBasedSidebar = function() {
           ${n.status === 'awaiting_preview_selection' || n.status === 'published'
             ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.openTutorPreviewPicker('${id}', ${n.pageCount || 0})">📑 選擇預覽頁</button>`
             : ''}
+          ${n.status === 'draft'
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.retryRegisterTutorNote('${id}')">🔁 重試讀取頁數</button>`
+            : ''}
           <button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.promptEditTutorNote('${id}')">✏️ 編輯</button>
           <button class="btn btn-red" style="font-size:12px; padding:4px 8px;" onclick="window.deleteTutorNoteConfirm('${id}')">🗑️ 刪除</button>
         </div>
@@ -461,10 +464,25 @@ window.applyRoleBasedSidebar = function() {
 
   // 導師預覽：分兩個掣，一個開「整份PDF」（fullStoragePath，只有導師本人／admin睇到），
   // 一個開「學生視角」（previewStoragePath，即係公開嗰幾頁預覽PDF，同學生實際見到嘅一樣）。
-  // 兩個都係用 Firebase Storage 嘅 getDownloadURL 攞返個網址，然後開新分頁顯示 PDF。
+  // 兩個都係用 Firebase Storage 嘅 getDownloadURL 攞返個網址，然後喺
+  // modal-pdf-preview 個 iframe 入面直接顯示（唔再開新分頁）。
   function findTutorNoteDocById(noteId) {
     return tutorNotes.find((d) => d.id === noteId) || null;
   }
+
+  function showPdfPreviewModal(url, titleText) {
+    const iframe = document.getElementById('pdf-preview-iframe');
+    const titleEl = document.getElementById('pdf-preview-title');
+    if (titleEl) titleEl.innerText = titleText;
+    if (iframe) iframe.src = url;
+    if (typeof window.openModal === 'function') window.openModal('modal-pdf-preview');
+  }
+
+  window.closePdfPreviewModal = function() {
+    const iframe = document.getElementById('pdf-preview-iframe');
+    if (iframe) iframe.src = ''; // 清空先，避免個PDF留喺記憶體度
+    if (typeof window.closeModal === 'function') window.closeModal('modal-pdf-preview');
+  };
 
   window.previewTutorNoteFull = async function(noteId) {
     const docSnap = findTutorNoteDocById(noteId);
@@ -472,7 +490,7 @@ window.applyRoleBasedSidebar = function() {
     if (!n || !n.fullStoragePath) { window.showToast('找不到這份教材的檔案', '⚠️'); return; }
     try {
       const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.fullStoragePath));
-      window.open(url, '_blank');
+      showPdfPreviewModal(url, '📄 預覽整份文件：' + (n.title || ''));
     } catch (err) {
       window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
     }
@@ -484,7 +502,7 @@ window.applyRoleBasedSidebar = function() {
     if (!n || !n.previewStoragePath) { window.showToast('這份教材尚未設定預覽頁', '⚠️'); return; }
     try {
       const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.previewStoragePath));
-      window.open(url, '_blank');
+      showPdfPreviewModal(url, '👁️ 預覽（學生視角）：' + (n.title || ''));
     } catch (err) {
       window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
     }
@@ -572,9 +590,25 @@ window.applyRoleBasedSidebar = function() {
     }
   };
 
+  // PDF 檔案本身其實已經上傳成功（見「預覽整份文件」掣可以睇到），
+  // 但登記頁數嗰步（registerTutorNoteUpload）唔一定同一次過成功
+  // （例如網路波動、Cloud Function 一時逾時），呢種情況教材會卡喺
+  // status:'draft'，冇任何一個掣可以再叫得郁——所以喺度加返一個
+  // 「重試讀取頁數」，畀導師唔使刪走再重新上傳一次成個檔案。
+  window.retryRegisterTutorNote = async function(noteId) {
+    try {
+      window.showToast('正在重試讀取頁數…', '🔁');
+      const registerResult = await window.callCloudFunction('registerTutorNoteUpload', { noteId });
+      window.showToast('已成功讀取頁數，請選擇預覽頁', '✅');
+      window.openTutorPreviewPicker(noteId, registerResult.pageCount);
+    } catch (err) {
+      window.showToast('重試失敗：' + (err.message || err), '❌');
+    }
+  };
+
   // ---------- 揀預覽頁 ----------
   window.openTutorPreviewPicker = function(noteId, pageCount) {
-    if (!pageCount || pageCount < 1) { window.showToast('呢份教材仲未完成頁數讀取，請稍後再試', '⚠️'); return; }
+    if (!pageCount || pageCount < 1) { window.showToast('這份教材還未完成頁數讀取，請稍後再試', '⚠️'); return; }
     lastRegisteredNoteId = noteId;
     const panel = document.getElementById('tutor-note-upload-panel');
     if (!panel) return;
