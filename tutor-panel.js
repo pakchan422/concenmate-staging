@@ -8,24 +8,37 @@
 // window.callCloudFunction／window.currentUser 等物件。
 //
 // 呢個檔案負責兩件事：
-//   1. applyRoleBasedSidebar() —— 導師帳戶（role==='tutor'）登入之後，
-//      將側邊欄由學生嗰一套（視訊溫習室／學科溫習卡…）完全換做淨係
-//      「主頁」＋「管理教材」兩項，同學生／Admin 介面徹底分開。
-//   2. 「管理教材」分頁本身：科目 → 課題 → 教材（PDF 筆記）三層架構，
-//      教材支援上傳、揀預覽頁、定價、刪除。實際嘅 PDF 檔案處理（讀
-//      頁數、抽頁產生預覽版）全部喺 functions/index.js 嘅
-//      beginTutorNoteUpload／registerTutorNoteUpload／
-//      selectTutorNotePreviewPages／deleteTutorNote 度做，呢度淨係
-//      負責前端顯示同觸發呼叫。
+//   1. applyRoleBasedSidebar() —— 揀咗導師呢條路嘅帳戶（無論已經批核
+//      定審批緊）登入之後，將側邊欄由學生嗰一套（視訊溫習室／學科溫
+//      習卡…）完全換做淨係「主頁」＋「管理教材」兩項，同學生／Admin
+//      介面徹底分開——⚠️ 呢度特登用 accountType==='tutor'（喺註冊或者
+//      事後申請導師嗰刻就已經寫低，唔使等批核）嚟判斷，唔係用
+//      role==='tutor'（要批核之後先會有）：如果淨係睇 role，審批中嘅
+//      導師申請人喺批核之前會不斷見到一整套學生功能，同「揀咗導師就
+//      應該見到導師介面」呢個預期唔一致。真正嘅操作權限（新增科目、
+//      上傳教材）依然由 role／tutors.status 把關，同呢度嘅介面判斷
+//      完全分開。
+//   2. 「管理教材」分頁本身：role==='tutor'（已批核）先顯示真正嘅
+//      科目 → 課題 → 教材管理介面；accountType==='tutor' 但仲未批核
+//      （或者被拒）就顯示審批狀態畫面。教材支援上傳、揀預覽頁、定
+//      價、刪除，實際嘅 PDF 檔案處理（讀頁數、抽頁產生預覽版）全部
+//      喺 functions/index.js 嘅 beginTutorNoteUpload／
+//      registerTutorNoteUpload／selectTutorNotePreviewPages／
+//      deleteTutorNote 度做，呢度淨係負責前端顯示同觸發呼叫。
 
 // ===================== 側邊欄按帳戶類型切換 =====================
 window.applyRoleBasedSidebar = function() {
-  const isTutor = !!(window.currentUser && window.currentUser.role === 'tutor');
+  // ⚠️ 兩個條件用 OR：accountType==='tutor' 涵蓋「揀咗導師呢條路但仲
+  // 未批核」，role==='tutor' 額外兜住 Phase A 剛推出嗰陣（accountType
+  // 呢個欄位出現之前）已經批核咗嘅舊帳戶——嗰批帳戶嘅 users 文件冇
+  // accountType 呢個欄位，淨係靠 role 先識別得到，唔加呢個 OR 佢哋登
+  // 入會變返見到成套學生側邊欄。
+  const isTutorPath = !!(window.currentUser && (window.currentUser.accountType === 'tutor' || window.currentUser.role === 'tutor'));
   document.querySelectorAll('.student-only-nav').forEach((btn) => {
-    btn.style.display = isTutor ? 'none' : '';
+    btn.style.display = isTutorPath ? 'none' : '';
   });
   const tutorBtn = document.getElementById('nav-btn-tutor-materials');
-  if (tutorBtn) tutorBtn.style.display = isTutor ? '' : 'none';
+  if (tutorBtn) tutorBtn.style.display = isTutorPath ? '' : 'none';
 };
 
 (function() {
@@ -49,9 +62,67 @@ window.applyRoleBasedSidebar = function() {
   }
 
   // ===================== 分頁入口 =====================
-  window.renderTutorMaterialsTab = function() {
-    if (!window.currentUser || window.currentUser.role !== 'tutor' || !window.db || !window.fs) return;
-    loadTutorSubjects();
+  window.renderTutorMaterialsTab = async function() {
+    const onTutorPath = !!(window.currentUser && (window.currentUser.accountType === 'tutor' || window.currentUser.role === 'tutor'));
+    if (!onTutorPath || !window.db || !window.fs) return;
+
+    const pendingPanel = document.getElementById('tutor-materials-pending-panel');
+    const approvedPanel = document.getElementById('tutor-materials-approved-panel');
+
+    if (window.currentUser.role === 'tutor') {
+      // 已經批核：顯示返正常嘅科目／課題／教材管理介面
+      if (pendingPanel) pendingPanel.style.display = 'none';
+      if (approvedPanel) approvedPanel.style.display = 'block';
+      loadTutorSubjects();
+      return;
+    }
+
+    // 未批核（或者已被拒）：唔顯示管理介面，改為顯示審批狀態
+    if (approvedPanel) approvedPanel.style.display = 'none';
+    if (!pendingPanel) return;
+    pendingPanel.style.display = 'block';
+    pendingPanel.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">正在查詢申請狀態…</p>';
+    try {
+      const snap = await window.fs.getDoc(window.fs.doc(window.db, 'tutorApplications', window.currentUser.uid));
+      if (!snap.exists()) {
+        pendingPanel.innerHTML = `
+          <div style="text-align:center; padding:20px;">
+            <div style="font-size:40px; margin-bottom:8px;">🎓</div>
+            <p style="font-size:14px; color:#666;">搵唔到導師申請紀錄，請重新提交申請。</p>
+            <button class="btn btn-primary" type="button" style="margin-top:10px;" onclick="window.openTutorApplyModal()">重新申請</button>
+          </div>
+        `;
+        return;
+      }
+      const app = snap.data();
+      if (app.status === 'pending') {
+        pendingPanel.innerHTML = `
+          <div style="text-align:center; padding:30px 16px;">
+            <div style="font-size:44px; margin-bottom:10px;">⏳</div>
+            <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">導師申請審批中</h3>
+            <p style="font-size:14px; color:#666; max-width:360px; margin:0 auto;">你嘅導師申請已經收到，請耐心等候管理員審批。批核之後呢度就會變成完整嘅教材管理後台。</p>
+          </div>
+        `;
+      } else if (app.status === 'rejected') {
+        pendingPanel.innerHTML = `
+          <div style="text-align:center; padding:30px 16px;">
+            <div style="font-size:44px; margin-bottom:10px;">❌</div>
+            <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">導師申請未獲批准</h3>
+            ${app.rejectionReason ? `<p style="font-size:14px; color:#8a2f2f; background:#FBEAEA; border-radius:8px; padding:8px 10px; max-width:360px; margin:0 auto 10px;">原因：${escapeHtmlLocal(app.rejectionReason)}</p>` : ''}
+            <button class="btn btn-primary" type="button" onclick="window.openTutorApplyModal()">🔁 重新申請</button>
+          </div>
+        `;
+      } else {
+        pendingPanel.innerHTML = `
+          <div style="text-align:center; padding:30px 16px;">
+            <div style="font-size:44px; margin-bottom:10px;">🎓</div>
+            <p style="font-size:14px; color:#666;">你嘅導師申請已經批核，請重新登入以更新帳戶狀態。</p>
+          </div>
+        `;
+      }
+    } catch (err) {
+      pendingPanel.innerHTML = `<p style="text-align:center; color:#c0392b; font-size:13px;">查詢申請狀態失敗：${escapeHtmlLocal(err.message || err)}</p>`;
+    }
   };
 
   // ===================== 科目 =====================
@@ -104,15 +175,53 @@ window.applyRoleBasedSidebar = function() {
     loadTutorTopics(subjectId);
   };
 
-  window.promptCreateTutorSubject = async function() {
-    const name = (prompt('新科目名稱（例如：數學）：', '') || '').trim();
-    if (!name) return;
+  // HKDSE 常見科目清單（核心＋選修），揀「其他」先出現自訂文字輸入
+  // 格——用固定清單嚟揀，避免各導師自己隨意打字令同一科出現唔同名
+  // 稱（例如「Maths」「數學」「Math」混雜），方便日後學生瀏覽篩選。
+  const TUTOR_DSE_SUBJECTS = [
+    '中國語文', '英國語文', '數學（必修部分）', '數學延伸部分單元一（M1）', '數學延伸部分單元二（M2）',
+    '公民與社會發展',
+    '中國歷史', '歷史', '地理', '經濟', '企業、會計與財務概論（BAFS）', '倫理與宗教',
+    '中國文學', '文學', '英語文學',
+    '物理', '化學', '生物', '組合科學', '綜合科學',
+    '資訊及通訊科技', '健康管理與社會關懷', '科技與生活', '設計與應用科技', '旅遊與款待',
+    '視覺藝術', '音樂', '體育',
+    '其他（自行輸入）',
+  ];
+
+  window.openTutorAddSubjectModal = function() {
+    const select = document.getElementById('tutor-add-subject-select');
+    if (select) {
+      select.innerHTML = TUTOR_DSE_SUBJECTS.map((s) => `<option value="${escapeHtmlLocal(s)}">${escapeHtmlLocal(s)}</option>`).join('');
+      select.value = TUTOR_DSE_SUBJECTS[0];
+    }
+    const customInput = document.getElementById('tutor-add-subject-custom');
+    if (customInput) customInput.value = '';
+    window.onTutorAddSubjectSelectChange();
+    window.openModal('modal-tutor-add-subject');
+  };
+
+  window.onTutorAddSubjectSelectChange = function() {
+    const select = document.getElementById('tutor-add-subject-select');
+    const wrap = document.getElementById('tutor-add-subject-custom-wrap');
+    if (!select || !wrap) return;
+    wrap.style.display = select.value === '其他（自行輸入）' ? 'block' : 'none';
+  };
+
+  window.confirmTutorAddSubject = async function() {
+    const select = document.getElementById('tutor-add-subject-select');
+    let name = select ? select.value : '';
+    if (name === '其他（自行輸入）') {
+      name = (document.getElementById('tutor-add-subject-custom').value || '').trim();
+    }
+    if (!name) { window.showToast('請填寫科目名稱', '⚠️'); return; }
     try {
       const ref = await window.fs.addDoc(window.fs.collection(window.db, 'tutorSubjects'), {
         tutorUid: window.currentUser.uid,
         name: name.slice(0, 30),
         createdAt: Date.now(),
       });
+      window.closeModal('modal-tutor-add-subject');
       window.selectTutorSubject(ref.id);
       window.showToast('已新增科目', '✅');
     } catch (err) {
@@ -229,9 +338,18 @@ window.applyRoleBasedSidebar = function() {
   // ===================== 教材（PDF 筆記） =====================
   function loadTutorNotes(topicId) {
     if (notesUnsub) notesUnsub();
+    // ⚠️ 一定要連 tutorUid 都一齊帶落 query（唔淨係 topicId），因為
+    // firestore.rules 嘅 tutorNotes 讀取規則係按每份文件嘅內容判斷
+    // （status=='published' 或者 tutorUid== 自己），對於「列表」查詢，
+    // Firestore 要求規則嘅條件一定要由 query 本身嘅篩選條件保證到，
+    // 唔會逐份文件咁check——冇帶埋 tutorUid 呢個條件嘅話，Firestore
+    // 會直接拒絕成個 query（Missing or insufficient permissions），
+    // 唔理個 collection 入面實際上有冇文件都一樣。呢度「管理教材」
+    // 本身就淨係應該顯示自己嘅教材，所以帶埋呢個篩選條件完全合理。
     const q = window.fs.query(
       window.fs.collection(window.db, 'tutorNotes'),
       window.fs.where('topicId', '==', topicId),
+      window.fs.where('tutorUid', '==', window.currentUser.uid),
       window.fs.orderBy('createdAt', 'asc')
     );
     notesUnsub = window.fs.onSnapshot(q, (snapshot) => {

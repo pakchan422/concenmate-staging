@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.133.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.133.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -2414,35 +2414,42 @@
             <p style="font-size:13px; color:#3E5A63; margin-top:4px;">管理你嘅科目、課題分類，同上架俾學生購買嘅 PDF 筆記</p>
           </div>
 
-          <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📚 我的科目</h3>
-              <div style="display:flex; gap:6px;">
-                <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorSubject(window.getSelectedTutorSubjectId())">🗑️ 刪除目前科目</button>
-                <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.promptCreateTutorSubject()">＋ 新增科目</button>
-              </div>
-            </div>
-            <div id="tutor-subject-tabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
-          </div>
+          <!-- 未批核／被拒嗰陣顯示（role !== 'tutor'），內容由
+               renderTutorMaterialsTab() 動態產生 -->
+          <div class="card" id="tutor-materials-pending-panel" style="display:none;"></div>
 
-          <div class="card" id="tutor-topics-card" style="display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📑 課題</h3>
-              <div style="display:flex; gap:6px;">
-                <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorTopic(window.getSelectedTutorTopicId())">🗑️ 刪除目前課題</button>
-                <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.promptCreateTutorTopic()">＋ 新增課題</button>
+          <!-- 已批核（role === 'tutor'）先顯示嘅正式管理介面 -->
+          <div id="tutor-materials-approved-panel" style="display:none;">
+            <div class="card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📚 我的科目</h3>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorSubject(window.getSelectedTutorSubjectId())">🗑️ 刪除目前科目</button>
+                  <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.openTutorAddSubjectModal()">＋ 新增科目</button>
+                </div>
               </div>
+              <div id="tutor-subject-tabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
             </div>
-            <div id="tutor-topic-tabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
-          </div>
 
-          <div class="card" id="tutor-notes-card" style="display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📄 教材</h3>
-              <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.openTutorNoteUploadForm()">⬆️ 上傳教材</button>
+            <div class="card" id="tutor-topics-card" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📑 課題</h3>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorTopic(window.getSelectedTutorTopicId())">🗑️ 刪除目前課題</button>
+                  <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.promptCreateTutorTopic()">＋ 新增課題</button>
+                </div>
+              </div>
+              <div id="tutor-topic-tabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
             </div>
-            <div id="tutor-note-upload-panel" style="display:none; background:var(--brand-50); border:1px solid var(--brand-200); border-radius:10px; padding:12px; margin-bottom:12px;"></div>
-            <div id="tutor-notes-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;"></div>
+
+            <div class="card" id="tutor-notes-card" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📄 教材</h3>
+                <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.openTutorNoteUploadForm()">⬆️ 上傳教材</button>
+              </div>
+              <div id="tutor-note-upload-panel" style="display:none; background:var(--brand-50); border:1px solid var(--brand-200); border-radius:10px; padding:12px; margin-bottom:12px;"></div>
+              <div id="tutor-notes-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;"></div>
+            </div>
           </div>
         </section>
 
@@ -3016,6 +3023,25 @@
       <div style="display:flex; gap:8px;">
         <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="closeModal('modal-tutor-apply')">取消</button>
         <button class="btn btn-primary" type="button" id="tutor-apply-submit-btn" style="flex:1; justify-content:center;" onclick="submitTutorApplication()">送出申請</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎓 導師「新增科目」：科目名稱由 HKDSE 常見科目清單揀選（避免
+       各導師自己隨意打字，令科目名稱唔統一），揀「其他」先出現自訂
+       文字輸入格。清單由 tutor-panel.js 嘅 TUTOR_DSE_SUBJECTS 產生。 -->
+  <div class="modal-backdrop" id="modal-tutor-add-subject" style="display:none;">
+    <div class="modal-box" style="max-width:380px;">
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">📚 新增科目</h3>
+      <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">科目名稱</label>
+      <select id="tutor-add-subject-select" class="input-field" style="width:100%; margin-bottom:10px;" onchange="window.onTutorAddSubjectSelectChange()"></select>
+      <div id="tutor-add-subject-custom-wrap" style="display:none;">
+        <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">自訂科目名稱</label>
+        <input id="tutor-add-subject-custom" class="input-field" type="text" maxlength="30" style="width:100%; margin-bottom:10px;" placeholder="例如：法文">
+      </div>
+      <div style="display:flex; gap:8px; margin-top:6px;">
+        <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="closeModal('modal-tutor-add-subject')">取消</button>
+        <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="window.confirmTutorAddSubject()">新增</button>
       </div>
     </div>
   </div>

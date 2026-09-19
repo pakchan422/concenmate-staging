@@ -801,6 +801,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           grade: profileData.grade || '',
           favSubjects: profileData.favSubjects || '無',
           dislikeSubjects: profileData.dislikeSubjects || '無',
+          // accountType 喺呢度就已經寫死（唔使等下面嗰個 applyTutorRole
+          // 呼叫完成先有），等揀咗「🎓 我是導師」嗰邊嘅用戶一註冊完成，
+          // 側邊欄即刻就顯示導師殼＋審批中提示，唔使畀佢哋先見到一
+          // 閃即逝嘅學生介面先至轉做導師介面。
+          accountType: profileData.accountType === 'tutor' ? 'tutor' : 'student',
           hours: "0.0",
           points: 0,
           exp: 0,
