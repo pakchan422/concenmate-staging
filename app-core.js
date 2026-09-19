@@ -847,9 +847,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.updateUserAuthUI();
         if (profileData.accountType === 'tutor') {
           if (tutorApplySucceeded) {
-            window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」。導師身份申請已經一併送出，請等候管理員審批，審批結果會喺「我的帳戶」顯示`, "🎓");
+            window.showToast(`🎉 註冊成功！您的帳號 ID 是「${loginId}」。導師身份申請已經一併送出，請等候管理員審批，審批結果會在「我的帳戶」顯示`, "🎓");
           } else {
-            window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」。不過導師申請未能送出，請登入後喺「我的帳戶」重新申請`, "⚠️");
+            window.showToast(`🎉 註冊成功！您的帳號 ID 是「${loginId}」。不過導師申請未能送出，請登入後在「我的帳戶」重新申請`, "⚠️");
           }
         } else if (newProfile.contactEmail) {
           window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」，請記住以用作登入。另外請點擊已寄至你電郵的驗證連結，才能正式開始使用`, "✨");

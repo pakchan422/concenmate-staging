@@ -824,7 +824,7 @@
           const el = document.getElementById(id);
           if (el) el.innerText = window.currentUser.followingCount;
         });
-        window.showToast('已追蹤呢位書伴！', '🤝');
+        window.showToast('已追蹤這位書伴！', '🤝');
       } catch (e) {
         window.showToast('追蹤失敗：' + (e.message || e), '❌');
       }
@@ -910,7 +910,7 @@
       try {
         const snap = await window.fs.getDoc(window.fs.doc(window.db, 'users', _diaryViewUid));
         if (!snap.exists()) {
-          if (usernameEl) usernameEl.innerText = '找不到呢位用家';
+          if (usernameEl) usernameEl.innerText = '找不到這位使用者';
           return;
         }
         const u = snap.data();
@@ -1612,7 +1612,7 @@
       if (window.currentUser.role === 'tutor') {
         area.innerHTML = `
           <div style="background:#EAF6EC; border:1px solid #B7E0BE; border-radius:10px; padding:10px 12px; font-size:13px; color:#2F6B3A; text-align:left;">
-            🎓 你已經係 ConcenMate 認證導師。導師管理後台（上傳筆記、管理科目）將於下一階段開放，屆時會另行通知。
+            🎓 您已經是 ConcenMate 認證導師。請在左側選單點選「管理教材」，即可上傳與管理您的科目、課題及教材。
           </div>
         `;
         return;
@@ -1631,13 +1631,13 @@
         if (app.status === 'pending') {
           area.innerHTML = `
             <div style="background:#FFF7E6; border:1px solid #F0D9A0; border-radius:10px; padding:10px 12px; font-size:13px; color:#8a6d1f; text-align:left;">
-              ⏳ 你嘅導師申請正在審批中，請耐心等候管理員處理。
+              ⏳ 您的導師申請正在審批中，請耐心等候管理員處理。
             </div>
           `;
         } else if (app.status === 'rejected') {
           area.innerHTML = `
             <div style="background:#FBEAEA; border:1px solid #E3B4B4; border-radius:10px; padding:10px 12px; font-size:13px; color:#8a2f2f; text-align:left; margin-bottom:8px;">
-              ❌ 上一次嘅導師申請未獲批准。${app.rejectionReason ? ('原因：' + escapeHtml(app.rejectionReason)) : ''}
+              ❌ 上一次的導師申請未獲批准。${app.rejectionReason ? ('原因：' + escapeHtml(app.rejectionReason)) : ''}
             </div>
             <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="openTutorApplyModal()">🔁 重新申請</button>
           `;
@@ -1647,7 +1647,7 @@
           // 極微，保留呢個分支純粹係防禦性顯示）
           area.innerHTML = `
             <div style="background:#EAF6EC; border:1px solid #B7E0BE; border-radius:10px; padding:10px 12px; font-size:13px; color:#2F6B3A; text-align:left;">
-              🎓 你嘅導師申請已經批核，重新登入後即可生效。
+              🎓 您的導師申請已經批核，重新登入後即可生效。
             </div>
           `;
         }
@@ -2778,7 +2778,7 @@
       try {
         const snap = await window.fs.getDoc(window.fs.doc(window.db, 'users', uid));
         if (!snap.exists()) {
-          if (nameEl) nameEl.innerText = '找不到呢位用家';
+          if (nameEl) nameEl.innerText = '找不到這位使用者';
           return;
         }
         const u = snap.data();
@@ -2928,7 +2928,7 @@
 
     window.removeFriendAction = async function(friendUid) {
       if (!window.currentUser || !window.db || !window.fs) return;
-      if (!confirm('確定要移除呢位好友？')) return;
+      if (!confirm('確定要移除這位好友嗎？')) return;
       try {
         await window.fs.deleteDoc(window.fs.doc(window.db, 'users', window.currentUser.uid, 'friends', friendUid));
         await window.fs.deleteDoc(window.fs.doc(window.db, 'users', friendUid, 'friends', window.currentUser.uid));
@@ -2964,7 +2964,7 @@
         }
         const userSnap = await window.fs.getDoc(window.fs.doc(window.db, 'users', targetUid));
         if (!userSnap.exists()) {
-          resultEl.innerHTML = '<p style="font-size:13px; color:#D9764A;">找不到呢位用家的資料</p>';
+          resultEl.innerHTML = '<p style="font-size:13px; color:#D9764A;">找不到這位使用者的資料</p>';
           return;
         }
         const u = userSnap.data();
@@ -3745,7 +3745,7 @@
       if (!bodyEl || !window.currentUser) return;
       const messages = chatMessagesCache[chatId] || [];
       if (messages.length === 0) {
-        bodyEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:16px;">聊天啦～同呢位朋友講聲哈囉！</p>';
+        bodyEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:16px;">開始與這位朋友聊天，打個招呼吧！</p>';
         return;
       }
       const myUid = window.currentUser.uid;

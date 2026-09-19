@@ -209,7 +209,7 @@
         return `
           <div class="admin-card">
             <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">🎰 扭蛋機外觀圖片</h3>
-            <p style="font-size:13px; color:#888; margin-bottom:10px;">呢張係扭蛋機本身嘅外殼圖（唔係貼紙），顯示喺學生撳扭蛋果版度。上傳新圖會即時取代埋畫面上見到嘅圖案，唔上傳就繼續用返程式碼入面嘅預設圖。</p>
+            <p style="font-size:13px; color:#888; margin-bottom:10px;">這張是扭蛋機本身的外殼圖（不是貼紙），顯示在學生點擊扭蛋的頁面。上傳新圖會即時取代畫面上顯示的圖案，不上傳則繼續使用程式碼內建的預設圖。</p>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <div id="admin-gacha-machine-thumb" onclick="document.getElementById('admin-gacha-machine-input').click()" title="點擊這裡上傳圖片" style="width:80px; height:80px; border-radius:10px; background:#F0F6F8; border:1px dashed #B3D6DE; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${previewInner}</div>
               <input type="file" accept="image/*" id="admin-gacha-machine-input" style="display:none;" onchange="adminUploadGachaMachineImage(this)">
@@ -263,7 +263,7 @@
                 <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminAddGachaPrize()">➕ 新增貼紙</button>
               </div>
             </div>
-            <p style="font-size:13px; color:#888; margin-bottom:8px;">貼紙編號（#id）對應用戶收集圖鑑嘅位置，刪除貼紙之後編號會留返個缺口（例如刪走 #13~#17 之後就由 #12 跳去 #18），呢個唔影響扭蛋／收集功能，純粹畫面上唔靚。如果想執返靚佢，撳「🔢 重新排序編號」會將現存貼紙由上到下重新編做 1、2、3...連續號碼——但要留意：如果已經有真實學生扭過蛋、收藏了某幾隻貼紙，重新編號會令他們原有的收藏對應不上新編號（貼紙會「變咗做另一隻」），所以呢個掣淨係啱喺未有學生正式用過、或者你肯接受洗牌返晒佢哋收藏記錄嗰陣先撳。</p>
+            <p style="font-size:13px; color:#888; margin-bottom:8px;">貼紙編號（#id）對應用戶收集圖鑑的位置，刪除貼紙之後編號會留下缺口（例如刪除 #13~#17 之後就由 #12 跳到 #18），這不影響扭蛋／收集功能，純粹是畫面上不美觀。如果想整理，點擊「🔢 重新排序編號」會將現存貼紙由上到下重新編為 1、2、3...連續號碼——但要留意：如果已經有真實學生扭過蛋、收藏了某幾張貼紙，重新編號會令他們原有的收藏對應不上新編號（貼紙會「變成另一張」），所以這個按鈕只適合在未有學生正式使用過、或者您願意接受重整所有人收藏記錄的情況下才點擊。</p>
             <div style="overflow-x:auto;">
               <table class="admin-table">
                 <thead><tr><th>#</th><th>圖片</th><th>貼紙名稱</th><th>機率權重</th><th></th></tr></thead>
@@ -280,7 +280,7 @@
           <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">💰 扭蛋收費</h3>
           <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">抽一次 (PTS)：<input class="admin-input-sm" type="number" min="0" style="width:80px;" value="${adminGachaDraft.costNormal}" onchange="adminGachaDraft.costNormal = parseInt(this.value)||0"></label>
-            <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">連續抽十次 (PTS，一次過 10 抽嘅總費用)：<input class="admin-input-sm" type="number" min="0" style="width:80px;" value="${adminGachaDraft.costLucky}" onchange="adminGachaDraft.costLucky = parseInt(this.value)||0"></label>
+            <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">連續抽十次 (PTS，一次過 10 抽的總費用)：<input class="admin-input-sm" type="number" min="0" style="width:80px;" value="${adminGachaDraft.costLucky}" onchange="adminGachaDraft.costLucky = parseInt(this.value)||0"></label>
           </div>
         </div>
 
@@ -675,7 +675,7 @@
 
         <div class="admin-card" style="margin-top:12px;">
           <h3 style="font-size:14px; font-weight:bold; margin-bottom:4px;">🏅 段位稱號 + 水獺造型（由低到高，建議第一行等級門檻＝1）</h3>
-          <p style="font-size:13px; color:#888; margin-bottom:10px;">每個段位可以上傳專屬水獺相片，用家升到那個等級，主頁「我的水獺」就會自動換成嗰張相；唔上傳就用返共用的預設插畫（有心情表情變化）。</p>
+          <p style="font-size:13px; color:#888; margin-bottom:10px;">每個段位可以上傳專屬水獺相片，用家升到那個等級，主頁「我的水獺」就會自動換成那張相；不上傳則使用共用的預設插畫（有心情表情變化）。</p>
           <div>${ranksCards}</div>
           <button class="btn btn-outline" style="margin-top:4px; font-size:13px;" onclick="adminAddLevelRank()">➕ 新增段位</button>
         </div>
@@ -1510,7 +1510,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
     // 淨係已經處理完（已駁回／已處理）嘅舉報先俾刪，pending 嘅唔會出呢粒掣，
     // 避免管理員手快手滑刪走仲未跟進嘅證據
     window.adminDeleteReport = async function(reportId) {
-      if (!confirm('確定刪除呢一則已處理的舉報紀錄？連同截圖一齊刪走，刪了就沒辦法復原。')) return;
+      if (!confirm('確定刪除這一則已處理的舉報紀錄？連同截圖一併刪除，刪除後將無法復原。')) return;
       try {
         await window.fs.deleteDoc(window.fs.doc(window.db, 'reports', reportId));
         window.showToast('已刪除舉報紀錄', '🗑️');
@@ -1603,7 +1603,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
       container.innerHTML = `
         <div class="admin-card">
           <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">🖼 側邊欄功能圖示</h3>
-          <p style="font-size:13px; color:#888; margin-bottom:6px;">將側邊欄「主頁、視訊溫習室」等 8 個分頁掣原本嘅 emoji 圖示，換做自訂上傳嘅圖片。上傳新圖會即時取代畫面上見到嘅圖示，冇上傳過嘅項目就繼續用返預設 emoji。</p>
+          <p style="font-size:13px; color:#888; margin-bottom:6px;">將側邊欄「主頁、視訊溫習室」等 8 個分頁按鈕原本的 emoji 圖示，換成自訂上傳的圖片。上傳新圖會即時取代畫面上顯示的圖示，未上傳過的項目則繼續使用預設 emoji。</p>
           ${rows}
           <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px;">
             <button class="btn btn-outline" type="button" onclick="adminResetNavIconsDraft()">↩️ 還原未儲存的改動</button>
@@ -1858,7 +1858,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
     window.renderAdminTutorsTab = renderAdminTutorsTab;
 
     window.adminApproveTutorApp = async function(uid) {
-      if (!confirm('確定批准呢個導師申請？批准之後該用戶會即刻獲得導師身份。')) return;
+      if (!confirm('確定批准這個導師申請？批准之後該用戶會立即獲得導師身份。')) return;
       try {
         await window.callCloudFunction('approveTutorApplication', { targetUid: uid });
         window.showToast('已批准導師申請', '✅');
@@ -1868,7 +1868,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
     };
 
     window.adminRejectTutorApp = async function(uid) {
-      const reason = prompt('駁回原因（會顯示畀申請人睇，可以留空）：', '');
+      const reason = prompt('駁回原因（會顯示給申請人查看，可以留空）：', '');
       if (reason === null) return; // 撳咗取消
       try {
         await window.callCloudFunction('rejectTutorApplication', { targetUid: uid, rejectionReason: reason });
@@ -1879,7 +1879,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
     };
 
     window.adminSuspendTutor = async function(uid) {
-      if (!confirm('確定停權呢位導師？佢已上架嘅筆記會自動下架（Phase C 上線後生效），但已購買嘅學生保留下載權。')) return;
+      if (!confirm('確定停權這位導師？其已上架的筆記會自動下架，但已購買的學生保留下載權。')) return;
       try {
         await window.callCloudFunction('suspendTutor', { targetUid: uid });
         window.showToast('已停權該導師', '🚫');

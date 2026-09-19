@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.133.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.133.2"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1857,8 +1857,9 @@
                 </div>
               </div>
 
-              <!-- 主打功能：視訊溫習室 -->
-              <button class="home-primary-card" onclick="switchTab('room')">
+              <!-- 主打功能：視訊溫習室（導師帳號暫時唔顯示呢個卡，因為
+                   視訊溫習室係學生專用功能，導師個位暫時留空） -->
+              <button class="home-primary-card student-only-nav" id="home-video-room-card" onclick="switchTab('room')">
                 <div class="home-primary-icon">📹</div>
                 <div class="home-primary-text">
                   <div class="home-primary-title">視訊溫習室</div>

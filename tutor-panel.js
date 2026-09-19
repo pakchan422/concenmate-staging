@@ -88,7 +88,7 @@ window.applyRoleBasedSidebar = function() {
         pendingPanel.innerHTML = `
           <div style="text-align:center; padding:20px;">
             <div style="font-size:40px; margin-bottom:8px;">🎓</div>
-            <p style="font-size:14px; color:#666;">搵唔到導師申請紀錄，請重新提交申請。</p>
+            <p style="font-size:14px; color:#666;">找不到導師申請紀錄，請重新提交申請。</p>
             <button class="btn btn-primary" type="button" style="margin-top:10px;" onclick="window.openTutorApplyModal()">重新申請</button>
           </div>
         `;
@@ -100,7 +100,7 @@ window.applyRoleBasedSidebar = function() {
           <div style="text-align:center; padding:30px 16px;">
             <div style="font-size:44px; margin-bottom:10px;">⏳</div>
             <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">導師申請審批中</h3>
-            <p style="font-size:14px; color:#666; max-width:360px; margin:0 auto;">你嘅導師申請已經收到，請耐心等候管理員審批。批核之後呢度就會變成完整嘅教材管理後台。</p>
+            <p style="font-size:14px; color:#666; max-width:360px; margin:0 auto;">您的導師申請已經收到，請耐心等候管理員審批。批核之後這裡就會變成完整的教材管理後台。</p>
           </div>
         `;
       } else if (app.status === 'rejected') {
@@ -116,7 +116,7 @@ window.applyRoleBasedSidebar = function() {
         pendingPanel.innerHTML = `
           <div style="text-align:center; padding:30px 16px;">
             <div style="font-size:44px; margin-bottom:10px;">🎓</div>
-            <p style="font-size:14px; color:#666;">你嘅導師申請已經批核，請重新登入以更新帳戶狀態。</p>
+            <p style="font-size:14px; color:#666;">您的導師申請已經批核，請重新登入以更新帳戶狀態。</p>
           </div>
         `;
       }
@@ -239,7 +239,7 @@ window.applyRoleBasedSidebar = function() {
       window.fs.where('subjectId', '==', subjectId)
     ));
     if (!topicsSnap.empty) {
-      window.showToast('這個科目底下仲有課題，請先刪走全部課題', '⚠️');
+      window.showToast('這個科目底下還有課題，請先刪除全部課題', '⚠️');
       return;
     }
     if (!confirm('確定刪除這個科目？')) return;
@@ -280,7 +280,7 @@ window.applyRoleBasedSidebar = function() {
     const container = document.getElementById('tutor-topic-tabs');
     if (!container) return;
     if (tutorTopics.length === 0) {
-      container.innerHTML = '<p style="font-size:13px; color:#999;">呢個科目仲未有任何課題，撳「＋ 新增課題」開始。</p>';
+      container.innerHTML = '<p style="font-size:13px; color:#999;">這個科目還未有任何課題，點擊「＋ 新增課題」開始。</p>';
       return;
     }
     container.innerHTML = tutorTopics.map((d) => {
@@ -320,10 +320,11 @@ window.applyRoleBasedSidebar = function() {
     if (!topicId) { window.showToast('請先揀一個課題', '⚠️'); return; }
     const notesSnap = await window.fs.getDocs(window.fs.query(
       window.fs.collection(window.db, 'tutorNotes'),
-      window.fs.where('topicId', '==', topicId)
+      window.fs.where('topicId', '==', topicId),
+      window.fs.where('tutorUid', '==', window.currentUser.uid)
     ));
     if (!notesSnap.empty) {
-      window.showToast('這個課題底下仲有教材，請先刪走全部教材', '⚠️');
+      window.showToast('這個課題底下還有教材，請先刪除全部教材', '⚠️');
       return;
     }
     if (!confirm('確定刪除這個課題？')) return;
@@ -395,7 +396,7 @@ window.applyRoleBasedSidebar = function() {
     const container = document.getElementById('tutor-notes-grid');
     if (!container) return;
     if (tutorNotes.length === 0) {
-      container.innerHTML = '<p style="font-size:13px; color:#999; grid-column:1/-1;">呢個課題仲未有任何教材，撳「⬆️ 上傳教材」開始。</p>';
+      container.innerHTML = '<p style="font-size:13px; color:#999; grid-column:1/-1;">這個課題還未有任何教材，點擊「⬆️ 上傳教材」開始。</p>';
       return;
     }
     container.innerHTML = tutorNotes.map(buildTutorNoteCardHtml).join('');
@@ -488,7 +489,7 @@ window.applyRoleBasedSidebar = function() {
     panel.style.display = 'block';
     panel.innerHTML = `
       <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">📑 選擇預覽頁（最多 3 頁，共 ${pageCount} 頁）</h4>
-      <p style="font-size:12px; color:#888; margin-bottom:8px;">學生喺購買前可以睇到呢幾頁嘅內容，揀最能夠展示筆記質素嘅頁數。</p>
+      <p style="font-size:12px; color:#888; margin-bottom:8px;">學生在購買前可以看到這幾頁的內容，請選擇最能夠展示筆記質素的頁數。</p>
       <div id="tutor-preview-page-list" style="max-height:220px; overflow-y:auto; margin-bottom:10px;">${checkboxes}</div>
       <div style="display:flex; gap:8px;">
         <button class="btn btn-outline" type="button" onclick="document.getElementById('tutor-note-upload-panel').style.display='none';">遲些再揀</button>
