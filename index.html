@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.133.2"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.133.3"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -2412,7 +2412,7 @@
         <section id="tab-tutor-materials" class="tab-content">
           <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550;">
             <h2 style="font-size:18px; font-weight:bold;">🗂️ 管理教材</h2>
-            <p style="font-size:13px; color:#3E5A63; margin-top:4px;">管理你嘅科目、課題分類，同上架俾學生購買嘅 PDF 筆記</p>
+            <p style="font-size:13px; color:#3E5A63; margin-top:4px;">管理您的科目、課題分類，以及上架給學生購買的 PDF 筆記</p>
           </div>
 
           <!-- 未批核／被拒嗰陣顯示（role !== 'tutor'），內容由
@@ -2748,7 +2748,7 @@
         <button type="button" id="reg-type-student-btn" class="btn btn-primary" style="flex:1; justify-content:center;" onclick="setRegisterAccountType('student')">🎒 我是學生</button>
         <button type="button" id="reg-type-tutor-btn" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="setRegisterAccountType('tutor')">🎓 我是導師</button>
       </div>
-      <p id="reg-type-tutor-hint" style="display:none; font-size:13px; color:#8a6d1f; background:#FFF7E6; border:1px solid #F0D9A0; border-radius:8px; padding:8px 10px; margin-top:8px;">📌 導師帳號需要管理員審批，通過之前可以正常以學生身份使用平台其他功能，審批結果會喺「我的帳戶」顯示。</p>
+      <p id="reg-type-tutor-hint" style="display:none; font-size:13px; color:#8a6d1f; background:#FFF7E6; border:1px solid #F0D9A0; border-radius:8px; padding:8px 10px; margin-top:8px;">📌 導師帳號需要管理員審批，通過之前可以正常以學生身份使用平台其他功能，審批結果會在「我的帳戶」顯示。</p>
 
       <form onsubmit="handleRegisterSubmit(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
         <input type="hidden" id="reg-account-type" value="student">
@@ -2761,7 +2761,7 @@
         <div>
           <label style="font-size:13px; font-weight:bold; color:#555;">帳號 ID（登入用）*</label>
           <input type="text" id="reg-account-id" class="input-field" required placeholder="例如：alex_wong2026" pattern="[A-Za-z0-9_]{3,20}" maxlength="20">
-          <p style="font-size:13px; color:#999; margin-top:4px;">3-20 個英文字母／數字／底線，設定了就要用來登入，揀個記得住的</p>
+          <p style="font-size:13px; color:#999; margin-top:4px;">3-20 個英文字母／數字／底線，設定了就要用來登入，請選擇一個容易記住的</p>
         </div>
 
         <div>
@@ -2811,11 +2811,11 @@
         <div id="register-tutor-fields" style="display:none;">
           <div>
             <label style="font-size:13px; font-weight:bold; color:#555;">自我介紹</label>
-            <textarea id="reg-tutor-bio" class="input-field" rows="3" maxlength="500" placeholder="簡單介紹自己嘅教學背景、經驗" style="width:100%; resize:vertical;"></textarea>
+            <textarea id="reg-tutor-bio" class="input-field" rows="3" maxlength="500" placeholder="簡單介紹自己的教學背景、經驗" style="width:100%; resize:vertical;"></textarea>
           </div>
 
           <div style="margin-top:10px;">
-            <label style="font-size:13px; font-weight:bold; color:#555;">想教嘅科目 *（用逗號分隔，例如：數學, 英文）</label>
+            <label style="font-size:13px; font-weight:bold; color:#555;">想教的科目 *（用逗號分隔，例如：數學, 英文）</label>
             <input type="text" id="reg-tutor-subjects" class="input-field" maxlength="200" placeholder="數學, 英文">
           </div>
         </div>
@@ -3007,18 +3007,18 @@
   <div class="modal-backdrop" id="modal-tutor-apply" style="display:none;">
     <div class="modal-box" style="max-width:420px;">
       <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">🎓 申請成為導師</h3>
-      <p style="font-size:13px; color:#888; margin-bottom:14px;">通過審批之後，你就可以喺導師後台管理科目、上傳付費筆記畀其他同學購買。填好以下資料交俾管理員審批。</p>
+      <p style="font-size:13px; color:#888; margin-bottom:14px;">通過審批之後，您就可以在導師後台管理科目、上傳付費筆記給其他同學購買。請填好以下資料交給管理員審批。</p>
 
       <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">顯示名稱</label>
-      <input id="tutor-apply-name" class="input-field" type="text" maxlength="40" placeholder="學生會見到嘅導師名稱" style="width:100%; margin-bottom:10px;">
+      <input id="tutor-apply-name" class="input-field" type="text" maxlength="40" placeholder="學生會見到的導師名稱" style="width:100%; margin-bottom:10px;">
 
       <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">自我介紹</label>
-      <textarea id="tutor-apply-bio" class="input-field" rows="3" maxlength="500" placeholder="簡單介紹自己嘅教學背景、經驗" style="width:100%; margin-bottom:10px; resize:vertical;"></textarea>
+      <textarea id="tutor-apply-bio" class="input-field" rows="3" maxlength="500" placeholder="簡單介紹自己的教學背景、經驗" style="width:100%; margin-bottom:10px; resize:vertical;"></textarea>
 
-      <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">想教嘅科目（用逗號分隔，例如：數學, 英文）</label>
+      <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">想教的科目（用逗號分隔，例如：數學, 英文）</label>
       <input id="tutor-apply-subjects" class="input-field" type="text" maxlength="200" placeholder="數學, 英文" style="width:100%; margin-bottom:10px;">
 
-      <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">聯絡方式（管理員審批用，唔會公開）</label>
+      <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">聯絡方式（管理員審批用，不會公開）</label>
       <input id="tutor-apply-contact" class="input-field" type="text" maxlength="200" placeholder="例如電郵或電話" style="width:100%; margin-bottom:14px;">
 
       <div style="display:flex; gap:8px;">
@@ -3103,7 +3103,7 @@
         <img id="report-screenshot-preview" style="width:100%; border-radius:10px; border:1px solid #ddd; display:block;">
       </div>
       <div id="report-screenshot-missing" style="margin-bottom:10px; font-size:13px; color:#c99; display:none;">
-        ⚠️ 呢一刻攞唔到對方畫面（可能對方鏡頭已關閉），舉報仍然會照送出，管理員會看返其他資料處理。
+        ⚠️ 目前無法取得對方畫面（可能對方鏡頭已關閉），舉報仍然會照常送出，管理員會依其他資料處理。
       </div>
 
       <div style="margin-bottom:10px;">

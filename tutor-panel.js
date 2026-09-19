@@ -156,7 +156,7 @@ window.applyRoleBasedSidebar = function() {
     const container = document.getElementById('tutor-subject-tabs');
     if (!container) return;
     if (tutorSubjects.length === 0) {
-      container.innerHTML = '<p style="font-size:13px; color:#999;">仲未有任何科目，撳「＋ 新增科目」開始。</p>';
+      container.innerHTML = '<p style="font-size:13px; color:#999;">還未有任何科目，點擊「＋ 新增科目」開始。</p>';
       return;
     }
     container.innerHTML = tutorSubjects.map((d) => {
@@ -233,7 +233,7 @@ window.applyRoleBasedSidebar = function() {
   window.getSelectedTutorTopicId = function() { return selectedTopicId; };
 
   window.deleteTutorSubject = async function(subjectId) {
-    if (!subjectId) { window.showToast('請先揀一個科目', '⚠️'); return; }
+    if (!subjectId) { window.showToast('請先選擇一個科目', '⚠️'); return; }
     const topicsSnap = await window.fs.getDocs(window.fs.query(
       window.fs.collection(window.db, 'tutorTopics'),
       window.fs.where('subjectId', '==', subjectId)
@@ -299,7 +299,7 @@ window.applyRoleBasedSidebar = function() {
   };
 
   window.promptCreateTutorTopic = async function() {
-    if (!selectedSubjectId) { window.showToast('請先揀一個科目', '⚠️'); return; }
+    if (!selectedSubjectId) { window.showToast('請先選擇一個科目', '⚠️'); return; }
     const name = (prompt('新課題名稱（例如：三角函數）：', '') || '').trim();
     if (!name) return;
     try {
@@ -317,7 +317,7 @@ window.applyRoleBasedSidebar = function() {
   };
 
   window.deleteTutorTopic = async function(topicId) {
-    if (!topicId) { window.showToast('請先揀一個課題', '⚠️'); return; }
+    if (!topicId) { window.showToast('請先選擇一個課題', '⚠️'); return; }
     const notesSnap = await window.fs.getDocs(window.fs.query(
       window.fs.collection(window.db, 'tutorNotes'),
       window.fs.where('topicId', '==', topicId),
@@ -364,7 +364,7 @@ window.applyRoleBasedSidebar = function() {
 
   const NOTE_STATUS_LABEL = {
     draft: '⏳ 上傳中',
-    awaiting_preview_selection: '📑 待揀預覽頁',
+    awaiting_preview_selection: '📑 待選擇預覽頁',
     published: '✅ 已上架',
     delisted: '🚫 已下架（導師停權）',
     removed: '🗑️ 已下架',
@@ -382,8 +382,14 @@ window.applyRoleBasedSidebar = function() {
         <div style="font-size:13px; color:#3E7A8A; font-weight:700;">${centsToDollarStr(n.priceCents)}</div>
         <div style="font-size:12px; color:#aaa; margin:4px 0;">${n.pageCount ? (n.pageCount + ' 頁') : '頁數計算中…'}${n.previewPages && n.previewPages.length ? '　預覽頁：' + n.previewPages.join(', ') : ''}</div>
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+          ${n.fullStoragePath
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.previewTutorNoteFull('${id}')">📄 預覽整份文件</button>`
+            : ''}
+          ${n.status === 'published' && n.previewStoragePath
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.previewTutorNoteStudentView('${id}')">👁️ 預覽（學生視角）</button>`
+            : ''}
           ${n.status === 'awaiting_preview_selection' || n.status === 'published'
-            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.openTutorPreviewPicker('${id}', ${n.pageCount || 0})">📑 揀預覽頁</button>`
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.openTutorPreviewPicker('${id}', ${n.pageCount || 0})">📑 選擇預覽頁</button>`
             : ''}
           <button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.promptEditTutorNote('${id}')">✏️ 編輯</button>
           <button class="btn btn-red" style="font-size:12px; padding:4px 8px;" onclick="window.deleteTutorNoteConfirm('${id}')">🗑️ 刪除</button>
@@ -391,6 +397,37 @@ window.applyRoleBasedSidebar = function() {
       </div>
     `;
   }
+
+  // 導師預覽：分兩個掣，一個開「整份PDF」（fullStoragePath，只有導師本人／admin睇到），
+  // 一個開「學生視角」（previewStoragePath，即係公開嗰幾頁預覽PDF，同學生實際見到嘅一樣）。
+  // 兩個都係用 Firebase Storage 嘅 getDownloadURL 攞返個網址，然後開新分頁顯示 PDF。
+  function findTutorNoteDocById(noteId) {
+    return tutorNotes.find((d) => d.id === noteId) || null;
+  }
+
+  window.previewTutorNoteFull = async function(noteId) {
+    const docSnap = findTutorNoteDocById(noteId);
+    const n = docSnap && docSnap.data();
+    if (!n || !n.fullStoragePath) { window.showToast('找不到這份教材的檔案', '⚠️'); return; }
+    try {
+      const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.fullStoragePath));
+      window.open(url, '_blank');
+    } catch (err) {
+      window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
+    }
+  };
+
+  window.previewTutorNoteStudentView = async function(noteId) {
+    const docSnap = findTutorNoteDocById(noteId);
+    const n = docSnap && docSnap.data();
+    if (!n || !n.previewStoragePath) { window.showToast('這份教材尚未設定預覽頁', '⚠️'); return; }
+    try {
+      const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.previewStoragePath));
+      window.open(url, '_blank');
+    } catch (err) {
+      window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
+    }
+  };
 
   function renderTutorNotesGridUI() {
     const container = document.getElementById('tutor-notes-grid');
@@ -404,7 +441,7 @@ window.applyRoleBasedSidebar = function() {
 
   // ---------- 上傳流程 ----------
   window.openTutorNoteUploadForm = function() {
-    if (!selectedTopicId) { window.showToast('請先揀一個課題', '⚠️'); return; }
+    if (!selectedTopicId) { window.showToast('請先選擇一個課題', '⚠️'); return; }
     const panel = document.getElementById('tutor-note-upload-panel');
     if (!panel) return;
     panel.style.display = 'block';
@@ -492,7 +529,7 @@ window.applyRoleBasedSidebar = function() {
       <p style="font-size:12px; color:#888; margin-bottom:8px;">學生在購買前可以看到這幾頁的內容，請選擇最能夠展示筆記質素的頁數。</p>
       <div id="tutor-preview-page-list" style="max-height:220px; overflow-y:auto; margin-bottom:10px;">${checkboxes}</div>
       <div style="display:flex; gap:8px;">
-        <button class="btn btn-outline" type="button" onclick="document.getElementById('tutor-note-upload-panel').style.display='none';">遲些再揀</button>
+        <button class="btn btn-outline" type="button" onclick="document.getElementById('tutor-note-upload-panel').style.display='none';">稍後再選</button>
         <button class="btn btn-primary" type="button" id="tutor-preview-confirm-btn" onclick="window.confirmTutorPreviewPages()">確認並發佈</button>
       </div>
     `;
@@ -503,7 +540,7 @@ window.applyRoleBasedSidebar = function() {
     const checked = boxes.filter((b) => b.checked);
     if (checked.length > 3) {
       checked[checked.length - 1].checked = false;
-      window.showToast('預覽頁最多只可以揀 3 頁', '⚠️');
+      window.showToast('預覽頁最多只能選擇 3 頁', '⚠️');
     }
   };
 
