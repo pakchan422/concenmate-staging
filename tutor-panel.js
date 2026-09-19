@@ -182,8 +182,8 @@ window.applyRoleBasedSidebar = function() {
     '中國語文', '英國語文', '數學（必修部分）', '數學延伸部分單元一（M1）', '數學延伸部分單元二（M2）',
     '公民與社會發展',
     '中國歷史', '歷史', '地理', '經濟', '企業、會計與財務概論（BAFS）', '倫理與宗教',
-    '中國文學', '文學', '英語文學',
-    '物理', '化學', '生物', '組合科學', '綜合科學',
+    '中國文學', '英語文學',
+    '物理', '化學', '生物',
     '資訊及通訊科技', '健康管理與社會關懷', '科技與生活', '設計與應用科技', '旅遊與款待',
     '視覺藝術', '音樂', '體育',
     '其他（自行輸入）',
@@ -354,7 +354,15 @@ window.applyRoleBasedSidebar = function() {
       window.fs.orderBy('createdAt', 'asc')
     );
     notesUnsub = window.fs.onSnapshot(q, (snapshot) => {
-      tutorNotes = snapshot.docs;
+      // 排序：Firestore query 本身跟 createdAt 排（唔使加新 composite index），
+      // 但如果導師用「拖曳排序」自訂過順序，文件會有 order 呢個欄位，
+      // 呢度就喺前端用 order（有嘅話）覆蓋返 createdAt 嚟排，兩者並存。
+      tutorNotes = snapshot.docs.slice().sort((a, b) => {
+        const da = a.data(), db_ = b.data();
+        const oa = typeof da.order === 'number' ? da.order : da.createdAt;
+        const ob = typeof db_.order === 'number' ? db_.order : db_.createdAt;
+        return oa - ob;
+      });
       renderTutorNotesGridUI();
     }, (err) => {
       const el = document.getElementById('tutor-notes-grid');
@@ -370,13 +378,19 @@ window.applyRoleBasedSidebar = function() {
     removed: '🗑️ 已下架',
   };
 
-  function buildTutorNoteCardHtml(docSnap) {
+  function buildTutorNoteCardHtml(docSnap, dragEnabled) {
     const n = docSnap.data();
     const id = docSnap.id;
     const statusLabel = NOTE_STATUS_LABEL[n.status] || n.status;
+    const dragAttrs = dragEnabled
+      ? `draggable="true" data-note-id="${id}" ondragstart="window.handleTutorNoteDragStart(event)" ondragover="window.handleTutorNoteDragOver(event)" ondrop="window.handleTutorNoteDrop(event)" ondragend="window.handleTutorNoteDragEnd(event)"`
+      : `data-note-id="${id}"`;
     return `
-      <div class="admin-card" style="margin-bottom:0;">
-        <div style="font-size:12px; color:#999; margin-bottom:4px;">${escapeHtmlLocal(statusLabel)}</div>
+      <div class="admin-card" style="margin-bottom:0; ${dragEnabled ? 'cursor:grab;' : ''}" ${dragAttrs}>
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+          ${dragEnabled ? '<span style="color:#bbb; font-size:14px;" title="拖曳可調整排序">⠿</span>' : ''}
+          <div style="font-size:12px; color:#999;">${escapeHtmlLocal(statusLabel)}</div>
+        </div>
         <div style="font-weight:700; font-size:14px; color:var(--brand-800); margin-bottom:2px;">${escapeHtmlLocal(n.title)}</div>
         <div style="font-size:12px; color:#888; margin-bottom:6px; min-height:16px;">${escapeHtmlLocal(n.description || '')}</div>
         <div style="font-size:13px; color:#3E7A8A; font-weight:700;">${centsToDollarStr(n.priceCents)}</div>
@@ -397,6 +411,53 @@ window.applyRoleBasedSidebar = function() {
       </div>
     `;
   }
+
+  // ---------- 拖曳排序（多過一份教材先啟用） ----------
+  // 做法：拖曳完成之後，將目前排列順序寫返做每份教材嘅 order 欄位
+  // （用 10 為單位隔開，方便將來插入），寫入 Firestore 之後 onSnapshot
+  // 會自動重新排序、重新 render，唔使自己手動搬 DOM。
+  let dragNoteId = null;
+
+  window.handleTutorNoteDragStart = function(ev) {
+    dragNoteId = ev.currentTarget.getAttribute('data-note-id');
+    ev.currentTarget.style.opacity = '0.5';
+    ev.dataTransfer.effectAllowed = 'move';
+  };
+
+  window.handleTutorNoteDragOver = function(ev) {
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = 'move';
+  };
+
+  window.handleTutorNoteDragEnd = function(ev) {
+    ev.currentTarget.style.opacity = '';
+  };
+
+  window.handleTutorNoteDrop = async function(ev) {
+    ev.preventDefault();
+    const targetId = ev.currentTarget.getAttribute('data-note-id');
+    if (!dragNoteId || dragNoteId === targetId) return;
+
+    const ids = tutorNotes.map((d) => d.id);
+    const fromIdx = ids.indexOf(dragNoteId);
+    const toIdx = ids.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    ids.splice(toIdx, 0, ids.splice(fromIdx, 1)[0]);
+
+    // 先喺前端即時重排一次（樂觀更新，畫面即時反映），寫入 Firestore
+    // 成功之後 onSnapshot 會再確認返一次順序
+    tutorNotes.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    renderTutorNotesGridUI();
+
+    try {
+      await Promise.all(ids.map((id, idx) =>
+        window.fs.updateDoc(window.fs.doc(window.db, 'tutorNotes', id), { order: (idx + 1) * 10 })
+      ));
+    } catch (err) {
+      window.showToast('儲存排序失敗：' + (err.message || err), '❌');
+    }
+  };
 
   // 導師預覽：分兩個掣，一個開「整份PDF」（fullStoragePath，只有導師本人／admin睇到），
   // 一個開「學生視角」（previewStoragePath，即係公開嗰幾頁預覽PDF，同學生實際見到嘅一樣）。
@@ -436,7 +497,8 @@ window.applyRoleBasedSidebar = function() {
       container.innerHTML = '<p style="font-size:13px; color:#999; grid-column:1/-1;">這個課題還未有任何教材，點擊「⬆️ 上傳教材」開始。</p>';
       return;
     }
-    container.innerHTML = tutorNotes.map(buildTutorNoteCardHtml).join('');
+    const dragEnabled = tutorNotes.length > 1;
+    container.innerHTML = tutorNotes.map((d) => buildTutorNoteCardHtml(d, dragEnabled)).join('');
   }
 
   // ---------- 上傳流程 ----------
@@ -564,31 +626,50 @@ window.applyRoleBasedSidebar = function() {
   };
 
   // ---------- 編輯／刪除 ----------
-  window.promptEditTutorNote = async function(noteId) {
+  // 改用 modal-tutor-edit-note 表格式編輯（標題／簡介／定價），取代舊版
+  // 一個接一個彈出嘅 prompt()，editingNoteId 記住而家編緊邊份教材。
+  let editingNoteId = null;
+
+  window.promptEditTutorNote = function(noteId) {
     const docSnap = tutorNotes.find((d) => d.id === noteId);
     if (!docSnap) return;
     const n = docSnap.data();
+    editingNoteId = noteId;
 
-    const newTitle = (prompt('標題：', n.title || '') || '').trim();
-    if (!newTitle) return;
-    const newDesc = prompt('簡介：', n.description || '');
-    if (newDesc === null) return;
-    const newPriceStr = prompt('定價（HKD）：', ((n.priceCents || 0) / 100).toFixed(2));
-    if (newPriceStr === null) return;
-    const newPriceDollar = parseFloat(newPriceStr);
+    const titleEl = document.getElementById('tutor-edit-note-title');
+    const descEl = document.getElementById('tutor-edit-note-desc');
+    const priceEl = document.getElementById('tutor-edit-note-price');
+    if (titleEl) titleEl.value = n.title || '';
+    if (descEl) descEl.value = n.description || '';
+    if (priceEl) priceEl.value = ((n.priceCents || 0) / 100).toFixed(2);
+
+    if (typeof window.openModal === 'function') window.openModal('modal-tutor-edit-note');
+  };
+
+  window.confirmTutorEditNote = async function() {
+    if (!editingNoteId) return;
+    const titleEl = document.getElementById('tutor-edit-note-title');
+    const descEl = document.getElementById('tutor-edit-note-desc');
+    const priceEl = document.getElementById('tutor-edit-note-price');
+
+    const newTitle = (titleEl && titleEl.value || '').trim();
+    if (!newTitle) { window.showToast('請輸入標題', '⚠️'); return; }
+    const newPriceDollar = parseFloat(priceEl && priceEl.value);
     if (Number.isNaN(newPriceDollar) || newPriceDollar < 0) {
-      window.showToast('定價格式不正確，已取消更新', '⚠️');
+      window.showToast('定價格式不正確', '⚠️');
       return;
     }
 
     try {
-      await window.fs.updateDoc(window.fs.doc(window.db, 'tutorNotes', noteId), {
+      await window.fs.updateDoc(window.fs.doc(window.db, 'tutorNotes', editingNoteId), {
         title: newTitle.slice(0, 80),
-        description: (newDesc || '').trim().slice(0, 1000),
+        description: ((descEl && descEl.value) || '').trim().slice(0, 1000),
         priceCents: Math.round(newPriceDollar * 100),
         updatedAt: Date.now(),
       });
       window.showToast('已更新教材資料', '✅');
+      if (typeof window.closeModal === 'function') window.closeModal('modal-tutor-edit-note');
+      editingNoteId = null;
     } catch (err) {
       window.showToast('更新失敗：' + (err.message || err), '❌');
     }
