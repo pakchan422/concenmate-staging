@@ -96,7 +96,7 @@ window.applyRoleBasedSidebar = function() {
     tutorDirectoryUnsub = window.fs.onSnapshot(q, (snapshot) => {
       const activeTutors = snapshot.docs.filter((d) => (d.data().status || 'active') === 'active');
       if (!activeTutors.length) {
-        container.innerHTML = '<div class="card" style="text-align:center; color:#999;">暫時未有已上架嘅導師</div>';
+        container.innerHTML = '<div class="card" style="text-align:center; color:#999;">目前尚未有已上架的導師</div>';
         return;
       }
       container.innerHTML = activeTutors.map((docSnap) => {
@@ -588,7 +588,7 @@ window.applyRoleBasedSidebar = function() {
       // 自動降級：關咗個彈出視窗，改為喺新分頁直接開個 PDF 網址（呢個
       // 純粹瀏覽器顯示 PDF，唔涉及 fetch()，唔會撞到 CORS）。
       window.closePdfPreviewModal();
-      window.showToast('目前未能喺頁面內預覽，已改用新分頁開啟檔案', '📄');
+      window.showToast('目前未能在頁面內預覽，已改用新分頁開啟檔案', '📄');
       window.open(url, '_blank');
     }
   }
@@ -692,7 +692,7 @@ window.applyRoleBasedSidebar = function() {
       <input id="tutor-note-title" class="input-field" type="text" maxlength="80" style="width:100%; margin-bottom:8px;" placeholder="例如：三角函數重點筆記">
       <label style="font-size:13px; font-weight:bold; color:#555;">簡介</label>
       <textarea id="tutor-note-desc" class="input-field" rows="2" maxlength="1000" style="width:100%; margin-bottom:8px; resize:vertical;" placeholder="簡單講吓呢份筆記有咩內容"></textarea>
-      <label style="font-size:13px; font-weight:bold; color:#555;">定價（HKD，最低 $10，只可整數）*</label>
+      <label style="font-size:13px; font-weight:bold; color:#555;">定價（港幣，最低 $10，只能為整數）*</label>
       <input id="tutor-note-price" class="input-field" type="number" min="10" step="1" style="width:100%; margin-bottom:8px;" placeholder="例如：30">
       <label style="font-size:13px; font-weight:bold; color:#555;">PDF 檔案 *（上限 50MB）</label>
       <input id="tutor-note-file" type="file" accept="application/pdf" style="width:100%; margin-bottom:10px;">
@@ -718,7 +718,7 @@ window.applyRoleBasedSidebar = function() {
     // Number.isInteger() 驗證返個原始輸入係咪已經係整數，唔淨係四捨五
     // 入之後先啱，例如打 "10.5" 呢種都要擋低，唔可以靜雞雞變咗 $11。
     if (Number.isNaN(priceDollar) || !Number.isInteger(priceDollar) || priceDollar < 10) {
-      window.showToast('定價必須係 $10 或以上嘅整數金額（例如：$10、$25，唔可以有仙）', '⚠️');
+      window.showToast('定價必須為 $10 或以上的整數金額', '⚠️');
       return;
     }
     if (!file) { window.showToast('請選擇 PDF 檔案', '⚠️'); return; }
@@ -857,7 +857,7 @@ window.applyRoleBasedSidebar = function() {
     if (!newTitle) { window.showToast('請輸入標題', '⚠️'); return; }
     const newPriceDollar = parseFloat(priceEl && priceEl.value);
     if (Number.isNaN(newPriceDollar) || !Number.isInteger(newPriceDollar) || newPriceDollar < 10) {
-      window.showToast('定價必須係 $10 或以上嘅整數金額（例如：$10、$25，唔可以有仙）', '⚠️');
+      window.showToast('定價必須為 $10 或以上的整數金額', '⚠️');
       return;
     }
 
