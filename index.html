@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.135.3"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.135.4"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -3056,8 +3056,8 @@
       <input id="tutor-edit-note-title" class="input-field" type="text" maxlength="80" style="width:100%; margin-bottom:10px;">
       <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">簡介</label>
       <textarea id="tutor-edit-note-desc" class="input-field" rows="3" maxlength="1000" style="width:100%; margin-bottom:10px; resize:vertical;"></textarea>
-      <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">定價（HKD）*</label>
-      <input id="tutor-edit-note-price" class="input-field" type="number" min="0" step="1" style="width:100%; margin-bottom:14px;">
+      <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">定價（HKD，最低 $10，只可整數）*</label>
+      <input id="tutor-edit-note-price" class="input-field" type="number" min="10" step="1" style="width:100%; margin-bottom:14px;">
       <div style="display:flex; gap:8px;">
         <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="closeModal('modal-tutor-edit-note')">取消</button>
         <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="window.confirmTutorEditNote()">儲存</button>

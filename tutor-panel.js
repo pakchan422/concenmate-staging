@@ -692,8 +692,8 @@ window.applyRoleBasedSidebar = function() {
       <input id="tutor-note-title" class="input-field" type="text" maxlength="80" style="width:100%; margin-bottom:8px;" placeholder="例如：三角函數重點筆記">
       <label style="font-size:13px; font-weight:bold; color:#555;">簡介</label>
       <textarea id="tutor-note-desc" class="input-field" rows="2" maxlength="1000" style="width:100%; margin-bottom:8px; resize:vertical;" placeholder="簡單講吓呢份筆記有咩內容"></textarea>
-      <label style="font-size:13px; font-weight:bold; color:#555;">定價（HKD）*</label>
-      <input id="tutor-note-price" class="input-field" type="number" min="0" step="1" style="width:100%; margin-bottom:8px;" placeholder="例如：30">
+      <label style="font-size:13px; font-weight:bold; color:#555;">定價（HKD，最低 $10，只可整數）*</label>
+      <input id="tutor-note-price" class="input-field" type="number" min="10" step="1" style="width:100%; margin-bottom:8px;" placeholder="例如：30">
       <label style="font-size:13px; font-weight:bold; color:#555;">PDF 檔案 *（上限 50MB）</label>
       <input id="tutor-note-file" type="file" accept="application/pdf" style="width:100%; margin-bottom:10px;">
       <p id="tutor-note-upload-progress" style="font-size:13px; color:#888; margin-bottom:8px;"></p>
@@ -714,7 +714,13 @@ window.applyRoleBasedSidebar = function() {
     const btn = document.getElementById('tutor-note-upload-btn');
 
     if (!title) { window.showToast('請填寫標題', '⚠️'); return; }
-    if (Number.isNaN(priceDollar) || priceDollar < 0) { window.showToast('請填寫正確的定價', '⚠️'); return; }
+    // ⚠️ 定價一定要係 HKD$10 或以上嘅整數（唔可以有仙）——用
+    // Number.isInteger() 驗證返個原始輸入係咪已經係整數，唔淨係四捨五
+    // 入之後先啱，例如打 "10.5" 呢種都要擋低，唔可以靜雞雞變咗 $11。
+    if (Number.isNaN(priceDollar) || !Number.isInteger(priceDollar) || priceDollar < 10) {
+      window.showToast('定價必須係 $10 或以上嘅整數金額（例如：$10、$25，唔可以有仙）', '⚠️');
+      return;
+    }
     if (!file) { window.showToast('請選擇 PDF 檔案', '⚠️'); return; }
     if (file.type !== 'application/pdf') { window.showToast('只可以上傳 PDF 檔案', '⚠️'); return; }
     if (file.size > 50 * 1024 * 1024) { window.showToast('檔案不可以超過 50MB', '⚠️'); return; }
@@ -836,7 +842,7 @@ window.applyRoleBasedSidebar = function() {
     const priceEl = document.getElementById('tutor-edit-note-price');
     if (titleEl) titleEl.value = n.title || '';
     if (descEl) descEl.value = n.description || '';
-    if (priceEl) priceEl.value = ((n.priceCents || 0) / 100).toFixed(2);
+    if (priceEl) priceEl.value = Math.round((n.priceCents || 0) / 100);
 
     if (typeof window.openModal === 'function') window.openModal('modal-tutor-edit-note');
   };
@@ -850,8 +856,8 @@ window.applyRoleBasedSidebar = function() {
     const newTitle = (titleEl && titleEl.value || '').trim();
     if (!newTitle) { window.showToast('請輸入標題', '⚠️'); return; }
     const newPriceDollar = parseFloat(priceEl && priceEl.value);
-    if (Number.isNaN(newPriceDollar) || newPriceDollar < 0) {
-      window.showToast('定價格式不正確', '⚠️');
+    if (Number.isNaN(newPriceDollar) || !Number.isInteger(newPriceDollar) || newPriceDollar < 10) {
+      window.showToast('定價必須係 $10 或以上嘅整數金額（例如：$10、$25，唔可以有仙）', '⚠️');
       return;
     }
 
