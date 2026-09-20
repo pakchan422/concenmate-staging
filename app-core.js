@@ -270,6 +270,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           return;
         }
 
+        // 記低「最後上線時間」，俾管理後台「用戶管理」分頁顯示（見
+        // admin-panel.js 嘅 formatLastLoginDisplay()）。用 Date.now()
+        // 呢個前端時間戳，同呢個 app 其他 createdAt／updatedAt 欄位一致
+        // 嘅做法，冇特登用 Firestore serverTimestamp。故意唔 await——
+        // 呢個純粹背景記錄用，唔應該累到登入流程等埋佢寫完先繼續；
+        // 寫失敗都唔緊要（例如離線），淨係 console 記低，唔會嚇親用戶。
+        updateDoc(userDocRef, { lastLoginAt: Date.now() }).catch((e) => {
+          console.warn('記錄最後上線時間失敗（唔影響使用）:', e);
+        });
+
         // 即時停權監聽：管理員喺後台撳「停權」嗰刻，唔使等呢個用戶下次
         // 登入先生效——直接監聽緊自己嗰份 users/{uid} 文件，一見到
         // suspended 變咗 true 就即刻強制登出，唔理佢而家仲喺唔喺線

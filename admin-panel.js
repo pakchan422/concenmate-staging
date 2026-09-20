@@ -1258,6 +1258,20 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
     };
 
     // ---------- 用戶管理 ----------
+    // 「最後上線時間」欄用嘅格式化函數：lastLoginAt 由 app-core.js 嘅
+    // onAuthStateChanged() 每次登入成功就寫一次（Date.now() 嘅 epoch
+    // ms，同呢個 app 其他 createdAt／updatedAt 欄位一致，冇用 Firestore
+    // serverTimestamp）。呢個功能推出之前註冊嘅舊帳號，喺佢哋下次登入
+    // 之前都會冇呢個欄位，顯示「從未登入」（實際意思係「呢個功能推出
+    // 之後仲未登入過」，唔係真係話個帳戶未用過）。
+    function formatLastLoginDisplay(ts) {
+      if (!ts) return '<span style="color:#bbb; font-size:13px;">從未登入</span>';
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return '<span style="color:#bbb; font-size:13px;">從未登入</span>';
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
     function renderAdminUsersTab() {
       const container = document.getElementById('admin-tab-users');
       if (!container || !window.db || !window.fs) return;
@@ -1292,6 +1306,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
               <td>${u.loginId ? '🆔 ' + escapeHtml(u.loginId) : '<span style="color:#c99; font-size:13px;">未設定</span>'}</td>
               <td>${escapeHtml(displayEmail)}</td>
               <td>${escapeHtml(u.school || '—')}</td>
+              <td style="white-space:nowrap;">${formatLastLoginDisplay(u.lastLoginAt)}</td>
               <td><input class="admin-input-sm" type="number" style="width:70px;" value="${u.points || 0}" id="admin-user-points-${uid}"></td>
               <td><input class="admin-input-sm" style="width:60px;" value="${(parseFloat(u.hours) || 0).toFixed(1)}" id="admin-user-hours-${uid}"></td>
               <td><input class="admin-input-sm" type="number" style="width:70px;" value="${u.exp || 0}" id="admin-user-exp-${uid}"></td>
@@ -1307,7 +1322,7 @@ Compromise | Verb | 妥協 | Both sides need to compromise in order to resolve t
             <p style="font-size:13px; color:#888; margin-bottom:10px;">改完積分／時數／EXP 之後記得逐行撳「💾 儲存」；EXP 決定用戶的溫習等級同段位，一般不用人手改，特殊情況（例如補發）先用。「停權」會令該用戶下次登入時被強制登出。</p>
             <div style="overflow-x:auto;">
               <table class="admin-table">
-                <thead><tr><th>用戶名</th><th>帳號 ID</th><th>Email</th><th>學校</th><th>積分</th><th>時數</th><th>EXP</th><th></th></tr></thead>
+                <thead><tr><th>用戶名</th><th>帳號 ID</th><th>Email</th><th>學校</th><th>最後上線</th><th>積分</th><th>時數</th><th>EXP</th><th></th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </div>
