@@ -129,6 +129,12 @@
       if (tabId === 'tutor-materials' && typeof window.renderTutorMaterialsTab === 'function') {
         window.renderTutorMaterialsTab();
       }
+
+      // 「溫習資源」分頁（學生專用）一開就即刻載入導師名錄，函式定義喺
+      // tutor-panel.js
+      if (tabId === 'vip' && typeof window.renderTutorDirectoryTab === 'function') {
+        window.renderTutorDirectoryTab();
+      }
     }
     window.switchTab = switchTab;
 

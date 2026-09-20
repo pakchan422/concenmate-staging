@@ -39,6 +39,20 @@ window.applyRoleBasedSidebar = function() {
   });
   const tutorBtn = document.getElementById('nav-btn-tutor-materials');
   if (tutorBtn) tutorBtn.style.display = isTutorPath ? '' : 'none';
+
+  // ⚠️ 導師帳戶唔應該見到「等級／今日目標／溫習日曆／本日時數／積分」
+  // 呢批學生／Admin 專用嘅統計資訊。呢度特登唔用返上面 .student-only-nav
+  // 嗰個泛用 toggle：嗰個 toggle 對冇揀導師嘅帳戶會做 style.display=''
+  // （即係清走 inline 樣式，返去食 CSS class 預設值），但呢幾個元素本身
+  // 冇 CSS class 定義 display，一定要靠 updateUserAuthUI() 剛剛先設落嘅
+  // inline display:flex/block 先顯示得啱；如果套用返嗰個泛用 toggle，
+  // 學生登入時就會因為呢個 reset 而累到呢幾個元素唔見咗。所以呢度淨係
+  // 喺導師嗰陣主動隱藏，唔係導師就乜都唔做，原封不動保留
+  // updateUserAuthUI() 已經設好嘅顯示狀態。
+  ['header-user-stats', 'global-status-bar', 'otter-pet-card', 'home-goal-card', 'study-calendar-card', 'home-stat-hours-pill', 'home-stat-pts-pill'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && isTutorPath) el.style.display = 'none';
+  });
 };
 
 (function() {
@@ -52,6 +66,7 @@ window.applyRoleBasedSidebar = function() {
   let topicsUnsub = null;
   let notesUnsub = null;
   let lastRegisteredNoteId = null; // 上傳完成、等緊揀預覽頁嗰份教材
+  let tutorDirectoryUnsub = null;
 
   function escapeHtmlLocal(str) {
     return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -60,6 +75,54 @@ window.applyRoleBasedSidebar = function() {
   function centsToDollarStr(cents) {
     return 'HK$' + ((cents || 0) / 100).toFixed(2);
   }
+
+  // ===================== 「溫習資源」分頁：導師名錄（學生用） =====================
+  // 淨係列出已上架（status==='active'）嘅導師，資料嚟自 tutors
+  // collection——同 admin 後台「🎓 導師申請 → 導師名單」讀緊嗰個
+  // collection 一樣。撳張卡就開返 app-features.js 嗰個現成嘅「查看用戶
+  // 資料卡」彈出視窗（window.viewUserProfile()），入面已經有齊追蹤掣、
+  // 粉絲人數呢啲，唔使再寫多一套追蹤邏輯。
+  window.renderTutorDirectoryTab = function() {
+    const container = document.getElementById('tutor-directory-list');
+    if (!container || !window.db || !window.fs) return;
+    container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入導師名錄中…</p>';
+
+    if (tutorDirectoryUnsub) tutorDirectoryUnsub();
+    const q = window.fs.query(
+      window.fs.collection(window.db, 'tutors'),
+      window.fs.orderBy('createdAt', 'desc'),
+      window.fs.limit(100)
+    );
+    tutorDirectoryUnsub = window.fs.onSnapshot(q, (snapshot) => {
+      const activeTutors = snapshot.docs.filter((d) => (d.data().status || 'active') === 'active');
+      if (!activeTutors.length) {
+        container.innerHTML = '<div class="card" style="text-align:center; color:#999;">暫時未有已上架嘅導師</div>';
+        return;
+      }
+      container.innerHTML = activeTutors.map((docSnap) => {
+        const t = docSnap.data();
+        const uid = docSnap.id;
+        const subjectsHtml = (t.subjectsIntended || [])
+          .map((s) => `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtmlLocal(s)}</span>`)
+          .join('');
+        return `
+          <div class="card" style="cursor:pointer;" onclick="window.viewUserProfile('${uid}')">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:44px; height:44px; border-radius:50%; background:var(--brand-100); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">🎓</div>
+              <div style="min-width:0; flex:1;">
+                <p style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:2px;">${escapeHtmlLocal(t.displayName || '導師')}</p>
+                <p style="font-size:13px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtmlLocal(t.bio || '')}</p>
+              </div>
+              <span style="font-size:13px; color:var(--brand-600); flex-shrink:0;">查看 ›</span>
+            </div>
+            ${subjectsHtml ? `<div style="margin-top:8px;">${subjectsHtml}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }, (err) => {
+      container.innerHTML = `<div class="card" style="color:#C0524A;">載入導師名錄失敗：${escapeHtmlLocal(err.message || err)}</div>`;
+    });
+  };
 
   // ===================== 分頁入口 =====================
   window.renderTutorMaterialsTab = async function() {
@@ -391,6 +454,9 @@ window.applyRoleBasedSidebar = function() {
           ${dragEnabled ? '<span style="color:#bbb; font-size:14px;" title="拖曳可調整排序">⠿</span>' : ''}
           <div style="font-size:12px; color:#999;">${escapeHtmlLocal(statusLabel)}</div>
         </div>
+        <div id="tutor-note-thumb-${id}" class="tutor-note-thumb" style="width:100%; aspect-ratio:3/4; max-height:160px; border-radius:6px; background:#eef3f4; display:flex; align-items:center; justify-content:center; margin-bottom:6px; overflow:hidden;">
+          <span style="font-size:11px; color:#bbb;">縮圖載入中…</span>
+        </div>
         <div style="font-weight:700; font-size:14px; color:var(--brand-800); margin-bottom:2px;">${escapeHtmlLocal(n.title)}</div>
         <div style="font-size:12px; color:#888; margin-bottom:6px; min-height:16px;">${escapeHtmlLocal(n.description || '')}</div>
         <div style="font-size:13px; color:#3E7A8A; font-weight:700;">${centsToDollarStr(n.priceCents)}</div>
@@ -464,23 +530,61 @@ window.applyRoleBasedSidebar = function() {
 
   // 導師預覽：分兩個掣，一個開「整份PDF」（fullStoragePath，只有導師本人／admin睇到），
   // 一個開「學生視角」（previewStoragePath，即係公開嗰幾頁預覽PDF，同學生實際見到嘅一樣）。
-  // 兩個都係用 Firebase Storage 嘅 getDownloadURL 攞返個網址，然後喺
-  // modal-pdf-preview 個 iframe 入面直接顯示（唔再開新分頁）。
+  // ⚠️ 原本用 <iframe src="PDF網址"> 靠瀏覽器內建 PDF viewer 顯示，但
+  // 手機（尤其 iOS Safari）嗰個內建viewer塞喺iframe入面嗰陣，揭頁唔
+  // 穩定，淨係睇到第一頁。改用 pdf.js（index.html 引入嘅
+  // window.pdfjsLib）自己讀PDF、自己將每一頁畫落<canvas>，自己控制
+  // 「上一頁／下一頁」，桌面同手機行為完全一致。
   function findTutorNoteDocById(noteId) {
     return tutorNotes.find((d) => d.id === noteId) || null;
   }
 
-  function showPdfPreviewModal(url, titleText) {
-    const iframe = document.getElementById('pdf-preview-iframe');
+  let pdfPreviewDoc = null;   // 而家個modal入面開緊嘅 pdf.js document
+  let pdfPreviewPage = 1;     // 而家顯示緊第幾頁
+
+  async function renderPdfPreviewPage(pageNum) {
+    if (!pdfPreviewDoc) return;
+    const page = await pdfPreviewDoc.getPage(pageNum);
+    const canvas = document.getElementById('pdf-preview-canvas');
+    const wrap = document.getElementById('pdf-preview-canvas-wrap');
+    if (!canvas || !wrap) return;
+    const targetWidth = Math.max(wrap.clientWidth - 24, 200);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = targetWidth / baseViewport.width;
+    const viewport = page.getViewport({ scale });
+    const ctx = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    pdfPreviewPage = pageNum;
+    const label = document.getElementById('pdf-preview-page-label');
+    if (label) label.innerText = pageNum + ' / ' + pdfPreviewDoc.numPages;
+  }
+
+  window.pdfPreviewPrevPage = function() {
+    if (pdfPreviewDoc && pdfPreviewPage > 1) renderPdfPreviewPage(pdfPreviewPage - 1);
+  };
+  window.pdfPreviewNextPage = function() {
+    if (pdfPreviewDoc && pdfPreviewPage < pdfPreviewDoc.numPages) renderPdfPreviewPage(pdfPreviewPage + 1);
+  };
+
+  async function showPdfPreviewModal(url, titleText) {
     const titleEl = document.getElementById('pdf-preview-title');
     if (titleEl) titleEl.innerText = titleText;
-    if (iframe) iframe.src = url;
     if (typeof window.openModal === 'function') window.openModal('modal-pdf-preview');
+    const label = document.getElementById('pdf-preview-page-label');
+    if (label) label.innerText = '載入中…';
+    try {
+      if (!window.pdfjsLib) throw new Error('PDF 顯示元件未載入，請重新整理頁面再試');
+      pdfPreviewDoc = await window.pdfjsLib.getDocument(url).promise;
+      await renderPdfPreviewPage(1);
+    } catch (err) {
+      window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
+    }
   }
 
   window.closePdfPreviewModal = function() {
-    const iframe = document.getElementById('pdf-preview-iframe');
-    if (iframe) iframe.src = ''; // 清空先，避免個PDF留喺記憶體度
+    pdfPreviewDoc = null; // 清空返，避免個PDF留喺記憶體度
     if (typeof window.closeModal === 'function') window.closeModal('modal-pdf-preview');
   };
 
@@ -508,6 +612,48 @@ window.applyRoleBasedSidebar = function() {
     }
   };
 
+  // ---------- 教材卡第一頁縮圖 ----------
+  // 圖三要求：教材卡直接顯示PDF第一頁嘅縮圖，唔使撳「預覽整份文件」先
+  // 見到。用 pdf.js 讀 fullStoragePath 嘅第一頁，畫落一個細嘅離屏
+  // canvas，轉做 dataURL 塞入卡片入面嘅 <img>。用 thumbCache 做記憶體
+  // 快取（key 係 storagePath），避免拖曳排序、切換課題嗰陣重新render
+  // 成個grid時，同一份教材要重新讀多次PDF、重新畫多次。
+  const thumbCache = {};
+
+  async function loadTutorNoteThumbnails(docs) {
+    if (!window.pdfjsLib) return;
+    for (const docSnap of docs) {
+      const n = docSnap.data();
+      const id = docSnap.id;
+      const el = document.getElementById('tutor-note-thumb-' + id);
+      if (!el || !n.fullStoragePath) continue;
+      if (thumbCache[n.fullStoragePath]) {
+        el.innerHTML = `<img src="${thumbCache[n.fullStoragePath]}" style="width:100%; height:100%; object-fit:cover;" alt="">`;
+        continue;
+      }
+      try {
+        const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.fullStoragePath));
+        const pdfDoc = await window.pdfjsLib.getDocument(url).promise;
+        const page = await pdfDoc.getPage(1);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const scale = 240 / baseViewport.width;
+        const viewport = page.getViewport({ scale });
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = viewport.width;
+        offCanvas.height = viewport.height;
+        await page.render({ canvasContext: offCanvas.getContext('2d'), viewport }).promise;
+        const dataUrl = offCanvas.toDataURL('image/jpeg', 0.8);
+        thumbCache[n.fullStoragePath] = dataUrl;
+        // 用戶可能喺載入緊期間已經切走課題／重排咗，重新check返個容器仲喺唔喺度
+        const elAfter = document.getElementById('tutor-note-thumb-' + id);
+        if (elAfter) elAfter.innerHTML = `<img src="${dataUrl}" style="width:100%; height:100%; object-fit:cover;" alt="">`;
+      } catch (err) {
+        const elFail = document.getElementById('tutor-note-thumb-' + id);
+        if (elFail) elFail.innerHTML = '<span style="font-size:11px; color:#c99;">縮圖載入失敗</span>';
+      }
+    }
+  }
+
   function renderTutorNotesGridUI() {
     const container = document.getElementById('tutor-notes-grid');
     if (!container) return;
@@ -517,6 +663,7 @@ window.applyRoleBasedSidebar = function() {
     }
     const dragEnabled = tutorNotes.length > 1;
     container.innerHTML = tutorNotes.map((d) => buildTutorNoteCardHtml(d, dragEnabled)).join('');
+    loadTutorNoteThumbnails(tutorNotes);
   }
 
   // ---------- 上傳流程 ----------

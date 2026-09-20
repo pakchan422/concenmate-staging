@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.134.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.135.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1704,14 +1704,14 @@
               </div>
             </div>
             <div class="home-hero-stats">
-              <div class="home-stat-pill">
+              <div class="home-stat-pill" id="home-stat-hours-pill">
                 <span class="home-stat-icon">⏱️</span>
                 <div>
                   <div class="home-stat-val"><span id="home-stat-hours">0分鐘</span></div>
                   <div class="home-stat-label">本日時數</div>
                 </div>
               </div>
-              <div class="home-stat-pill">
+              <div class="home-stat-pill" id="home-stat-pts-pill">
                 <span class="home-stat-icon">🪙</span>
                 <div>
                   <div class="home-stat-val"><span id="home-stat-pts">0</span></div>
@@ -1875,7 +1875,7 @@
             <div class="home-side-col">
 
               <!-- 積分進度 -->
-              <div class="home-side-card">
+              <div class="home-side-card" id="home-goal-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                   <span style="font-size:14px; font-weight:700; color:var(--brand-800);">🎯 今日目標</span>
                   <span style="font-size:13px; color:var(--brand-600);" id="home-goal-label">0 / 60 分鐘</span>
@@ -2395,15 +2395,16 @@
           </div>
         </section>
 
+        <!-- 「溫習資源」分頁：目前先做「導師名錄」——列出已上架嘅導師，
+             撳落去開返現有嗰個「查看用戶資料卡」彈出視窗（已經有齊追蹤
+             掣同粉絲人數），等學生揾到導師先追蹤到佢。實際列表由
+             tutor-panel.js 嘅 renderTutorDirectoryTab() 產生。 -->
         <section id="tab-vip" class="tab-content">
-          <div style="text-align:center; padding:60px 20px;">
-            <div style="font-size:64px; margin-bottom:16px;">🚧</div>
-            <h2 style="font-size:20px; font-weight:800; color:var(--brand-800); margin-bottom:10px;">溫習資源</h2>
-            <p style="font-size:15px; color:#7DB8C5; font-weight:600; margin-bottom:8px;">⏳ 期待日後更新</p>
-            <p style="font-size:13px; color:#aaa; line-height:1.7; max-width:320px; margin:0 auto;">
-              功能仍在開發中，敬請期待！
-            </p>
+          <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550;">
+            <h2 style="font-size:18px; font-weight:bold;">👑 溫習資源</h2>
+            <p style="font-size:13px; color:#3E5A63; margin-top:4px;">瀏覽已上架嘅導師，撳卡片可以查看資料同追蹤佢，收到最新消息</p>
           </div>
+          <div id="tutor-directory-list" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;"></div>
         </section>
 
         <!-- 🎓 導師專用：管理教材（科目／課題／PDF 筆記）。內容全部由
@@ -3064,18 +3065,26 @@
     </div>
   </div>
 
-  <!-- 🎓 導師 PDF 預覽（整份文件／學生視角）：用 iframe 喺頁面內直接顯示
-       PDF，唔使開新分頁。大部分瀏覽器（Chrome／Safari／Firefox）嘅
-       <iframe src="PDF網址"> 都會自動用返瀏覽器內建嘅 PDF viewer
-       顯示，唔使額外載入 pdf.js。關閉嗰陣要記得清空 iframe.src，
-       否則個PDF會留喺記憶體度持續佔用資源。 -->
+  <!-- 🎓 導師 PDF 預覽（整份文件／學生視角）：原本用 iframe 帶入 PDF 網址
+       靠瀏覽器內建 PDF viewer 顯示，但手機版（尤其 iOS Safari）個內建
+       viewer 塞喺 iframe 入面嗰陣，滾動/揭頁唔穩定，成日淨係睇到第一
+       頁、揭唔到落去第二頁。改用 pdf.js（見下面 JS 檔案引入）自己
+       將每一頁畫落畫布，自己控制「上一頁／下一頁」，桌面同手機
+       行為完全一致，唔再靠瀏覽器自己嗰個PDF viewer。 -->
   <div class="modal-backdrop" id="modal-pdf-preview" style="display:none;">
     <div class="modal-box" style="max-width:960px; width:92vw; height:88vh; display:flex; flex-direction:column; padding:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-        <h3 id="pdf-preview-title" style="font-size:16px; font-weight:bold; color:var(--brand-800); margin:0;">📄 預覽</h3>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
+        <h3 id="pdf-preview-title" style="font-size:15px; font-weight:bold; color:var(--brand-800); margin:0; flex:1; min-width:120px;">📄 預覽</h3>
         <button class="btn btn-outline" type="button" style="padding:4px 10px;" onclick="window.closePdfPreviewModal()">✕ 關閉</button>
       </div>
-      <iframe id="pdf-preview-iframe" style="flex:1; width:100%; border:1px solid #E5EEF0; border-radius:8px; background:#f5f5f5;"></iframe>
+      <div id="pdf-preview-canvas-wrap" style="flex:1; width:100%; overflow:auto; border:1px solid #E5EEF0; border-radius:8px; background:#f5f5f5; display:flex; align-items:flex-start; justify-content:center; -webkit-overflow-scrolling:touch;">
+        <canvas id="pdf-preview-canvas" style="max-width:100%; height:auto; box-shadow:0 1px 4px rgba(0,0,0,0.15);"></canvas>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:14px; margin-top:10px;">
+        <button class="btn btn-outline" type="button" style="padding:6px 14px;" onclick="window.pdfPreviewPrevPage()">‹ 上一頁</button>
+        <span id="pdf-preview-page-label" style="font-size:13px; color:#555; min-width:64px; text-align:center;">1 / 1</span>
+        <button class="btn btn-outline" type="button" style="padding:6px 14px;" onclick="window.pdfPreviewNextPage()">下一頁 ›</button>
+      </div>
     </div>
   </div>
 
@@ -3329,6 +3338,16 @@
   </div>
 
   <script src="admin-panel.js"></script>
+  <!-- pdf.js：導師教材嘅 PDF 預覽（整份文件／學生視角）同教材卡嘅第一頁
+       縮圖，都用呢個 library 自己畫落 <canvas>，唔再靠瀏覽器內建嘅PDF
+       viewer（手機Safari個內建viewer塞喺iframe度揭唔到第二頁）。淨係
+       tutor-panel.js 用到，所以擺喺佢之前載入就得。 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
   <script src="tutor-panel.js"></script>
 
 </body>
