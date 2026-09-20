@@ -579,7 +579,17 @@ window.applyRoleBasedSidebar = function() {
       pdfPreviewDoc = await window.pdfjsLib.getDocument(url).promise;
       await renderPdfPreviewPage(1);
     } catch (err) {
-      window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
+      // ⚠️ 呢度最常見嘅失敗原因唔係檔案本身有問題，而係 Firebase Storage
+      // bucket 未開放俾呢個網站嘅 origin 跨域讀取（CORS）——pdf.js 一定
+      // 要用 fetch() 攞成份 PDF 嘅原始資料先畫得落 canvas，冇開 CORS 嘅
+      // 話瀏覽器會擋低，出返 "Failed to fetch"。呢個要喺 Firebase／GCP
+      // 專案設定 Storage bucket CORS 先根治，唔係前端程式碼可以自己搞
+      // 掂。喺未設定好之前，都要俾導師/學生繼續用得到功能，所以呢度會
+      // 自動降級：關咗個彈出視窗，改為喺新分頁直接開個 PDF 網址（呢個
+      // 純粹瀏覽器顯示 PDF，唔涉及 fetch()，唔會撞到 CORS）。
+      window.closePdfPreviewModal();
+      window.showToast('目前未能喺頁面內預覽，已改用新分頁開啟檔案', '📄');
+      window.open(url, '_blank');
     }
   }
 
@@ -648,8 +658,12 @@ window.applyRoleBasedSidebar = function() {
         const elAfter = document.getElementById('tutor-note-thumb-' + id);
         if (elAfter) elAfter.innerHTML = `<img src="${dataUrl}" style="width:100%; height:100%; object-fit:cover;" alt="">`;
       } catch (err) {
+        // 同 showPdfPreviewModal() 嗰個 catch 一樣，最常見原因係 Storage
+        // bucket 未開 CORS，唔係真係個檔案壞咗，所以呢度顯示中性嘅
+        // 佔位圖示（📄）就算，唔使用「失敗」呢種會嚇親人嘅字眼——一旦
+        // CORS 設定好，下次載入呢個分頁就會自動變返縮圖，唔使改碼。
         const elFail = document.getElementById('tutor-note-thumb-' + id);
-        if (elFail) elFail.innerHTML = '<span style="font-size:11px; color:#c99;">縮圖載入失敗</span>';
+        if (elFail) elFail.innerHTML = '<span style="font-size:28px; color:#B7C6C9;">📄</span>';
       }
     }
   }
