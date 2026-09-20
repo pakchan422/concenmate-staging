@@ -47,7 +47,7 @@
        🔧 版本號 — 每次推送 GitHub 前改呢度
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.135.4"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.135.5"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- ========================================
@@ -1070,7 +1070,11 @@
       position: fixed;
       top: 20px;
       right: 20px;
-      z-index: 200;
+      /* ⚠️ 一定要高過 .modal-backdrop（10000）同 #qa-lightbox（10050）：
+         showToast() 成日喺彈出視窗開住嗰陣先觸發（例如表格驗證失敗），
+         原本 z-index:200 會俾個彈出視窗完全遮住，用戶見唔到個提示，
+         好似撳咗「儲存」冇反應咁（見「編輯教材」定價驗證嗰次截圖）。 */
+      z-index: 10100;
       background: var(--brand-800);
       color: white;
       padding: 12px 18px;
