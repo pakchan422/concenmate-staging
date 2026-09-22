@@ -211,16 +211,23 @@
 
     // ===================== 🏆 溫習排行榜 =====================
     // 分區個人排行榜／學校排行榜，都係查 leaderboardEntries／
-    // schoolLeaderboard 呢兩個「公開精簡版」collection（唔係直接查
-    // users——users 唔開放 list，見 firestore.rules 同
-    // functions/index.js 嘅 syncLeaderboardOnUserWrite），呢兩個
-    // collection 由 Cloud Function 自動同步，前端淨係讀，唔使亦唔可以
-    // 自己寫。
-    let leaderboardMode = 'district'; // 'district' | 'school'
+    // schoolLeaderboard（累積）或 schoolLeaderboardMonthly（本月）呢幾個
+    // 「公開精簡版」collection（唔係直接查 users——users 唔開放 list，
+    // 見 firestore.rules 同 functions/index.js 嘅
+    // syncLeaderboardOnUserWrite），呢啲 collection 由 Cloud Function
+    // 自動同步，前端淨係讀，唔使亦唔可以自己寫。
+    let leaderboardMode = 'district'; // 'district' | 'schoolInternal' | 'school'
+    // 「本月」／「累積」呢個切換獨立於上面嗰個 mode，兩者可以自由組合
+    // （例如「本月＋分區個人」、「累積＋學校總排行」）。本月榜用
+    // monthlyHours／monthlyPeriod 呢兩個由 Cloud Function 同步過嚟嘅欄
+    // 位，一到新一個月，用戶帳戶嘅 monthlyPeriod 就會自動轉做新月份，
+    // 舊月份嘅紀錄唔會再喺「本月」呢個查詢入面出現，等於自動歸零重新
+    // 競賽，唔使另外寫重設工作。
+    let leaderboardPeriod = 'month'; // 'month' | 'alltime'
 
-    // 學校名做 schoolLeaderboard 文件 ID 嗰套消毒邏輯，一定要同
-    // functions/index.js 嘅 sanitizeSchoolIdForDoc 完全一致，先至查得
-    // 返自己間學校對應嗰份文件。
+    // 學校名做 schoolLeaderboard／schoolLeaderboardMonthly 文件 ID 嗰套
+    // 消毒邏輯，一定要同 functions/index.js 嘅 sanitizeSchoolIdForDoc
+    // 完全一致，先至查得返自己間學校對應嗰份文件。
     function sanitizeSchoolIdForDoc(schoolName) {
       const trimmed = (schoolName || '').trim();
       if (!trimmed) return null;
@@ -259,6 +266,15 @@
       window.loadLeaderboardTab();
     };
 
+    window.switchLeaderboardPeriod = function(period) {
+      leaderboardPeriod = (period === 'alltime') ? 'alltime' : 'month';
+      const monthBtn = document.getElementById('lb-period-month-btn');
+      const alltimeBtn = document.getElementById('lb-period-alltime-btn');
+      if (monthBtn) monthBtn.classList.toggle('active', leaderboardPeriod === 'month');
+      if (alltimeBtn) alltimeBtn.classList.toggle('active', leaderboardPeriod === 'alltime');
+      window.loadLeaderboardTab();
+    };
+
     window.loadLeaderboardTab = async function() {
       if (!window.currentUser || !window.db || !window.fs) return;
       populateLeaderboardDistrictSelect();
@@ -294,13 +310,25 @@
       listEl.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入排行榜中…</p>';
       if (ownRankWrap) ownRankWrap.style.display = 'none';
 
+      // 本月榜：query 多加一個 monthlyPeriod == 今個月 嘅條件，並且改用
+      // monthlyHours 呢個欄位排序。因為 Cloud Function 淨係喺用戶「有動
+      // 靜」（溫習、改資料等）先會寫入 leaderboardEntries，如果上個月一
+      // 直冇再溫習，佢個 monthlyPeriod 就會停留喺上個月，match 唔到今個
+      // 月嘅條件，自動唔會出現喺「本月」榜度——等於自動歸零重新競賽，
+      // 唔使另外寫重設工作／排程。
+      const isMonth = leaderboardPeriod === 'month';
+      const hoursField = isMonth ? 'monthlyHours' : 'hours';
+      const curMonthStr = getCurrentMonthStr();
+
       try {
-        const q = window.fs.query(
-          window.fs.collection(window.db, 'leaderboardEntries'),
+        const constraints = [
           window.fs.where('district', '==', district),
-          window.fs.orderBy('hours', 'desc'),
-          window.fs.limit(50)
-        );
+        ];
+        if (isMonth) constraints.push(window.fs.where('monthlyPeriod', '==', curMonthStr));
+        constraints.push(window.fs.orderBy(hoursField, 'desc'));
+        constraints.push(window.fs.limit(50));
+
+        const q = window.fs.query(window.fs.collection(window.db, 'leaderboardEntries'), ...constraints);
         const snap = await window.fs.getDocs(q);
         const entries = snap.docs.map((d) => d.data());
 
@@ -308,20 +336,26 @@
           listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">這個地區暫時未有同學上榜，開始溫習就可以成為第一位！</p>`;
         } else {
           listEl.innerHTML = entries.map((e, i) =>
-            renderLeaderboardRow(i + 1, e.username || '同學', formatHoursMinutes(e.hours), e.uid === window.currentUser.uid)
+            renderLeaderboardRow(i + 1, e.username || '同學', formatHoursMinutes(e[hoursField]), e.uid === window.currentUser.uid)
           ).join('');
         }
 
         // 如果自己已經喺榜上（頭 50 名），唔使再問多次伺服器攞名次；
-        // 唔喺榜上（可能未上榜，或者排第 51 名之後）先計算真正名次。
+        // 唔喺榜上（可能未上榜，或者排第 51 名之後）先計算真正名次。呢度
+        // 判斷「自己本月有冇上榜」時要留意：如果自己帳戶今個月一直未溫
+        // 習過，window.currentUser.monthlyPeriod 都會係上個月，代表本月
+        // 時數應該當 0，唔可以攞返上個月嘅舊數字嚟顯示，會誤導用戶。
         const meInList = entries.some((e) => e.uid === window.currentUser.uid);
         if (!meInList && window.currentUser.district === district) {
-          const myHours = parseFloat(window.currentUser.hours) || 0;
-          const countQ = window.fs.query(
-            window.fs.collection(window.db, 'leaderboardEntries'),
+          const myHours = isMonth
+            ? ((window.currentUser.monthlyPeriod === curMonthStr) ? (parseFloat(window.currentUser.monthlyHours) || 0) : 0)
+            : (parseFloat(window.currentUser.hours) || 0);
+          const countConstraints = [
             window.fs.where('district', '==', district),
-            window.fs.where('hours', '>', myHours)
-          );
+          ];
+          if (isMonth) countConstraints.push(window.fs.where('monthlyPeriod', '==', curMonthStr));
+          countConstraints.push(window.fs.where(hoursField, '>', myHours));
+          const countQ = window.fs.query(window.fs.collection(window.db, 'leaderboardEntries'), ...countConstraints);
           const countSnap = await window.fs.getCountFromServer(countQ);
           const myRank = countSnap.data().count + 1;
           if (ownRankWrap) {
@@ -360,13 +394,17 @@
 
       listEl.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入排行榜中…</p>';
 
+      const isMonth = leaderboardPeriod === 'month';
+      const hoursField = isMonth ? 'monthlyHours' : 'hours';
+      const curMonthStr = getCurrentMonthStr();
+
       try {
-        const q = window.fs.query(
-          window.fs.collection(window.db, 'leaderboardEntries'),
-          window.fs.where('school', '==', mySchool),
-          window.fs.orderBy('hours', 'desc'),
-          window.fs.limit(50)
-        );
+        const constraints = [window.fs.where('school', '==', mySchool)];
+        if (isMonth) constraints.push(window.fs.where('monthlyPeriod', '==', curMonthStr));
+        constraints.push(window.fs.orderBy(hoursField, 'desc'));
+        constraints.push(window.fs.limit(50));
+
+        const q = window.fs.query(window.fs.collection(window.db, 'leaderboardEntries'), ...constraints);
         const snap = await window.fs.getDocs(q);
         const entries = snap.docs.map((d) => d.data());
 
@@ -374,18 +412,19 @@
           listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">你的學校暫時未有同學上榜，開始溫習就可以成為第一位！</p>`;
         } else {
           listEl.innerHTML = entries.map((e, i) =>
-            renderLeaderboardRow(i + 1, e.username || '同學', formatHoursMinutes(e.hours), e.uid === window.currentUser.uid)
+            renderLeaderboardRow(i + 1, e.username || '同學', formatHoursMinutes(e[hoursField]), e.uid === window.currentUser.uid)
           ).join('');
         }
 
         const meInList = entries.some((e) => e.uid === window.currentUser.uid);
         if (!meInList) {
-          const myHours = parseFloat(window.currentUser.hours) || 0;
-          const countQ = window.fs.query(
-            window.fs.collection(window.db, 'leaderboardEntries'),
-            window.fs.where('school', '==', mySchool),
-            window.fs.where('hours', '>', myHours)
-          );
+          const myHours = isMonth
+            ? ((window.currentUser.monthlyPeriod === curMonthStr) ? (parseFloat(window.currentUser.monthlyHours) || 0) : 0)
+            : (parseFloat(window.currentUser.hours) || 0);
+          const countConstraints = [window.fs.where('school', '==', mySchool)];
+          if (isMonth) countConstraints.push(window.fs.where('monthlyPeriod', '==', curMonthStr));
+          countConstraints.push(window.fs.where(hoursField, '>', myHours));
+          const countQ = window.fs.query(window.fs.collection(window.db, 'leaderboardEntries'), ...countConstraints);
           const countSnap = await window.fs.getCountFromServer(countQ);
           const myRank = countSnap.data().count + 1;
           if (ownRankWrap) {
@@ -408,12 +447,24 @@
 
       const mySchoolId = sanitizeSchoolIdForDoc(window.currentUser.school);
 
+      // 本月榜：學校總時數用另一個獨立 collection（schoolLeaderboardMonthly），
+      // 文件 ID 係「學校ID_年-月」，一到新一個月，Cloud Function 就會開始
+      // 寫入一份全新嘅文件（舊月份嗰份唔會被清走，但「本月」呢個查詢淨
+      // 係揀返今個月嘅文件 ID，自動變相歸零重新競賽），唔使另外寫重設
+      // 工作／排程，亦唔使擔心上個月數字滲埋入嚟。
+      const isMonth = leaderboardPeriod === 'month';
+      const curMonthStr = getCurrentMonthStr();
+      const collectionName = isMonth ? 'schoolLeaderboardMonthly' : 'schoolLeaderboard';
+      const totalField = isMonth ? 'totalHours' : 'totalHours'; // 兩邊 collection 都叫 totalHours，保留呢個變數方便日後改名
+      const myDocId = isMonth ? (mySchoolId ? `${mySchoolId}_${curMonthStr}` : null) : mySchoolId;
+
       try {
-        const q = window.fs.query(
-          window.fs.collection(window.db, 'schoolLeaderboard'),
-          window.fs.orderBy('totalHours', 'desc'),
-          window.fs.limit(50)
-        );
+        const constraints = [];
+        if (isMonth) constraints.push(window.fs.where('period', '==', curMonthStr));
+        constraints.push(window.fs.orderBy(totalField, 'desc'));
+        constraints.push(window.fs.limit(50));
+
+        const q = window.fs.query(window.fs.collection(window.db, collectionName), ...constraints);
         const snap = await window.fs.getDocs(q);
         const entries = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
@@ -421,26 +472,24 @@
           listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">暫時未有學校上榜，開始溫習就可以幫你的學校爭取第一！</p>`;
         } else {
           listEl.innerHTML = entries.map((e, i) =>
-            renderLeaderboardRow(i + 1, e.schoolName || '未命名學校', formatHoursMinutes(e.totalHours), e.id === mySchoolId)
+            renderLeaderboardRow(i + 1, e.schoolName || '未命名學校', formatHoursMinutes(e[totalField]), e.id === myDocId)
           ).join('');
         }
 
-        const meInList = mySchoolId && entries.some((e) => e.id === mySchoolId);
-        if (!meInList && mySchoolId) {
-          const mySchoolSnap = await window.fs.getDoc(window.fs.doc(window.db, 'schoolLeaderboard', mySchoolId));
-          if (mySchoolSnap.exists()) {
-            const mySchoolData = mySchoolSnap.data();
-            const myTotalHours = mySchoolData.totalHours || 0;
-            const countQ = window.fs.query(
-              window.fs.collection(window.db, 'schoolLeaderboard'),
-              window.fs.where('totalHours', '>', myTotalHours)
-            );
-            const countSnap = await window.fs.getCountFromServer(countQ);
-            const myRank = countSnap.data().count + 1;
-            if (ownRankWrap) {
-              ownRankWrap.style.display = 'block';
-              ownRankWrap.innerHTML = renderLeaderboardRow(myRank, mySchoolData.schoolName || window.currentUser.school, formatHoursMinutes(myTotalHours), true);
-            }
+        const meInList = myDocId && entries.some((e) => e.id === myDocId);
+        if (!meInList && myDocId) {
+          const mySchoolSnap = await window.fs.getDoc(window.fs.doc(window.db, collectionName, myDocId));
+          const myTotalHours = mySchoolSnap.exists() ? (mySchoolSnap.data()[totalField] || 0) : 0;
+          const mySchoolName = mySchoolSnap.exists() ? mySchoolSnap.data().schoolName : window.currentUser.school;
+          const countConstraints = [];
+          if (isMonth) countConstraints.push(window.fs.where('period', '==', curMonthStr));
+          countConstraints.push(window.fs.where(totalField, '>', myTotalHours));
+          const countQ = window.fs.query(window.fs.collection(window.db, collectionName), ...countConstraints);
+          const countSnap = await window.fs.getCountFromServer(countQ);
+          const myRank = countSnap.data().count + 1;
+          if (ownRankWrap) {
+            ownRankWrap.style.display = 'block';
+            ownRankWrap.innerHTML = renderLeaderboardRow(myRank, mySchoolName || window.currentUser.school, formatHoursMinutes(myTotalHours), true);
           }
         }
       } catch (err) {
@@ -1499,6 +1548,17 @@
       const mm = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
       return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // 「本月排行榜」用嘅月份字串（例如 "2026-09"），用返使用者本機時區
+    // 判斷「而家係邊個月」，同 getTodayDateStr() 嗰個「今日」歸零邏輯做
+    // 法一致。呢個字串會傳去 awardStudyPoint()，等 Cloud Function 記低
+    // monthlyHours／monthlyPeriod，一到新一個月就自動歸零重新競賽。
+    function getCurrentMonthStr() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      return `${yyyy}-${mm}`;
     }
 
     // 如果 Firestore 度記錄嘅 todayDate 唔係今日，代表隔咗一日（或者用戶第一次

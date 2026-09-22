@@ -1568,6 +1568,18 @@
           window.currentUser.todayMinutes = (window.currentUser.todayMinutes || 0) + 1;
         }
         updateGoalBarDisplay();
+
+        // 「本月排行榜」本機樂觀更新：真正決定月份歸零嘅係伺服器（見
+        // functions/index.js 嘅 awardStudyPoints，用伺服器時間判斷，唔
+        // 信任前端），呢度純粹即時更新返本機顯示／自己名次計算用，等
+        // 「本月」own-rank 都可以喺未攞新資料之前都準確返。
+        const curMonthStr = getCurrentMonthStr();
+        if (window.currentUser.monthlyPeriod !== curMonthStr) {
+          window.currentUser.monthlyHours = hoursIncrement;
+          window.currentUser.monthlyPeriod = curMonthStr;
+        } else {
+          window.currentUser.monthlyHours = (parseFloat(window.currentUser.monthlyHours) || 0) + hoursIncrement;
+        }
       }
 
       // 寫入伺服器：而家改用 Cloud Function（awardStudyPoints）做，用
