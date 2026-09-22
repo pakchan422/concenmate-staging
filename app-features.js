@@ -245,13 +245,17 @@
     }
 
     window.switchLeaderboardMode = function(mode) {
-      leaderboardMode = (mode === 'school') ? 'school' : 'district';
+      leaderboardMode = (mode === 'school' || mode === 'schoolInternal') ? mode : 'district';
       const districtBtn = document.getElementById('lb-mode-district-btn');
+      const schoolInternalBtn = document.getElementById('lb-mode-schoolInternal-btn');
       const schoolBtn = document.getElementById('lb-mode-school-btn');
       const districtPickerWrap = document.getElementById('lb-district-picker-wrap');
+      const schoolInternalLabelWrap = document.getElementById('lb-school-internal-label-wrap');
       if (districtBtn) districtBtn.classList.toggle('active', leaderboardMode === 'district');
+      if (schoolInternalBtn) schoolInternalBtn.classList.toggle('active', leaderboardMode === 'schoolInternal');
       if (schoolBtn) schoolBtn.classList.toggle('active', leaderboardMode === 'school');
       if (districtPickerWrap) districtPickerWrap.style.display = (leaderboardMode === 'district') ? 'flex' : 'none';
+      if (schoolInternalLabelWrap) schoolInternalLabelWrap.style.display = (leaderboardMode === 'schoolInternal') ? 'block' : 'none';
       window.loadLeaderboardTab();
     };
 
@@ -260,6 +264,8 @@
       populateLeaderboardDistrictSelect();
       if (leaderboardMode === 'school') {
         await renderSchoolLeaderboard();
+      } else if (leaderboardMode === 'schoolInternal') {
+        await renderSchoolInternalLeaderboard();
       } else {
         await renderDistrictLeaderboard();
       }
@@ -329,6 +335,66 @@
         }
       } catch (err) {
         console.error('載入分區排行榜失敗:', err);
+        listEl.innerHTML = `<p style="text-align:center; color:#c0392b; padding:20px;">載入排行榜失敗：${escapeHtml(err.message || err)}</p>`;
+      }
+    }
+
+    // 「校內排行榜」：將同一間學校（school 欄位完全脗合）嘅所有學生
+    // 個人時數逐個排名，同「分區個人排行榜」查詢邏輯一樣，淨係將
+    // district 換成 school，冚唪唥都係淨係睇自己間學校，冇地區選單，
+    // 唔使揀。
+    async function renderSchoolInternalLeaderboard() {
+      const listEl = document.getElementById('lb-list-container');
+      const ownRankWrap = document.getElementById('lb-own-rank-wrap');
+      const nameEl = document.getElementById('lb-school-internal-name');
+      if (!listEl) return;
+
+      const mySchool = (window.currentUser.school || '').trim();
+      if (nameEl) nameEl.innerText = mySchool || '未設定';
+      if (ownRankWrap) ownRankWrap.style.display = 'none';
+
+      if (!mySchool) {
+        listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">你的帳戶未設定學校名稱，請先到「我的帳戶」填寫學校，先可以睇到校內排行榜</p>`;
+        return;
+      }
+
+      listEl.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入排行榜中…</p>';
+
+      try {
+        const q = window.fs.query(
+          window.fs.collection(window.db, 'leaderboardEntries'),
+          window.fs.where('school', '==', mySchool),
+          window.fs.orderBy('hours', 'desc'),
+          window.fs.limit(50)
+        );
+        const snap = await window.fs.getDocs(q);
+        const entries = snap.docs.map((d) => d.data());
+
+        if (entries.length === 0) {
+          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">你的學校暫時未有同學上榜，開始溫習就可以成為第一位！</p>`;
+        } else {
+          listEl.innerHTML = entries.map((e, i) =>
+            renderLeaderboardRow(i + 1, e.username || '同學', formatHoursMinutes(e.hours), e.uid === window.currentUser.uid)
+          ).join('');
+        }
+
+        const meInList = entries.some((e) => e.uid === window.currentUser.uid);
+        if (!meInList) {
+          const myHours = parseFloat(window.currentUser.hours) || 0;
+          const countQ = window.fs.query(
+            window.fs.collection(window.db, 'leaderboardEntries'),
+            window.fs.where('school', '==', mySchool),
+            window.fs.where('hours', '>', myHours)
+          );
+          const countSnap = await window.fs.getCountFromServer(countQ);
+          const myRank = countSnap.data().count + 1;
+          if (ownRankWrap) {
+            ownRankWrap.style.display = 'block';
+            ownRankWrap.innerHTML = renderLeaderboardRow(myRank, window.currentUser.username || '你', formatHoursMinutes(myHours), true);
+          }
+        }
+      } catch (err) {
+        console.error('載入校內排行榜失敗:', err);
         listEl.innerHTML = `<p style="text-align:center; color:#c0392b; padding:20px;">載入排行榜失敗：${escapeHtml(err.message || err)}</p>`;
       }
     }
