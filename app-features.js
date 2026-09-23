@@ -3463,7 +3463,7 @@
     function buddyRenderCommentsHtml(comments) {
       return comments.length
         ? comments.map((c) =>
-            `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong>${escapeHtml(c.authorName || '同學')}：</strong>${escapeHtml(c.text || '')}</div>`
+            `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong style="cursor:pointer;" onclick="window.viewUserProfile && window.viewUserProfile('${c.authorUid || ''}')">${escapeHtml(c.authorName || '同學')}</strong>：${escapeHtml(c.text || '')}</div>`
           ).join('')
         : '<p style="font-size:12px; color:#999; padding:6px 0;">尚未有留言，做第一個留言的人吧！</p>';
     }
