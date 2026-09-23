@@ -3448,6 +3448,25 @@
     // function 喺呢個 map 度，等離開「書伴廣場」分頁（或登出）嗰陣可以
     // 一次過拆晒（見 window.stopBuddyWallListeners()）。
     let buddyCommentUnsubs = {};
+    // 留言內容本身嘅 cache（postId -> 留言陣列）同「而家邊幾則貼文嘅
+    // 留言區係展開緊」嘅記錄（postId 集合）。因為每次留言之後貼文本身
+    // 嘅 commentCount 改變都會令成個貼文列表（window.renderBuddyWallList）
+    // 重新畫一次畫面，將舊嘅留言區 DOM 整個換走，如果淨係靠 onSnapshot
+    // 監聽器嗰陣先至填內容，就會出現「留咗言但睇唔番、永遠卡住喺
+    // 『載入留言中』」嘅問題——因為 Firestore 資料本身冇再變，監聽器
+    // 唔會為咗一次純粹嘅畫面重畫而重新送多一次消息。而家改為每次重畫
+    // 都直接用返呢個 cache 即刻填內容（唔使再等監聽器），監聽器淨係
+    // 負責喺資料真正有變嗰陣更新 cache 同重畫。
+    let buddyCommentsCache = {};
+    let buddyOpenPanels = new Set();
+
+    function buddyRenderCommentsHtml(comments) {
+      return comments.length
+        ? comments.map((c) =>
+            `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong>${escapeHtml(c.authorName || '同學')}：</strong>${escapeHtml(c.text || '')}</div>`
+          ).join('')
+        : '<p style="font-size:12px; color:#999; padding:6px 0;">尚未有留言，做第一個留言的人吧！</p>';
+    }
 
     window.wallSubjectFilter = '全部';
 
@@ -3556,6 +3575,11 @@
         const secondBtnHtml = isOwn
           ? `<button class="btn btn-red" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.deleteBuddyPost && window.deleteBuddyPost('${post.id}')">🗑️ 刪除</button>`
           : `<button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.addFriendFromWallPost && window.addFriendFromWallPost('${post.id}')">➕ 加好友</button>`;
+        const isOpen = buddyOpenPanels.has(post.id);
+        const cachedComments = buddyCommentsCache[post.id];
+        const commentsListHtml = cachedComments
+          ? buddyRenderCommentsHtml(cachedComments)
+          : '<p style="font-size:12px; color:#999; padding:6px 0;">載入留言中…</p>';
         return `
           <div class="card" style="margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
@@ -3572,8 +3596,8 @@
               <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.toggleBuddyPostComments && window.toggleBuddyPostComments('${post.id}')">💬 留言（${post.commentCount || 0}）</button>
               ${secondBtnHtml}
             </div>
-            <div id="buddy-comments-${post.id}" style="display:none; margin-top:8px;">
-              <div id="buddy-comments-list-${post.id}"><p style="font-size:12px; color:#999; padding:6px 0;">載入留言中…</p></div>
+            <div id="buddy-comments-${post.id}" style="display:${isOpen ? 'block' : 'none'}; margin-top:8px;">
+              <div id="buddy-comments-list-${post.id}">${commentsListHtml}</div>
               <div style="display:flex; gap:6px; margin-top:8px;">
                 <input type="text" id="buddy-comment-input-${post.id}" class="input-field" style="flex:1; font-size:13px;" placeholder="回覆這則貼文…" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.addBuddyWallComment('${post.id}');}">
                 <button class="btn btn-primary" type="button" style="font-size:13px; padding:6px 10px;" onclick="window.addBuddyWallComment('${post.id}')">傳送</button>
@@ -3582,14 +3606,37 @@
           </div>
         `;
       }).join('');
+
+      // 對已經展開緊嘅貼文，順手確保個留言監聽器仲喺度運作（未訂閱過
+      // 先會真正裝一個新嘅；上面個 HTML 已經即刻用返 cache 畫低咗最新
+      // 內容，唔使等呢個 function 先有嘢睇）。
+      buddyOpenPanels.forEach((postId) => window.subscribeBuddyPostComments(postId));
     };
 
     window.toggleBuddyPostComments = function(postId) {
       const el = document.getElementById('buddy-comments-' + postId);
       if (!el) return;
       const showing = el.style.display !== 'none';
-      el.style.display = showing ? 'none' : 'block';
-      if (!showing) window.subscribeBuddyPostComments(postId);
+      if (showing) {
+        buddyOpenPanels.delete(postId);
+        el.style.display = 'none';
+      } else {
+        buddyOpenPanels.add(postId);
+        el.style.display = 'block';
+        window.subscribeBuddyPostComments(postId);
+      }
+    };
+
+    // 重新（或第一次）用 cache 嘅內容畫返某一則貼文嘅留言區——貼文列表
+    // 每次重畫（window.renderBuddyWallList）都會叫呢個，確保個留言區
+    // 唔會因為 DOM 整個換走咗而卡住喺舊嘅內容或者「載入中」。
+    window.renderBuddyPostCommentsFromCache = function(postId) {
+      const listEl = document.getElementById('buddy-comments-list-' + postId);
+      if (!listEl) return;
+      const comments = buddyCommentsCache[postId];
+      listEl.innerHTML = comments
+        ? buddyRenderCommentsHtml(comments)
+        : '<p style="font-size:12px; color:#999; padding:6px 0;">載入留言中…</p>';
     };
 
     // 開始監聽某一則貼文嘅留言（第一次展開先裝，之後保持住監聽，收埋
@@ -3601,16 +3648,12 @@
       const ref = window.fs.collection(window.db, 'buddyPosts', postId, 'comments');
       const q = window.fs.query(ref, window.fs.orderBy('createdAt', 'asc'), window.fs.limit(100));
       buddyCommentUnsubs[postId] = window.fs.onSnapshot(q, (snap) => {
-        const listEl = document.getElementById('buddy-comments-list-' + postId);
-        if (!listEl) return;
-        const comments = snap.docs.map((d) => d.data());
-        listEl.innerHTML = comments.length
-          ? comments.map((c) =>
-              `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong>${escapeHtml(c.authorName || '同學')}：</strong>${escapeHtml(c.text || '')}</div>`
-            ).join('')
-          : '<p style="font-size:12px; color:#999; padding:6px 0;">尚未有留言，做第一個留言的人吧！</p>';
+        buddyCommentsCache[postId] = snap.docs.map((d) => d.data());
+        window.renderBuddyPostCommentsFromCache(postId);
       }, (e) => {
         console.error('讀取留言失敗:', e);
+        const listEl = document.getElementById('buddy-comments-list-' + postId);
+        if (listEl) listEl.innerHTML = '<p style="font-size:12px; color:#D9764A; padding:6px 0;">讀取留言失敗，請稍後再試</p>';
       });
     };
 
@@ -3676,6 +3719,8 @@
         if (typeof buddyCommentUnsubs[postId] === 'function') buddyCommentUnsubs[postId]();
       });
       buddyCommentUnsubs = {};
+      buddyCommentsCache = {};
+      buddyOpenPanels = new Set();
     };
 
     window.updateBuddyPostCharCount = function() {
