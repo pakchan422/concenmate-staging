@@ -3441,7 +3441,7 @@
         id: 'mock-1',
         authorName: 'Ariel',
         role: 'want_taught',
-        subjects: ['數學', '英文'],
+        subjects: ['數學（必修部分）', '英國語文'],
         content: 'DSE 數學卷一經常不及格，想找一位成績較好的同學一齊溫習，互相督促！',
         timeLabel: '2 小時前',
         comments: [
@@ -3461,7 +3461,7 @@
         id: 'mock-3',
         authorName: 'Dora',
         role: 'study_together',
-        subjects: ['中文', '公民與社會發展'],
+        subjects: ['中國語文', '公民與社會發展'],
         content: '想找幾位同學一齊網上溫習中文和公民，每晚 8 點開房，有興趣可以加我！',
         timeLabel: '3 日前',
         comments: [],
@@ -3469,6 +3469,11 @@
     ];
 
     window.wallSubjectFilter = '全部';
+
+    // 常駐科目分頁：只固定顯示呢 3 科（同 window.TUTOR_DSE_SUBJECTS 入
+    // 面嘅寫法一致），其餘科目一律歸入「其他科目」彈出視窗選擇，避免
+    // 分頁列太長。
+    window.WALL_SUBJECT_PINNED = ['中國語文', '英國語文', '數學（必修部分）'];
 
     window.setSocialSubTab = function(tab) {
       const friendsPanel = document.getElementById('social-friends-panel');
@@ -3489,6 +3494,40 @@
       document.querySelectorAll('#buddy-wall-subject-tabs .room-subject-tab-btn').forEach((btn) => {
         btn.classList.toggle('active', btn.getAttribute('data-subject') === subject);
       });
+      // 揀返常駐分頁嘅話，「其他科目」掣要還原返預設字樣同未選中狀態
+      const moreBtn = document.getElementById('buddy-wall-more-btn');
+      if (moreBtn) moreBtn.textContent = '其他科目 ▾';
+      window.renderBuddyWallList();
+    };
+
+    // 「其他科目」彈出視窗：列出 window.TUTOR_DSE_SUBJECTS 入面扣除 3
+    // 科常駐分頁、同「其他（自行輸入）」之後嘅所有科目，撳邊科就篩選
+    // 邊科（見 window.selectWallSubjectFromMore()）。
+    window.openWallSubjectMoreModal = function() {
+      const listEl = document.getElementById('wall-subject-more-list');
+      if (listEl) {
+        const pinned = window.WALL_SUBJECT_PINNED || [];
+        const moreSubjects = (window.TUTOR_DSE_SUBJECTS || []).filter((s) => !pinned.includes(s) && s !== '其他（自行輸入）');
+        listEl.innerHTML = moreSubjects.map((s) => {
+          const active = window.wallSubjectFilter === s;
+          const safeS = s.replace(/'/g, "\\'");
+          return `<button type="button" class="room-subject-tab-btn${active ? ' active' : ''}" onclick="window.selectWallSubjectFromMore && window.selectWallSubjectFromMore('${safeS}')">${escapeHtml(s)}</button>`;
+        }).join('');
+      }
+      if (typeof window.openModal === 'function') window.openModal('modal-wall-subject-more');
+    };
+
+    window.selectWallSubjectFromMore = function(subject) {
+      window.wallSubjectFilter = subject;
+      document.querySelectorAll('#buddy-wall-subject-tabs .room-subject-tab-btn[data-subject]').forEach((btn) => {
+        btn.classList.remove('active');
+      });
+      const moreBtn = document.getElementById('buddy-wall-more-btn');
+      if (moreBtn) {
+        moreBtn.classList.add('active');
+        moreBtn.textContent = `${subject} ▾`;
+      }
+      if (typeof window.closeModal === 'function') window.closeModal('modal-wall-subject-more');
       window.renderBuddyWallList();
     };
 
@@ -3514,9 +3553,9 @@
         return `
           <div class="card" style="margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-              <div class="avatar-circle" style="width:36px; height:36px; font-size:15px; background:var(--brand-500); border-color:var(--brand-200);">${escapeHtml((post.authorName || '?').charAt(0))}</div>
+              <div class="avatar-circle" style="width:36px; height:36px; font-size:15px; background:var(--brand-500); border-color:var(--brand-200); cursor:pointer;" onclick="window.viewMockBuddyProfile && window.viewMockBuddyProfile('${post.id}')">${escapeHtml((post.authorName || '?').charAt(0))}</div>
               <div style="flex:1;">
-                <strong style="font-size:14px; color:var(--brand-800);">${escapeHtml(post.authorName)}</strong>
+                <strong style="font-size:14px; color:var(--brand-800); cursor:pointer;" onclick="window.viewMockBuddyProfile && window.viewMockBuddyProfile('${post.id}')">${escapeHtml(post.authorName)}</strong>
                 <span style="font-size:12px; color:#999; margin-left:4px;">${escapeHtml(post.timeLabel || '')}</span>
               </div>
               <span class="tag" style="background:var(--brand-100); color:var(--brand-800);">${roleMeta.emoji} ${roleMeta.label}</span>
@@ -3561,6 +3600,51 @@
 
     window.mockAddFriendFromWall = function(authorName) {
       window.showToast && window.showToast(`🚧 示範版面：這是暫時的示範資料，第二步連接正式資料庫後，才可以真正向「${authorName}」發送好友邀請`, '🚧');
+    };
+
+    // 撳書伴留言牆貼文嘅頭像／用戶名，彈出返個人資料卡（重用現有嘅
+    // #modal-view-profile）。因為呢個階段嘅貼文全部都係示範資料，冇對
+    // 應嘅真實 uid，所以唔會好似 window.viewUserProfile() 咁去 Firestore
+    // 讀取，改為直接用貼文本身嘅資料填入資料卡，追蹤／溫習日記等需要
+    // 真實帳戶嘅功能會留空。第二步駁通正式資料庫後，呢度會改用真正嘅
+    // window.viewUserProfile(uid)。
+    window.viewMockBuddyProfile = function(postId) {
+      const post = (window.MOCK_BUDDY_POSTS || []).find((p) => p.id === postId);
+      if (!post) return;
+      _popViewUid = null;
+      const roleMeta = window.BUDDY_ROLE_META[post.role] || { emoji: '📝', label: '書伴' };
+
+      const avatarEl = document.getElementById('pop-user-avatar');
+      const nameEl = document.getElementById('pop-user-name');
+      const verifiedEl = document.getElementById('pop-user-verified');
+      const schoolEl = document.getElementById('pop-user-school');
+      const gradeEl = document.getElementById('pop-user-grade');
+      const favEl = document.getElementById('pop-user-fav');
+      const dislikeEl = document.getElementById('pop-user-dislike');
+      const hoursEl = document.getElementById('pop-user-hours');
+      const photoCountEl = document.getElementById('pop-photo-count');
+      const followerCountEl = document.getElementById('pop-follower-count');
+      const followWrap = document.getElementById('pop-follow-btn-wrap');
+      const diaryWrap = document.getElementById('pop-diary-btn-wrap');
+      const actionsEl = document.getElementById('pop-user-friend-actions');
+
+      if (avatarEl) avatarEl.innerText = (post.authorName || '?').charAt(0).toUpperCase();
+      if (nameEl) nameEl.innerText = post.authorName || '同學';
+      if (verifiedEl) verifiedEl.innerText = `${roleMeta.emoji} ${roleMeta.label}`;
+      if (schoolEl) schoolEl.innerText = '示範資料（尚未連接正式帳號）';
+      if (gradeEl) gradeEl.innerText = '示範資料';
+      if (favEl) favEl.innerText = (post.subjects || []).join('、') || '未填寫';
+      if (dislikeEl) dislikeEl.innerText = '未填寫';
+      if (hoursEl) hoursEl.innerText = '未提供';
+      if (photoCountEl) photoCountEl.innerText = '0';
+      if (followerCountEl) followerCountEl.innerText = '0';
+      if (followWrap) followWrap.innerHTML = '';
+      if (diaryWrap) diaryWrap.innerHTML = '';
+      if (actionsEl) {
+        const safeAuthor = escapeHtml(post.authorName || '');
+        actionsEl.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="window.mockAddFriendFromWall && window.mockAddFriendFromWall('${safeAuthor}')">➕ 加好友</button>`;
+      }
+      if (typeof window.openModal === 'function') window.openModal('modal-view-profile');
     };
 
     window.updateBuddyPostCharCount = function() {
