@@ -208,10 +208,57 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }, 400);
     }
 
+    // 兩池溫習室（「中學溫習室」／「公開溫習室」）：判斷返而家登入緊
+    // 嘅用戶自己屬於邊一池——淨係註冊嗰陣揀咗「本人確認現時為中學
+    // 生」（isSecondaryStudent === true）先算「中學溫習室」池，其他
+    // 一律當「公開溫習室」池（大專生、自修生、成年人、同埋呢個欄位
+    // 推出之前註冊、未填過嘅舊帳戶）。呢個判斷要同 firestore.rules 嘅
+    // viewerRoomPool() 完全一致（見嗰邊嘅註解解釋點解「未知」預設當
+    // 公開池唔當中學池），唔可以兩邊各自寫一套、之後改壞咗一邊。
+    window.getViewerRoomPool = function() {
+      return (window.currentUser && window.currentUser.isSecondaryStudent === true) ? 'secondary' : 'public';
+    };
+
+    // 更新「公開溫習大廳」標題，喺後面加返「（中學溫習室）」／「（公開
+    // 溫習室）」，等用戶一眼睇到自己而家喺邊一個池，唔使撳「！」先知。
+    window.updateRoomLobbyTitle = function() {
+      const titleEl = document.getElementById('room-lobby-title');
+      if (!titleEl) return;
+      const isSecondary = window.getViewerRoomPool() === 'secondary';
+      titleEl.innerText = isSecondary ? '🌐 公開溫習大廳（中學溫習室）' : '🌐 公開溫習大廳（公開溫習室）';
+    };
+
+    // 分類說明彈窗（見 index.html #modal-room-pool-info）：彈出之前先
+    // 填返「你現時所屬」嗰句提示，等用戶睇解釋嗰陣可以即刻對應返自己。
+    window.openRoomPoolInfoModal = function() {
+      const hintEl = document.getElementById('room-lobby-you-are-in-hint');
+      if (hintEl) {
+        const isSecondary = window.getViewerRoomPool() === 'secondary';
+        hintEl.innerText = isSecondary ? '你目前屬於：中學溫習室' : '你目前屬於：公開溫習室';
+      }
+      if (typeof window.openModal === 'function') window.openModal('modal-room-pool-info');
+    };
+
     function listenToPublicRooms() {
       if (unsubscribeRooms) unsubscribeRooms();
 
-      const roomsRef = query(collection(db, "rooms"), orderBy("lastActiveAt", "desc"), limit(ROOMS_LISTEN_LIMIT));
+      // ⚠️ 呢度特登唔用 orderBy('lastActiveAt')：加咗 where('roomPool', ...)
+      // 之後，再加一個唔同欄位嘅 orderBy 會使 Firestore 要求一個複合
+      // index（要喺 Firebase Console 手動建，對唔熟技術嘅用戶嚟講係
+      // 額外一重障礙）。所以呢度淨係用單一欄位嘅 where + limit（唔使
+      // index），排序改為喺下面攞到資料之後喺前端做（見
+      // latestRoomsData.sort()），效果一樣，用戶睇唔出分別。
+      //
+      // 另外要留意：呢個 where 篩選會令「呢個功能推出之前建立、文件
+      // 入面完全冇 roomPool 呢個欄位」嘅舊房間，喺呢個新 listener 入面
+      // 一定攞唔返嚟（Firestore 嘅 == 篩選本身就唔會撞中冇呢個欄位嘅
+      // 文件）。因為房間本身係短命嘅直播 session（有心跳過期自動清走
+      // 機制，見 gcStaleRooms／allow delete 嗰 5 分鐘規則），呢個影響
+      // 淨係一次性、好短暫（deploy 嗰刻仲生存緊嘅舊房間，等佢過期或者
+      // 房主重新開房就會用返新格式），唔使特登另外寫遷移邏輯。
+      const viewerPool = window.getViewerRoomPool();
+      window.updateRoomLobbyTitle();
+      const roomsRef = query(collection(db, "rooms"), where("roomPool", "==", viewerPool), limit(ROOMS_LISTEN_LIMIT));
       unsubscribeRooms = onSnapshot(roomsRef, (snapshot) => {
         // 順手掃一次有冇幽靈房（心跳過期），唔使阻住畫面渲染
         gcStaleRooms(snapshot.docs.map(d => ({ id: d.id, data: d.data() })));
@@ -229,6 +276,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             createdAtMs = isNaN(parsed) ? 0 : parsed;
           }
           return { id: roomId, room, createdAtMs, isMyRoom };
+        });
+        // orderBy 冇喺 Firestore 查詢度做（見上面註解），呢度喺前端補返
+        // 「最新活動優先」嘅排序，等大廳畫面睇落同以前一樣。
+        latestRoomsData.sort((a, b) => {
+          const aTime = (typeof a.room.lastActiveAt === 'number') ? a.room.lastActiveAt : a.createdAtMs;
+          const bTime = (typeof b.room.lastActiveAt === 'number') ? b.room.lastActiveAt : b.createdAtMs;
+          return bTime - aTime;
         });
 
         scheduleRenderPublicRoomsList();
@@ -1514,6 +1568,34 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (gradeAgeHint) gradeAgeHint.style.display = tooOld ? 'block' : 'none';
     };
 
+    // 「我的帳戶」入面嘅「本人確認現時為中學生」剔選格，都要跟返註冊
+    // 表格同一套「約數年齡 20 歲或以上就唔畀剔」邏輯（見上面
+    // REG_SECONDARY_STUDENT_MAX_AGE）。呢度冇「出生年月」呢兩個選單
+    // 好揀（呢個表格淨係顯示，唔畀改出生年月），直接讀
+    // window.currentUser.birthYear／birthMonth 嚟計算——如果係呢個
+    // 欄位推出之前註冊嘅好舊帳戶，連 birthYear 都冇填過，就冇年齡
+    // 資料可以判斷，呢種情況唔會強行 disable（畀返用戶自己憑良心
+    // 剔選，總好過完全冇辦法補回呢個聲明）。
+    window.updateProfileSecondaryStudentAgeGate = function() {
+      const checkbox = document.getElementById('prof-is-secondary-student');
+      const ageHint = document.getElementById('prof-is-secondary-student-age-hint');
+      if (!checkbox) return;
+      const year = window.currentUser && parseInt(window.currentUser.birthYear, 10);
+      const month = window.currentUser && parseInt(window.currentUser.birthMonth, 10);
+      if (!year || !month) {
+        checkbox.disabled = false;
+        if (ageHint) ageHint.style.display = 'none';
+        return;
+      }
+      const now = new Date();
+      let age = now.getFullYear() - year;
+      if ((now.getMonth() + 1) < month) age -= 1;
+      const tooOld = age > REG_SECONDARY_STUDENT_MAX_AGE;
+      checkbox.disabled = tooOld;
+      if (tooOld) checkbox.checked = false;
+      if (ageHint) ageHint.style.display = tooOld ? 'block' : 'none';
+    };
+
     // 註冊表格嘅「🎒 我是學生」／「🎓 我是導師」切換：揀導師嗰邊會顯示
     // 導師申請專用欄位（自我介紹、想教嘅科目），同時隱藏埋學生專用嘅
     // 學校／年級／喜愛學科／討厭學科——並且將呢兩組欄位嘅 required
@@ -1719,6 +1801,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const favSubjects = document.getElementById('prof-fav').value.trim();
       const dislikeSubjects = document.getElementById('prof-dislike').value.trim();
       const username = document.getElementById('prof-username').value.trim();
+      const secondaryCheckboxEl = document.getElementById('prof-is-secondary-student');
+      // disabled（年齡已達 20 歲或以上）嗰陣一律當 false，防止有人用
+      // devtools 手動撳走 disabled 屬性再剔選嚟繞過呢重年齡限制——就算
+      // 真係咁做，呢度都會強制覆蓋返做 false，唔會寫得入去。
+      const isSecondaryStudent = !!(secondaryCheckboxEl && !secondaryCheckboxEl.disabled && secondaryCheckboxEl.checked);
       const contactEmailInput = document.getElementById('prof-contact-email');
       const contactEmail = contactEmailInput ? contactEmailInput.value.trim() : (window.currentUser.contactEmail || '');
 
@@ -1741,9 +1828,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (matched) district = matched;
       }
 
+      // 「是否中學生」呢個聲明改咗（例如舊帳戶而家先補剔），會直接影響
+      // 「公開溫習大廳」睇到邊一個池嘅房（見 window.getViewerRoomPool()），
+      // 所以要記低改咗未，等下面儲存成功之後可以即時重新訂閱返啱嘅池。
+      const secondaryStudentChanged = isSecondaryStudent !== !!window.currentUser.isSecondaryStudent;
+
       try {
         const userDocRef = doc(db, "users", auth.currentUser.uid);
-        const updates = { username, school, district, grade, favSubjects, dislikeSubjects, contactEmail };
+        const updates = { username, school, district, grade, favSubjects, dislikeSubjects, contactEmail, isSecondaryStudent };
         let newToken = null;
         if (emailChanged) {
           newToken = contactEmail ? generateVerifyToken() : null;
@@ -1758,6 +1850,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.currentUser.favSubjects = favSubjects;
         window.currentUser.dislikeSubjects = dislikeSubjects;
         window.currentUser.contactEmail = contactEmail;
+        window.currentUser.isSecondaryStudent = isSecondaryStudent;
         if (emailChanged) {
           window.currentUser.emailVerified = false;
           window.currentUser.emailVerifyToken = newToken;
@@ -1767,6 +1860,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         }
 
         window.updateUserAuthUI();
+        // 「是否中學生」有改過，即刻重新訂閱一次「公開溫習大廳」（見
+        // listenToPublicRooms()），等大廳畫面即時轉去啱嘅池，唔使用戶
+        // 自己手動重新整頁先見到效果。
+        if (secondaryStudentChanged && typeof listenToPublicRooms === 'function') {
+          listenToPublicRooms();
+        }
         window.showToast(emailChanged && contactEmail ? "💾 已更新資料，並寄出新的驗證電郵" : "💾 個人檔案已同步更新至 Firebase！", "✅");
       } catch (err) {
         window.showToast("更新失敗: " + err.message, "❌");
