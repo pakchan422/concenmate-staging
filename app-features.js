@@ -3421,12 +3421,12 @@
 
     // ===================== 書伴廣場．書伴留言牆（第一步：介面 + 假資料） =====================
     // 呢一整段係 2026-09 新增嘅「書伴留言牆」功能，第一步淨係做緊介面
-    // 同一批寫死喺代碼入面嘅示範貼文（window.MOCK_BUDDY_POSTS），未駁
-    // 通真正嘅 Firestore。下一步先會將呢度嘅假資料操作，逐個改做讀寫
-    // 一個新嘅 buddyPosts collection（連埋 comments 子 collection），
-    // 並喺 firestore.rules 加返對應權限、同埋加發帖頻率限制（rate
-    // limit）防止濫發。而家呢個階段嘅所有「加好友」／「發佈」操作，
-    // 都淨係喺呢個分頁自己嘅假資料度運作，唔會影響任何真實帳戶。
+    // 「書伴廣場」留言牆已經駁通真正嘅 Firestore（buddyPosts collection，
+    // 連埋 comments 子 collection）——第二步完成，貼文同留言一經發佈就
+    // 真係寫入資料庫，所有已登入用戶都會睇到同一批真實資料；「加好友」
+    // 亦都改用返同「用帳號 ID 搜尋朋友」共用嘅真正好友邀請機制
+    // （window.sendFriendRequest()）。第三步先會去 firestore.rules 加埋
+    // 發帖／留言嘅頻率限制（rate limit）防止濫發。
 
     window.BUDDY_ROLE_META = {
       want_taught:    { emoji: '🙋', label: '想找人教我' },
@@ -3434,39 +3434,20 @@
       study_together: { emoji: '👥', label: '想找人一齊溫書' },
     };
 
-    // 示範貼文：純粹本機記憶體陣列，重新整理頁面就會reset返原狀，
-    // 唔會寫入 Firestore，亦都唔涉及任何真實帳戶資料。
-    window.MOCK_BUDDY_POSTS = [
-      {
-        id: 'mock-1',
-        authorName: 'Ariel',
-        role: 'want_taught',
-        subjects: ['數學（必修部分）', '英國語文'],
-        content: 'DSE 數學卷一經常不及格，想找一位成績較好的同學一齊溫習，互相督促！',
-        timeLabel: '2 小時前',
-        comments: [
-          { authorName: 'Ben', text: '我也想找人一齊溫數學，可以加你嗎？' },
-        ],
-      },
-      {
-        id: 'mock-2',
-        authorName: 'Chris',
-        role: 'can_teach',
-        subjects: ['化學'],
-        content: 'DSE 化學 5**，有空可以協助解答疑難，也想找人一齊溫書！',
-        timeLabel: '昨天',
-        comments: [],
-      },
-      {
-        id: 'mock-3',
-        authorName: 'Dora',
-        role: 'study_together',
-        subjects: ['中國語文', '公民與社會發展'],
-        content: '想找幾位同學一齊網上溫習中文和公民，每晚 8 點開房，有興趣可以加我！',
-        timeLabel: '3 日前',
-        comments: [],
-      },
-    ];
+    // 貼文列表：真正資料嚟自 Firestore 嘅 buddyPosts collection，用
+    // onSnapshot 實時監聽（同疑難解答區 qaPostsCache 嘅寫法一致）——
+    // 監聽器一開咗就會維持住成個 session，唔會因為反覆切換分頁又拆
+    // 又裝。科目篩選（含「全部」／3 個常駐分頁／彈出視窗揀嘅其他科
+    // 目）一律喺前端對 buddyWallPostsCache 做，唔喺 query 層面加
+    // where('subjects','array-contains',...)，避免要為兩個 Firebase
+    // 專案（concenmate-dev／concenmate-app）分別建立多一個複合索引。
+    let buddyWallUnsubscribe = null;
+    window.buddyWallPostsCache = [];
+    // 留言：每一則貼文自己一個 onSnapshot 監聽器，撳「留言」展開先開始
+    // 監聽（唔一次過幫成頁貼文都裝晒監聽器），收埋個 unsubscribe
+    // function 喺呢個 map 度，等離開「書伴廣場」分頁（或登出）嗰陣可以
+    // 一次過拆晒（見 window.stopBuddyWallListeners()）。
+    let buddyCommentUnsubs = {};
 
     window.wallSubjectFilter = '全部';
 
@@ -3486,7 +3467,31 @@
       wallPanel.style.display = showWall ? 'block' : 'none';
       friendsBtn.classList.toggle('active', !showWall);
       wallBtn.classList.toggle('active', showWall);
-      if (showWall) window.renderBuddyWallList();
+      if (showWall) window.loadBuddyWallPosts();
+    };
+
+    // 開始／沿用返個 buddyPosts 監聽器。已經訂閱緊嘅話，淨係即刻用返
+    // cache 重畫一次（冇網絡來回、唔會再閃「載入中」），同 loadQAPosts()
+    // 嘅寫法一致。
+    window.loadBuddyWallPosts = function() {
+      if (!window.db || !window.fs) return;
+      if (buddyWallUnsubscribe) { window.renderBuddyWallList(); return; }
+
+      const listEl = document.getElementById('buddy-wall-list');
+      if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:24px;">🔄 載入中...</p>';
+
+      const q = window.fs.query(
+        window.fs.collection(window.db, 'buddyPosts'),
+        window.fs.orderBy('createdAt', 'desc'),
+        window.fs.limit(50)
+      );
+      buddyWallUnsubscribe = window.fs.onSnapshot(q, (snapshot) => {
+        window.buddyWallPostsCache = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        window.renderBuddyWallList();
+      }, (e) => {
+        console.error('讀取書伴留言牆失敗:', e);
+        if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#D9764A; font-size:13px; padding:24px;">載入失敗，請稍後再試</p>';
+      });
     };
 
     window.setWallSubjectFilter = function(subject) {
@@ -3535,7 +3540,7 @@
       const listEl = document.getElementById('buddy-wall-list');
       if (!listEl) return;
       const filter = window.wallSubjectFilter || '全部';
-      const posts = (window.MOCK_BUDDY_POSTS || []).filter((p) => filter === '全部' || (p.subjects || []).includes(filter));
+      const posts = (window.buddyWallPostsCache || []).filter((p) => filter === '全部' || (p.subjects || []).includes(filter));
 
       if (posts.length === 0) {
         listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:24px;">目前「${escapeHtml(filter)}」分類沒有貼文，換個分類看看，或者做第一個發帖的人！</p>`;
@@ -3547,27 +3552,28 @@
         const subjectTagsHtml = (post.subjects || []).map((s) =>
           `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtml(s)}</span>`
         ).join('');
-        const commentsHtml = (post.comments || []).map((c) =>
-          `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong>${escapeHtml(c.authorName)}：</strong>${escapeHtml(c.text)}</div>`
-        ).join('');
+        const isOwn = window.currentUser && post.authorUid === window.currentUser.uid;
+        const secondBtnHtml = isOwn
+          ? `<button class="btn btn-red" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.deleteBuddyPost && window.deleteBuddyPost('${post.id}')">🗑️ 刪除</button>`
+          : `<button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.addFriendFromWallPost && window.addFriendFromWallPost('${post.id}')">➕ 加好友</button>`;
         return `
           <div class="card" style="margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-              <div class="avatar-circle" style="width:36px; height:36px; font-size:15px; background:var(--brand-500); border-color:var(--brand-200); cursor:pointer;" onclick="window.viewMockBuddyProfile && window.viewMockBuddyProfile('${post.id}')">${escapeHtml((post.authorName || '?').charAt(0))}</div>
+              <div class="avatar-circle" style="width:36px; height:36px; font-size:15px; background:var(--brand-500); border-color:var(--brand-200); cursor:pointer;" onclick="window.viewUserProfile && window.viewUserProfile('${post.authorUid}')">${escapeHtml((post.authorName || '?').charAt(0))}</div>
               <div style="flex:1;">
-                <strong style="font-size:14px; color:var(--brand-800); cursor:pointer;" onclick="window.viewMockBuddyProfile && window.viewMockBuddyProfile('${post.id}')">${escapeHtml(post.authorName)}</strong>
-                <span style="font-size:12px; color:#999; margin-left:4px;">${escapeHtml(post.timeLabel || '')}</span>
+                <strong style="font-size:14px; color:var(--brand-800); cursor:pointer;" onclick="window.viewUserProfile && window.viewUserProfile('${post.authorUid}')">${escapeHtml(post.authorName || '同學')}</strong>
+                <span style="font-size:12px; color:#999; margin-left:4px;">${formatTime(post.createdAt)}</span>
               </div>
               <span class="tag" style="background:var(--brand-100); color:var(--brand-800);">${roleMeta.emoji} ${roleMeta.label}</span>
             </div>
             <div style="margin-bottom:6px;">${subjectTagsHtml}</div>
             <p style="font-size:14px; color:#333; line-height:1.6; margin-bottom:10px;">${escapeHtml(post.content)}</p>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.toggleBuddyPostComments && window.toggleBuddyPostComments('${post.id}')">💬 留言（${(post.comments || []).length}）</button>
-              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.mockAddFriendFromWall && window.mockAddFriendFromWall('${escapeHtml(post.authorName)}')">➕ 加好友</button>
+              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.toggleBuddyPostComments && window.toggleBuddyPostComments('${post.id}')">💬 留言（${post.commentCount || 0}）</button>
+              ${secondBtnHtml}
             </div>
             <div id="buddy-comments-${post.id}" style="display:none; margin-top:8px;">
-              ${commentsHtml || '<p style="font-size:12px; color:#999; padding:6px 0;">尚未有留言，做第一個留言的人吧！</p>'}
+              <div id="buddy-comments-list-${post.id}"><p style="font-size:12px; color:#999; padding:6px 0;">載入留言中…</p></div>
               <div style="display:flex; gap:6px; margin-top:8px;">
                 <input type="text" id="buddy-comment-input-${post.id}" class="input-field" style="flex:1; font-size:13px;" placeholder="回覆這則貼文…" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.addBuddyWallComment('${post.id}');}">
                 <button class="btn btn-primary" type="button" style="font-size:13px; padding:6px 10px;" onclick="window.addBuddyWallComment('${post.id}')">傳送</button>
@@ -3581,70 +3587,95 @@
     window.toggleBuddyPostComments = function(postId) {
       const el = document.getElementById('buddy-comments-' + postId);
       if (!el) return;
-      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+      const showing = el.style.display !== 'none';
+      el.style.display = showing ? 'none' : 'block';
+      if (!showing) window.subscribeBuddyPostComments(postId);
     };
 
-    window.addBuddyWallComment = function(postId) {
+    // 開始監聽某一則貼文嘅留言（第一次展開先裝，之後保持住監聽，收埋
+    // 分頁唔會即刻拆，下次再展開唔使再等網絡來回；真正拆晒全部監聽器
+    // 係喺 window.stopBuddyWallListeners()，切走「書伴廣場」分頁或者
+    // 登出嗰陣先叫）。
+    window.subscribeBuddyPostComments = function(postId) {
+      if (buddyCommentUnsubs[postId] || !window.db || !window.fs) return;
+      const ref = window.fs.collection(window.db, 'buddyPosts', postId, 'comments');
+      const q = window.fs.query(ref, window.fs.orderBy('createdAt', 'asc'), window.fs.limit(100));
+      buddyCommentUnsubs[postId] = window.fs.onSnapshot(q, (snap) => {
+        const listEl = document.getElementById('buddy-comments-list-' + postId);
+        if (!listEl) return;
+        const comments = snap.docs.map((d) => d.data());
+        listEl.innerHTML = comments.length
+          ? comments.map((c) =>
+              `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong>${escapeHtml(c.authorName || '同學')}：</strong>${escapeHtml(c.text || '')}</div>`
+            ).join('')
+          : '<p style="font-size:12px; color:#999; padding:6px 0;">尚未有留言，做第一個留言的人吧！</p>';
+      }, (e) => {
+        console.error('讀取留言失敗:', e);
+      });
+    };
+
+    window.addBuddyWallComment = async function(postId) {
+      if (!window.currentUser) { window.showToast && window.showToast('請先登入', '⚠️'); return; }
       const input = document.getElementById('buddy-comment-input-' + postId);
       if (!input) return;
       const text = input.value.trim();
       if (!text) return;
-      const post = (window.MOCK_BUDDY_POSTS || []).find((p) => p.id === postId);
-      if (!post) return;
-      post.comments = post.comments || [];
-      post.comments.push({ authorName: (window.currentUser && window.currentUser.username) || '我', text });
-      window.renderBuddyWallList();
-      // 重新 render 之後留言區會摺埋，展開返並保持係開住嘅狀態，等用戶睇到自己啱啱留低嘅言論。
-      window.toggleBuddyPostComments(postId);
-    };
-
-    window.mockAddFriendFromWall = function(authorName) {
-      window.showToast && window.showToast(`🚧 示範版面：這是暫時的示範資料，第二步連接正式資料庫後，才可以真正向「${authorName}」發送好友邀請`, '🚧');
-    };
-
-    // 撳書伴留言牆貼文嘅頭像／用戶名，彈出返個人資料卡（重用現有嘅
-    // #modal-view-profile）。因為呢個階段嘅貼文全部都係示範資料，冇對
-    // 應嘅真實 uid，所以唔會好似 window.viewUserProfile() 咁去 Firestore
-    // 讀取，改為直接用貼文本身嘅資料填入資料卡，追蹤／溫習日記等需要
-    // 真實帳戶嘅功能會留空。第二步駁通正式資料庫後，呢度會改用真正嘅
-    // window.viewUserProfile(uid)。
-    window.viewMockBuddyProfile = function(postId) {
-      const post = (window.MOCK_BUDDY_POSTS || []).find((p) => p.id === postId);
-      if (!post) return;
-      _popViewUid = null;
-      const roleMeta = window.BUDDY_ROLE_META[post.role] || { emoji: '📝', label: '書伴' };
-
-      const avatarEl = document.getElementById('pop-user-avatar');
-      const nameEl = document.getElementById('pop-user-name');
-      const verifiedEl = document.getElementById('pop-user-verified');
-      const schoolEl = document.getElementById('pop-user-school');
-      const gradeEl = document.getElementById('pop-user-grade');
-      const favEl = document.getElementById('pop-user-fav');
-      const dislikeEl = document.getElementById('pop-user-dislike');
-      const hoursEl = document.getElementById('pop-user-hours');
-      const photoCountEl = document.getElementById('pop-photo-count');
-      const followerCountEl = document.getElementById('pop-follower-count');
-      const followWrap = document.getElementById('pop-follow-btn-wrap');
-      const diaryWrap = document.getElementById('pop-diary-btn-wrap');
-      const actionsEl = document.getElementById('pop-user-friend-actions');
-
-      if (avatarEl) avatarEl.innerText = (post.authorName || '?').charAt(0).toUpperCase();
-      if (nameEl) nameEl.innerText = post.authorName || '同學';
-      if (verifiedEl) verifiedEl.innerText = `${roleMeta.emoji} ${roleMeta.label}`;
-      if (schoolEl) schoolEl.innerText = '示範資料（尚未連接正式帳號）';
-      if (gradeEl) gradeEl.innerText = '示範資料';
-      if (favEl) favEl.innerText = (post.subjects || []).join('、') || '未填寫';
-      if (dislikeEl) dislikeEl.innerText = '未填寫';
-      if (hoursEl) hoursEl.innerText = '未提供';
-      if (photoCountEl) photoCountEl.innerText = '0';
-      if (followerCountEl) followerCountEl.innerText = '0';
-      if (followWrap) followWrap.innerHTML = '';
-      if (diaryWrap) diaryWrap.innerHTML = '';
-      if (actionsEl) {
-        const safeAuthor = escapeHtml(post.authorName || '');
-        actionsEl.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="window.mockAddFriendFromWall && window.mockAddFriendFromWall('${safeAuthor}')">➕ 加好友</button>`;
+      if (!window.db || !window.fs) return;
+      input.disabled = true;
+      try {
+        await window.fs.addDoc(window.fs.collection(window.db, 'buddyPosts', postId, 'comments'), {
+          authorUid: window.currentUser.uid,
+          authorName: window.currentUser.username || '同學',
+          text: text.slice(0, 150),
+          createdAt: Date.now(),
+        });
+        await window.fs.updateDoc(window.fs.doc(window.db, 'buddyPosts', postId), {
+          commentCount: window.fs.increment(1),
+        });
+        input.value = '';
+      } catch (e) {
+        console.error('留言失敗:', e);
+        window.showToast && window.showToast('留言失敗，請稍後再試', '❌');
+      } finally {
+        input.disabled = false;
       }
-      if (typeof window.openModal === 'function') window.openModal('modal-view-profile');
+    };
+
+    // 撳「加好友」：貼文嘅作者係一個真實帳戶（authorUid），直接重用
+    // 「用帳號 ID 搜尋朋友」嗰套真正好友邀請機制
+    // （window.sendFriendRequest()），唔再係第一步嗰個純粹顯示示範訊息
+    // 嘅假掣。
+    window.addFriendFromWallPost = function(postId) {
+      if (!window.currentUser) { window.showToast && window.showToast('請先登入', '⚠️'); return; }
+      const post = (window.buddyWallPostsCache || []).find((p) => p.id === postId);
+      if (!post) return;
+      if (post.authorUid === window.currentUser.uid) {
+        window.showToast && window.showToast('不可以將自己加為好友', '😅');
+        return;
+      }
+      window.sendFriendRequest(post.authorUid, post.authorLoginId || '', post.authorName || '');
+    };
+
+    window.deleteBuddyPost = async function(postId) {
+      if (!window.currentUser || !window.db || !window.fs) return;
+      if (!confirm('確定刪除這則貼文？')) return;
+      try {
+        await window.fs.deleteDoc(window.fs.doc(window.db, 'buddyPosts', postId));
+        window.showToast && window.showToast('貼文已刪除', '🗑️');
+      } catch (e) {
+        console.error('刪除貼文失敗:', e);
+        window.showToast && window.showToast('刪除失敗，請稍後再試', '❌');
+      }
+    };
+
+    // 離開「書伴廣場」分頁（登出）嗰陣拆晒所有監聽器，避免冇需要都繼續
+    // 收 Firestore 更新（見 app-core.js 嘅 window.logoutWithFirebase()）。
+    window.stopBuddyWallListeners = function() {
+      if (typeof buddyWallUnsubscribe === 'function') { buddyWallUnsubscribe(); buddyWallUnsubscribe = null; }
+      Object.keys(buddyCommentUnsubs).forEach((postId) => {
+        if (typeof buddyCommentUnsubs[postId] === 'function') buddyCommentUnsubs[postId]();
+      });
+      buddyCommentUnsubs = {};
     };
 
     window.updateBuddyPostCharCount = function() {
@@ -3690,8 +3721,10 @@
       });
     });
 
-    window.submitBuddyPostMock = function(event) {
+    window.submitBuddyPost = async function(event) {
       event.preventDefault();
+      if (!window.currentUser) { window.showToast && window.showToast('請先登入', '⚠️'); closeModal('modal-buddy-post'); openModal('modal-login'); return; }
+      if (!window.db || !window.fs) return;
       const roleInput = document.getElementById('buddy-post-role');
       const contentInput = document.getElementById('buddy-post-content');
       const subjectsInput = document.getElementById('buddy-post-subjects');
@@ -3704,21 +3737,32 @@
         window.showToast && window.showToast('請輸入貼文內容', '⚠️');
         return;
       }
-      const subjects = ((subjectsInput && subjectsInput.value) || '').split(/[,，、]/).map((s) => s.trim()).filter(Boolean);
-      const newPost = {
-        id: 'mock-' + Date.now(),
-        authorName: (window.currentUser && window.currentUser.username) || '我',
-        role: roleInput.value,
-        subjects,
-        content,
-        timeLabel: '剛剛',
-        comments: [],
-      };
-      window.MOCK_BUDDY_POSTS.unshift(newPost);
-      window.resetBuddyPostForm();
-      closeModal('modal-buddy-post');
-      window.showToast && window.showToast('📮 已發佈（示範版面，下一步連接正式資料庫後就會真正儲存）', '✨');
-      window.renderBuddyWallList();
+      const subjects = ((subjectsInput && subjectsInput.value) || '').split(/[,，、]/).map((s) => s.trim()).filter(Boolean).slice(0, 3);
+
+      const submitBtn = document.querySelector('#modal-buddy-post .btn-primary');
+      const origText = submitBtn ? submitBtn.innerText : '';
+      if (submitBtn) { submitBtn.innerText = '⏳ 發佈中…'; submitBtn.disabled = true; }
+
+      try {
+        await window.fs.addDoc(window.fs.collection(window.db, 'buddyPosts'), {
+          authorUid: window.currentUser.uid,
+          authorName: window.currentUser.username || '同學',
+          authorLoginId: window.currentUser.loginId || '',
+          role: roleInput.value,
+          subjects,
+          content: content.slice(0, 150),
+          commentCount: 0,
+          createdAt: Date.now(),
+        });
+        window.resetBuddyPostForm();
+        closeModal('modal-buddy-post');
+        window.showToast && window.showToast('📮 貼文已發佈！', '✨');
+      } catch (e) {
+        console.error('發佈貼文失敗:', e);
+        window.showToast && window.showToast('發佈失敗，請稍後再試', '❌');
+      } finally {
+        if (submitBtn) { submitBtn.innerText = origText; submitBtn.disabled = false; }
+      }
     };
 
     // 「夥伴與讀書會」分頁：用帳號 ID 搜尋朋友
