@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.154.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.155.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2841,6 +2841,7 @@
               <option value="大專/大學">大專 / 大學</option>
               <option value="其他自修生">其他 / 自修生</option>
             </select>
+            <span id="reg-grade-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">⚠️ 根據所填出生年月，中一至中六已不可選擇。</span>
           </div>
 
           <!-- 「本人確認現時為中學生」剔選格：純粹自我申報，唔係身份
@@ -2863,14 +2864,19 @@
             </label>
           </div>
 
-          <div style="margin-top:10px;">
+          <!-- 「學校所在地區」／「學校名稱」係咪顯示、係咪必填，都要跟
+               返「現時年級」嚟決定（見 window.updateRegSchoolOptions()）：
+               中學年級——兩個都顯示、兩個都必填；大專/大學——淨係顯示
+               「院校名稱」（唔使先揀地區，直接揀院校），地區欄隱藏埋唔
+               使填；其他/自修生——兩個都隱藏埋唔使填。 -->
+          <div id="reg-school-district-wrap" style="margin-top:10px;">
             <label id="reg-school-district-label" style="font-size:13px; font-weight:bold; color:#555;">學校所在地區 *</label>
             <select id="reg-school-district" class="input-field" required onchange="window.updateRegSchoolOptions && window.updateRegSchoolOptions()">
               <option value="">請先選擇地區</option>
             </select>
           </div>
 
-          <div style="margin-top:10px;">
+          <div id="reg-school-wrap" style="margin-top:10px;">
             <label id="reg-school-label" style="font-size:13px; font-weight:bold; color:#555;">學校名稱 *</label>
             <select id="reg-school" class="input-field" required disabled onchange="window.handleRegSchoolSelectChange && window.handleRegSchoolSelectChange()">
               <option value="">請先選擇地區</option>
