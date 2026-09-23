@@ -318,8 +318,25 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         scheduleRenderPublicRoomsList();
       }, (error) => {
         console.error("監聽公開房間失敗:", error);
+        // ⚠️ 之前呢度淨係 console.error，冇更新返畫面——一旦查詢失敗
+        // （例如權限規則評估出錯、離線），大廳就會一直卡死喺「正在
+        // 透過 Firebase 加載公開溫習房列表…」呢句初始畫面，用戶完全
+        // 唔知發生咗咩事、亦冇辦法重試，睇落好似個功能壞咗噉。而家
+        // 改為明確顯示錯誤同「重新載入」按鈕。
+        const roomsListEl = document.getElementById('public-rooms-container');
+        if (roomsListEl) {
+          roomsListEl.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background: white; border-radius: 16px; border: 1px solid var(--brand-200);">
+              <div style="font-size:36px; margin-bottom:8px;">🦦⚠️</div>
+              <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">暫時未能載入公開溫習房列表</p>
+              <p style="font-size:13px; color:#666; margin-top:4px;">請檢查網絡連線，或稍後再試。</p>
+              <button class="btn btn-primary" type="button" style="margin-top:10px;" onclick="window.retryListenToPublicRooms && window.retryListenToPublicRooms()">🔄 重新載入</button>
+            </div>
+          `;
+        }
       });
     }
+    window.retryListenToPublicRooms = listenToPublicRooms;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
