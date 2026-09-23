@@ -73,6 +73,14 @@
       if (id === 'modal-register' && typeof window.populateRegBirthDateOptions === 'function') {
         window.populateRegBirthDateOptions();
       }
+      // 書伴留言牆嘅「發佈搵書伴貼文」表格：每次打開都重設返一個乾淨
+      // 嘅表格（清空上次揀低嘅身份標籤／科目／內容），並且喺呢一刻
+      // 先至畫科目 chip picker——呢陣時 tutor-panel.js 一定已經載入
+      // 完（成個頁面都載入晒用戶先撳得到掣打開呢個 modal），
+      // window.TUTOR_DSE_SUBJECTS 已經存在，唔使擔心 script 載入次序。
+      if (id === 'modal-buddy-post' && typeof window.resetBuddyPostForm === 'function') {
+        window.resetBuddyPostForm();
+      }
     }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
@@ -3409,6 +3417,224 @@
       } catch (e) {
         window.showToast('移除失敗：' + (e.message || e), '❌');
       }
+    };
+
+    // ===================== 書伴廣場．書伴留言牆（第一步：介面 + 假資料） =====================
+    // 呢一整段係 2026-09 新增嘅「書伴留言牆」功能，第一步淨係做緊介面
+    // 同一批寫死喺代碼入面嘅示範貼文（window.MOCK_BUDDY_POSTS），未駁
+    // 通真正嘅 Firestore。下一步先會將呢度嘅假資料操作，逐個改做讀寫
+    // 一個新嘅 buddyPosts collection（連埋 comments 子 collection），
+    // 並喺 firestore.rules 加返對應權限、同埋加發帖頻率限制（rate
+    // limit）防止濫發。而家呢個階段嘅所有「加好友」／「發佈」操作，
+    // 都淨係喺呢個分頁自己嘅假資料度運作，唔會影響任何真實帳戶。
+
+    window.BUDDY_ROLE_META = {
+      want_taught:    { emoji: '🙋', label: '想找人教我' },
+      can_teach:      { emoji: '🎓', label: '我可以教人' },
+      study_together: { emoji: '👥', label: '想找人一齊溫書' },
+    };
+
+    // 示範貼文：純粹本機記憶體陣列，重新整理頁面就會reset返原狀，
+    // 唔會寫入 Firestore，亦都唔涉及任何真實帳戶資料。
+    window.MOCK_BUDDY_POSTS = [
+      {
+        id: 'mock-1',
+        authorName: 'Ariel',
+        role: 'want_taught',
+        subjects: ['數學', '英文'],
+        content: 'DSE 數學卷一經常不及格，想找一位成績較好的同學一齊溫習，互相督促！',
+        timeLabel: '2 小時前',
+        comments: [
+          { authorName: 'Ben', text: '我也想找人一齊溫數學，可以加你嗎？' },
+        ],
+      },
+      {
+        id: 'mock-2',
+        authorName: 'Chris',
+        role: 'can_teach',
+        subjects: ['化學'],
+        content: 'DSE 化學 5**，有空可以協助解答疑難，也想找人一齊溫書！',
+        timeLabel: '昨天',
+        comments: [],
+      },
+      {
+        id: 'mock-3',
+        authorName: 'Dora',
+        role: 'study_together',
+        subjects: ['中文', '公民與社會發展'],
+        content: '想找幾位同學一齊網上溫習中文和公民，每晚 8 點開房，有興趣可以加我！',
+        timeLabel: '3 日前',
+        comments: [],
+      },
+    ];
+
+    window.wallSubjectFilter = '全部';
+
+    window.setSocialSubTab = function(tab) {
+      const friendsPanel = document.getElementById('social-friends-panel');
+      const wallPanel = document.getElementById('social-wall-panel');
+      const friendsBtn = document.getElementById('social-subtab-btn-friends');
+      const wallBtn = document.getElementById('social-subtab-btn-wall');
+      if (!friendsPanel || !wallPanel || !friendsBtn || !wallBtn) return;
+      const showWall = tab === 'wall';
+      friendsPanel.style.display = showWall ? 'none' : 'block';
+      wallPanel.style.display = showWall ? 'block' : 'none';
+      friendsBtn.classList.toggle('active', !showWall);
+      wallBtn.classList.toggle('active', showWall);
+      if (showWall) window.renderBuddyWallList();
+    };
+
+    window.setWallSubjectFilter = function(subject) {
+      window.wallSubjectFilter = subject;
+      document.querySelectorAll('#buddy-wall-subject-tabs .room-subject-tab-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-subject') === subject);
+      });
+      window.renderBuddyWallList();
+    };
+
+    window.renderBuddyWallList = function() {
+      const listEl = document.getElementById('buddy-wall-list');
+      if (!listEl) return;
+      const filter = window.wallSubjectFilter || '全部';
+      const posts = (window.MOCK_BUDDY_POSTS || []).filter((p) => filter === '全部' || (p.subjects || []).includes(filter));
+
+      if (posts.length === 0) {
+        listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:24px;">目前「${escapeHtml(filter)}」分類沒有貼文，換個分類看看，或者做第一個發帖的人！</p>`;
+        return;
+      }
+
+      listEl.innerHTML = posts.map((post) => {
+        const roleMeta = window.BUDDY_ROLE_META[post.role] || { emoji: '📝', label: '書伴' };
+        const subjectTagsHtml = (post.subjects || []).map((s) =>
+          `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtml(s)}</span>`
+        ).join('');
+        const commentsHtml = (post.comments || []).map((c) =>
+          `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong>${escapeHtml(c.authorName)}：</strong>${escapeHtml(c.text)}</div>`
+        ).join('');
+        return `
+          <div class="card" style="margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <div class="avatar-circle" style="width:36px; height:36px; font-size:15px; background:var(--brand-500); border-color:var(--brand-200);">${escapeHtml((post.authorName || '?').charAt(0))}</div>
+              <div style="flex:1;">
+                <strong style="font-size:14px; color:var(--brand-800);">${escapeHtml(post.authorName)}</strong>
+                <span style="font-size:12px; color:#999; margin-left:4px;">${escapeHtml(post.timeLabel || '')}</span>
+              </div>
+              <span class="tag" style="background:var(--brand-100); color:var(--brand-800);">${roleMeta.emoji} ${roleMeta.label}</span>
+            </div>
+            <div style="margin-bottom:6px;">${subjectTagsHtml}</div>
+            <p style="font-size:14px; color:#333; line-height:1.6; margin-bottom:10px;">${escapeHtml(post.content)}</p>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.toggleBuddyPostComments && window.toggleBuddyPostComments('${post.id}')">💬 留言（${(post.comments || []).length}）</button>
+              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.mockAddFriendFromWall && window.mockAddFriendFromWall('${escapeHtml(post.authorName)}')">➕ 加好友</button>
+            </div>
+            <div id="buddy-comments-${post.id}" style="display:none; margin-top:8px;">
+              ${commentsHtml || '<p style="font-size:12px; color:#999; padding:6px 0;">尚未有留言，做第一個留言的人吧！</p>'}
+              <div style="display:flex; gap:6px; margin-top:8px;">
+                <input type="text" id="buddy-comment-input-${post.id}" class="input-field" style="flex:1; font-size:13px;" placeholder="回覆這則貼文…" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.addBuddyWallComment('${post.id}');}">
+                <button class="btn btn-primary" type="button" style="font-size:13px; padding:6px 10px;" onclick="window.addBuddyWallComment('${post.id}')">傳送</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    window.toggleBuddyPostComments = function(postId) {
+      const el = document.getElementById('buddy-comments-' + postId);
+      if (!el) return;
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
+
+    window.addBuddyWallComment = function(postId) {
+      const input = document.getElementById('buddy-comment-input-' + postId);
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      const post = (window.MOCK_BUDDY_POSTS || []).find((p) => p.id === postId);
+      if (!post) return;
+      post.comments = post.comments || [];
+      post.comments.push({ authorName: (window.currentUser && window.currentUser.username) || '我', text });
+      window.renderBuddyWallList();
+      // 重新 render 之後留言區會摺埋，展開返並保持係開住嘅狀態，等用戶睇到自己啱啱留低嘅言論。
+      window.toggleBuddyPostComments(postId);
+    };
+
+    window.mockAddFriendFromWall = function(authorName) {
+      window.showToast && window.showToast(`🚧 示範版面：這是暫時的示範資料，第二步連接正式資料庫後，才可以真正向「${authorName}」發送好友邀請`, '🚧');
+    };
+
+    window.updateBuddyPostCharCount = function() {
+      const textarea = document.getElementById('buddy-post-content');
+      const counter = document.getElementById('buddy-post-char-count');
+      if (!textarea || !counter) return;
+      counter.textContent = `${textarea.value.length} / 150`;
+    };
+
+    window.resetBuddyPostForm = function() {
+      const form = document.getElementById('buddy-post-content');
+      if (form) form.value = '';
+      window.updateBuddyPostCharCount();
+      const roleInput = document.getElementById('buddy-post-role');
+      if (roleInput) roleInput.value = '';
+      document.querySelectorAll('.buddy-role-chip').forEach((btn) => {
+        btn.style.border = '1px solid #ddd';
+        btn.style.background = '#F5F7F8';
+        btn.style.color = '#555';
+      });
+      const subjectsInput = document.getElementById('buddy-post-subjects');
+      if (subjectsInput) subjectsInput.value = '';
+      if (typeof window.renderStudentFavSubjectChipPicker === 'function') {
+        window.renderStudentFavSubjectChipPicker('buddy-post-subject-picker', 'buddy-post-subjects', 3);
+      }
+    };
+
+    // 身份標籤單選 chip：撳落去就揀返呢一個、其餘打返灰（同 chip
+    // picker 唔同，呢度淨係可以揀一個，所以獨立寫一小段，唔借用
+    // renderStudentFavSubjectChipPicker）。
+    document.querySelectorAll('.buddy-role-chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.buddy-role-chip').forEach((b) => {
+          b.style.border = '1px solid #ddd';
+          b.style.background = '#F5F7F8';
+          b.style.color = '#555';
+        });
+        btn.style.border = '1px solid var(--brand-500)';
+        btn.style.background = 'var(--brand-500)';
+        btn.style.color = '#fff';
+        const roleInput = document.getElementById('buddy-post-role');
+        if (roleInput) roleInput.value = btn.getAttribute('data-role');
+      });
+    });
+
+    window.submitBuddyPostMock = function(event) {
+      event.preventDefault();
+      const roleInput = document.getElementById('buddy-post-role');
+      const contentInput = document.getElementById('buddy-post-content');
+      const subjectsInput = document.getElementById('buddy-post-subjects');
+      if (!roleInput || !roleInput.value) {
+        window.showToast && window.showToast('請先揀一個身份標籤', '⚠️');
+        return;
+      }
+      const content = (contentInput && contentInput.value.trim()) || '';
+      if (!content) {
+        window.showToast && window.showToast('請輸入貼文內容', '⚠️');
+        return;
+      }
+      const subjects = ((subjectsInput && subjectsInput.value) || '').split(/[,，、]/).map((s) => s.trim()).filter(Boolean);
+      const newPost = {
+        id: 'mock-' + Date.now(),
+        authorName: (window.currentUser && window.currentUser.username) || '我',
+        role: roleInput.value,
+        subjects,
+        content,
+        timeLabel: '剛剛',
+        comments: [],
+      };
+      window.MOCK_BUDDY_POSTS.unshift(newPost);
+      window.resetBuddyPostForm();
+      closeModal('modal-buddy-post');
+      window.showToast && window.showToast('📮 已發佈（示範版面，下一步連接正式資料庫後就會真正儲存）', '✨');
+      window.renderBuddyWallList();
     };
 
     // 「夥伴與讀書會」分頁：用帳號 ID 搜尋朋友

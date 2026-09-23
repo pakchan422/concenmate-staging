@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.161.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.163.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1455,7 +1455,7 @@
   <div id="chat-dock-panel">
     <div class="chat-dock-panel-header">💬 即時對話</div>
     <div class="chat-dock-panel-list" id="chat-dock-panel-list">
-      <p style="text-align:center; color:#999; font-size:13px; padding:16px;">尚未有好友，請先到「夥伴與讀書會」新增幾位！</p>
+      <p style="text-align:center; color:#999; font-size:13px; padding:16px;">尚未有好友，請先到「書伴廣場」新增幾位！</p>
     </div>
   </div>
   <div id="chat-windows-bar"></div>
@@ -1474,8 +1474,8 @@
           </div>
         </div>
         <div class="landing-nav-actions">
-          <button type="button" class="landing-nav-login landing-nav-login-header" onclick="openModal('modal-login')">登入</button>
-          <button type="button" class="landing-btn landing-btn-primary" style="padding:11px 22px; font-size:15px;" onclick="openModal('modal-register')">註冊帳號</button>
+          <button type="button" class="landing-nav-login landing-nav-login-header" onclick="typeof window.openModal==='function' && window.openModal('modal-login')">登入</button>
+          <button type="button" class="landing-btn landing-btn-primary" style="padding:11px 22px; font-size:15px;" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
         </div>
       </div>
     </nav>
@@ -1488,7 +1488,7 @@
           <p class="landing-hero-slogan">Always By Your Side</p>
           <p class="landing-hero-sub">ConcenMate 書伴是專為學生設計的線上溫習室，讓你尋找志同道合的夥伴，結合專注力計時、溫習社群與成長獎勵機制，陪伴你建立持續而穩定的學習習慣。</p>
           <div class="landing-hero-ctas">
-            <button type="button" class="landing-btn landing-btn-primary" onclick="openModal('modal-register')">註冊帳號</button>
+            <button type="button" class="landing-btn landing-btn-primary" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
           </div>
         </div>
         <div class="landing-hero-art">
@@ -1539,7 +1539,7 @@
       <div class="landing-container">
         <h2 class="landing-cta-h2">由今天開始，讓書伴陪你溫習</h2>
         <p class="landing-cta-sub">免費註冊帳戶，開始你的專注溫習旅程。</p>
-        <button type="button" class="landing-btn landing-btn-primary" style="padding:16px 36px; font-size:18px;" onclick="openModal('modal-register')">註冊帳號</button>
+        <button type="button" class="landing-btn landing-btn-primary" style="padding:16px 36px; font-size:18px;" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
       </div>
     </section>
 
@@ -1552,9 +1552,9 @@
       <div style="font-size:13px; color:#777; display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; align-items:center;">
         <span>© 2026 ConcenMate 書伴</span>
         <span style="color:#ccc;">|</span>
-        <span style="cursor:pointer; text-decoration:underline;" onclick="openModal('modal-terms')">服務條款</span>
+        <span style="cursor:pointer; text-decoration:underline;" onclick="typeof window.openModal==='function' && window.openModal('modal-terms')">服務條款</span>
         <span style="color:#ccc;">|</span>
-        <span style="cursor:pointer; text-decoration:underline;" onclick="openModal('modal-privacy-policy')">私隱政策</span>
+        <span style="cursor:pointer; text-decoration:underline;" onclick="typeof window.openModal==='function' && window.openModal('modal-privacy-policy')">私隱政策</span>
         <span style="color:#ccc;">|</span>
         <span>support@concenmate.com</span>
       </div>
@@ -1659,7 +1659,7 @@
         <button class="nav-btn student-only-nav" id="nav-btn-vip" type="button" onclick="switchTab('vip', this)"><span class="nav-icon" id="nav-icon-vip">👑</span> <span class="nav-text">溫習資源</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-store" type="button" onclick="switchTab('store', this)"><span class="nav-icon" id="nav-icon-store">🎁</span> <span class="nav-text">時數扭蛋機</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-leaderboard" type="button" onclick="switchTab('leaderboard', this)"><span class="nav-icon" id="nav-icon-leaderboard">🏆</span> <span class="nav-text">溫習排行榜</span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-social" type="button" onclick="switchTab('social', this)"><span class="nav-icon" id="nav-icon-social">👥</span> <span class="nav-text">夥伴與讀書會</span> <span class="home-sec-badge" id="nav-social-badge" style="display:none; margin-left:auto;"></span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-social" type="button" onclick="switchTab('social', this)"><span class="nav-icon" id="nav-icon-social">👥</span> <span class="nav-text">書伴廣場</span> <span class="home-sec-badge" id="nav-social-badge" style="display:none; margin-left:auto;"></span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-diary" type="button" onclick="switchTab('diary', this)"><span class="nav-icon" id="nav-icon-diary">📔</span> <span class="nav-text">溫習日記</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-verification" type="button" onclick="switchTab('verification', this)"><span class="nav-icon" id="nav-icon-verification">🎓</span> <span class="nav-text">學生身份驗證</span></button>
         <!-- 導師帳戶專用：淨係批核通過（role==='tutor'）先會顯示，見
@@ -1678,8 +1678,8 @@
         </p>
 
         <div style="display:flex; justify-content:center; gap:12px; margin-top:20px; flex-wrap:wrap;">
-          <button class="btn btn-primary" style="padding:10px 20px; font-size:16px;" onclick="openModal('modal-login')">🔑 會員登入</button>
-          <button class="btn btn-amber" style="padding:10px 20px; font-size:16px;" onclick="openModal('modal-register')">📝 新用戶註冊</button>
+          <button class="btn btn-primary" style="padding:10px 20px; font-size:16px;" onclick="typeof window.openModal==='function' && window.openModal('modal-login')">🔑 會員登入</button>
+          <button class="btn btn-amber" style="padding:10px 20px; font-size:16px;" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">📝 新用戶註冊</button>
         </div>
       </div>
 
@@ -1953,7 +1953,7 @@
                      嘅池（見 window.toggleAdminRoomPool）。 -->
                 <button type="button" id="admin-room-pool-toggle-btn" style="display:none; font-size:12px; padding:4px 10px; border-radius:8px; border:1px solid var(--brand-200); background:#fff; color:var(--brand-800); cursor:pointer; white-space:nowrap;" onclick="window.toggleAdminRoomPool && window.toggleAdminRoomPool()">🛠️ 轉換溫習室</button>
               </div>
-              <button class="btn btn-primary" type="button" onclick="openModal('modal-create-room')">
+              <button class="btn btn-primary" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-create-room')">
                 🚀 + 建立新溫習房
               </button>
             </div>
@@ -2616,27 +2616,66 @@
         </div>
 
 
+        <!-- 書伴廣場：原本叫「夥伴與讀書會」，2026-09 改名並拆做兩個
+             子分頁（見 window.setSocialSubTab()）：
+             1. 我的好友——原有嘅搜尋／好友名單／好友邀請功能，原封不動。
+             2. 書伴留言牆——新功能，畀學生貼文講自己想搵咩類型嘅書伴
+                （想被教／可以教人／想搵人一齊溫書），其他人可以按科目
+                篩選、留言、直接加好友。呢個階段（第一步）淨係做緊
+                介面同假資料（window.MOCK_BUDDY_POSTS），未駁通真正嘅
+                Firestore——下一步先會加返 buddyPosts collection、
+                firestore.rules 同防濫用嘅發帖頻率限制。 -->
         <section id="tab-social" class="tab-content">
 
-          <div class="card" style="margin-bottom:12px;">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">🔍 用帳號 ID 搜尋朋友</h3>
-            <div style="display:flex; gap:8px;">
-              <input type="text" id="friend-search-input" class="input-field" style="flex:1;" placeholder="輸入完整帳號 ID，例如：student001" onkeydown="if(event.key==='Enter'){event.preventDefault(); searchAccountById();}">
-              <button class="btn btn-primary" type="button" onclick="searchAccountById()">搜尋</button>
-            </div>
-            <div id="friend-search-result" style="margin-top:10px;"></div>
+          <div id="social-sub-tabs" style="display:flex; gap:6px; margin-bottom:12px;">
+            <button type="button" class="room-subject-tab-btn active" id="social-subtab-btn-friends" onclick="window.setSocialSubTab && window.setSocialSubTab('friends')" style="flex:1; text-align:center;">👥 我的好友</button>
+            <button type="button" class="room-subject-tab-btn" id="social-subtab-btn-wall" onclick="window.setSocialSubTab && window.setSocialSubTab('wall')" style="flex:1; text-align:center;">📝 書伴留言牆</button>
           </div>
 
-          <div class="card" id="friend-requests-card" style="margin-bottom:12px; display:none;">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">📨 收到的好友邀請</h3>
-            <div id="friend-requests-list"></div>
+          <div id="social-friends-panel">
+
+            <div class="card" style="margin-bottom:12px;">
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">🔍 用帳號 ID 搜尋朋友</h3>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="friend-search-input" class="input-field" style="flex:1;" placeholder="輸入完整帳號 ID，例如：student001" onkeydown="if(event.key==='Enter'){event.preventDefault(); searchAccountById();}">
+                <button class="btn btn-primary" type="button" onclick="searchAccountById()">搜尋</button>
+              </div>
+              <div id="friend-search-result" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="card" id="friend-requests-card" style="margin-bottom:12px; display:none;">
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">📨 收到的好友邀請</h3>
+              <div id="friend-requests-list"></div>
+            </div>
+
+            <div class="card">
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">👥 我的好友（<span id="friends-count">0</span>）</h3>
+              <div id="friends-list-container">
+                <p style="text-align:center; color:#999; font-size:13px; padding:20px;">🔄 載入中好友名單...</p>
+              </div>
+            </div>
+
           </div>
 
-          <div class="card">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">👥 我的好友（<span id="friends-count">0</span>）</h3>
-            <div id="friends-list-container">
-              <p style="text-align:center; color:#999; font-size:13px; padding:20px;">🔄 載入中好友名單...</p>
+          <div id="social-wall-panel" style="display:none;">
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
+              <h2 style="font-size:17px; font-weight:bold; color:var(--brand-800);">📝 書伴留言牆</h2>
+              <button class="btn btn-primary" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-buddy-post')">✏️ 發佈徵求書伴貼文</button>
             </div>
+            <p style="font-size:12px; color:#999; margin-bottom:10px;">試用版面：目前顯示的是示範貼文，尚未連接正式資料庫。</p>
+
+            <div id="buddy-wall-subject-tabs" style="display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px;">
+              <button type="button" class="room-subject-tab-btn active" data-subject="全部" onclick="window.setWallSubjectFilter && window.setWallSubjectFilter('全部')">全部</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="中文" onclick="window.setWallSubjectFilter && window.setWallSubjectFilter('中文')">中文</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="英文" onclick="window.setWallSubjectFilter && window.setWallSubjectFilter('英文')">英文</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="數學" onclick="window.setWallSubjectFilter && window.setWallSubjectFilter('數學')">數學</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="公民" onclick="window.setWallSubjectFilter && window.setWallSubjectFilter('公民')">公民</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="選修" onclick="window.setWallSubjectFilter && window.setWallSubjectFilter('選修')">選修</button>
+            </div>
+
+            <div id="buddy-wall-list"></div>
+
           </div>
 
         </section>
@@ -2742,10 +2781,10 @@
           <input type="password" id="login-password" class="input-field" required placeholder="請輸入密碼">
         </div>
         <div style="text-align:right;">
-          <span style="font-size:12px; color:#888; cursor:pointer; text-decoration:underline;" onclick="closeModal('modal-login'); openModal('modal-forgot-password');">忘記密碼？</span>
+          <span style="font-size:12px; color:#888; cursor:pointer; text-decoration:underline;" onclick="typeof window.closeModal==='function' && window.closeModal('modal-login'); typeof window.openModal==='function' && window.openModal('modal-forgot-password');">忘記密碼？</span>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-          <span style="font-size:13px; color:#3E7A8A; cursor:pointer;" onclick="closeModal('modal-login'); openModal('modal-register');">還沒有帳號？點此註冊</span>
+          <span style="font-size:13px; color:#3E7A8A; cursor:pointer;" onclick="typeof window.closeModal==='function' && window.closeModal('modal-login'); typeof window.openModal==='function' && window.openModal('modal-register');">還沒有帳號？點此註冊</span>
           <div style="display:flex; gap:6px;">
             <button class="btn btn-outline" type="button" id="login-cancel-btn" onclick="closeModal('modal-login')">取消</button>
             <button class="btn btn-primary" type="submit" id="login-submit-btn">登入</button>
@@ -2960,15 +2999,15 @@
           <input type="checkbox" id="reg-agree-terms" required style="margin-top:3px; flex-shrink:0; width:16px; height:16px;">
           <label for="reg-agree-terms" style="font-size:13px; color:#555; line-height:1.6;">
             我已閱讀並同意
-            <span style="color:#3E7A8A; text-decoration:underline; cursor:pointer;" onclick="event.preventDefault(); openModal('modal-terms');">《服務條款》</span>
+            <span style="color:#3E7A8A; text-decoration:underline; cursor:pointer;" onclick="event.preventDefault(); typeof window.openModal==='function' && window.openModal('modal-terms');">《服務條款》</span>
             及
-            <span style="color:#3E7A8A; text-decoration:underline; cursor:pointer;" onclick="event.preventDefault(); openModal('modal-privacy-policy');">《私隱政策》</span>
+            <span style="color:#3E7A8A; text-decoration:underline; cursor:pointer;" onclick="event.preventDefault(); typeof window.openModal==='function' && window.openModal('modal-privacy-policy');">《私隱政策》</span>
             *
           </label>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-          <span style="font-size:13px; color:#3E7A8A; cursor:pointer;" onclick="closeModal('modal-register'); openModal('modal-login');">已有帳號？點此登入</span>
+          <span style="font-size:13px; color:#3E7A8A; cursor:pointer;" onclick="typeof window.closeModal==='function' && window.closeModal('modal-register'); typeof window.openModal==='function' && window.openModal('modal-login');">已有帳號？點此登入</span>
           <div style="display:flex; gap:6px;">
             <button class="btn btn-outline" type="button" onclick="closeModal('modal-register')">取消</button>
             <button class="btn btn-primary" type="submit">完成註冊並登入</button>
@@ -3158,6 +3197,45 @@
         <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
           <button class="btn btn-outline" type="button" onclick="closeModal('modal-create-room')">取消</button>
           <button class="btn btn-primary" type="submit" id="btn-create-room-submit">🚀 立即建立並廣播</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 書伴留言牆：發佈搵書伴貼文（第一步：純介面 + 假資料，見
+       window.submitBuddyPostMock()）。「身份標籤」單選 chip 同「科目
+       標籤」chip picker 都借用返 room-subject-tab-btn／
+       renderStudentFavSubjectChipPicker 呢啲現成元件，唔重新寫一套。 -->
+  <div class="modal-backdrop" id="modal-buddy-post" style="display:none;">
+    <div class="modal-box">
+      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">✏️ 發佈徵求書伴貼文</h3>
+
+      <form onsubmit="window.submitBuddyPostMock && window.submitBuddyPostMock(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+        <div>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:6px;">身份標籤 *</label>
+          <div id="buddy-post-role-picker" style="display:flex; flex-wrap:wrap; gap:6px;">
+            <button type="button" class="tag buddy-role-chip" data-role="want_taught" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">🙋 想找人教我</button>
+            <button type="button" class="tag buddy-role-chip" data-role="can_teach" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">🎓 我可以教人</button>
+            <button type="button" class="tag buddy-role-chip" data-role="study_together" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">👥 想找人一齊溫書</button>
+          </div>
+          <input type="hidden" id="buddy-post-role" required>
+        </div>
+
+        <div>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:6px;">科目標籤（可選多科，最多 3 科）</label>
+          <div id="buddy-post-subject-picker"></div>
+          <input type="hidden" id="buddy-post-subjects">
+        </div>
+
+        <div>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">內容 *</label>
+          <textarea id="buddy-post-content" class="input-field" rows="4" maxlength="150" required placeholder="例如：DSE 數學卷一經常不及格，想找一位成績較好的同學一齊溫習，互相督促！" style="width:100%; resize:vertical;" oninput="window.updateBuddyPostCharCount && window.updateBuddyPostCharCount()"></textarea>
+          <p id="buddy-post-char-count" style="font-size:12px; color:#999; text-align:right; margin-top:2px;">0 / 150</p>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:6px; justify-content:flex-end;">
+          <button class="btn btn-outline" type="button" onclick="typeof window.closeModal==='function' && window.closeModal('modal-buddy-post')">取消</button>
+          <button class="btn btn-primary" type="submit">📮 發佈</button>
         </div>
       </form>
     </div>
