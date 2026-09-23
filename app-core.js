@@ -219,13 +219,47 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       return (window.currentUser && window.currentUser.isSecondaryStudent === true) ? 'secondary' : 'public';
     };
 
+    // 管理員專用：喺大廳標題旁邊揀咗「🛠️ 查看：中學溫習室／公開溫習室」
+    // 之後暫存嘅覆寫值。null 代表跟返管理員自己帳戶實際所屬嗰池（同
+    // 一般用戶一樣嘅行為）。呢個淨係影響管理員「而家喺大廳睇緊邊個
+    // 池」，唔會影響管理員自己建房嗰陣所屬嘅池（建房嗰邊
+    // room-video.js 一直都係直接用 window.getViewerRoomPool()，冇受呢個
+    // 覆寫影響）。
+    let adminRoomPoolOverride = null;
+
+    // 大廳實際攞緊嚟顯示嘅池：管理員如果揀咗覆寫，就用返個覆寫值；
+    // 其他情況（包括非管理員用戶）一律用返自己帳戶實際所屬嗰池。
+    function getLobbyViewPool() {
+      if (adminRoomPoolOverride && typeof window.isCurrentUserAdmin === 'function' && window.isCurrentUserAdmin()) {
+        return adminRoomPoolOverride;
+      }
+      return window.getViewerRoomPool();
+    }
+
+    // 管理員切換「🛠️ 查看邊個池」選單嗰陣叫呢個 function：更新覆寫值、
+    // 重新訂閱大廳（即時切去揀咗嗰個池），同埋刷新標題。
+    window.setAdminRoomPoolOverride = function(pool) {
+      adminRoomPoolOverride = (pool === 'secondary' || pool === 'public') ? pool : null;
+      listenToPublicRooms();
+    };
+
     // 更新「公開溫習大廳」標題，喺後面加返「（中學溫習室）」／「（公開
     // 溫習室）」，等用戶一眼睇到自己而家喺邊一個池，唔使撳「！」先知。
+    // 管理員專用嘅「🛠️ 查看邊個池」選單，都喺呢度同步顯示／隱藏，同埋
+    // 同步返揀落嘅覆寫值。
     window.updateRoomLobbyTitle = function() {
       const titleEl = document.getElementById('room-lobby-title');
+      const adminSelect = document.getElementById('admin-room-pool-select');
+      const isAdmin = typeof window.isCurrentUserAdmin === 'function' && window.isCurrentUserAdmin();
+      if (adminSelect) {
+        adminSelect.style.display = isAdmin ? 'inline-block' : 'none';
+        if (isAdmin) adminSelect.value = adminRoomPoolOverride || '';
+      }
       if (!titleEl) return;
-      const isSecondary = window.getViewerRoomPool() === 'secondary';
-      titleEl.innerText = isSecondary ? '🌐 公開溫習大廳（中學溫習室）' : '🌐 公開溫習大廳（公開溫習室）';
+      const isSecondary = getLobbyViewPool() === 'secondary';
+      let title = isSecondary ? '🌐 公開溫習大廳（中學溫習室）' : '🌐 公開溫習大廳（公開溫習室）';
+      if (isAdmin && adminRoomPoolOverride) title += ' 🛠️';
+      titleEl.innerText = title;
     };
 
     // 分類說明彈窗（見 index.html #modal-room-pool-info）：彈出之前先
@@ -233,7 +267,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     window.openRoomPoolInfoModal = function() {
       const hintEl = document.getElementById('room-lobby-you-are-in-hint');
       if (hintEl) {
-        const isSecondary = window.getViewerRoomPool() === 'secondary';
+        const isSecondary = getLobbyViewPool() === 'secondary';
         hintEl.innerText = isSecondary ? '你目前屬於：中學溫習室' : '你目前屬於：公開溫習室';
       }
       if (typeof window.openModal === 'function') window.openModal('modal-room-pool-info');
@@ -256,7 +290,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       // 機制，見 gcStaleRooms／allow delete 嗰 5 分鐘規則），呢個影響
       // 淨係一次性、好短暫（deploy 嗰刻仲生存緊嘅舊房間，等佢過期或者
       // 房主重新開房就會用返新格式），唔使特登另外寫遷移邏輯。
-      const viewerPool = window.getViewerRoomPool();
+      const viewerPool = getLobbyViewPool();
       window.updateRoomLobbyTitle();
       const roomsRef = query(collection(db, "rooms"), where("roomPool", "==", viewerPool), limit(ROOMS_LISTEN_LIMIT));
       unsubscribeRooms = onSnapshot(roomsRef, (snapshot) => {

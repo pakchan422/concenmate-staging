@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.158.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.159.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1945,6 +1945,17 @@
                      兩池嘅彈窗（見 window.openRoomPoolInfoModal，同下面
                      #modal-room-pool-info）。 -->
                 <button type="button" onclick="window.openRoomPoolInfoModal && window.openRoomPoolInfoModal()" title="了解公開溫習大廳的分類方式" style="display:flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; border:none; background:var(--brand-200); color:var(--brand-800); font-size:13px; font-weight:bold; cursor:pointer; padding:0;">!</button>
+                <!-- 淨係管理員先見到：管理員本身唔受兩池隔離（見
+                     firestore.rules 嘅 isAdmin(database) 豁免），可以用呢個
+                     選單切換緊睇邊一個池嘅大廳，方便巡查／測試兩邊嘅房間，
+                     唔使開多個帳戶。呢個揀擇淨係影響「而家睇緊邊個池」，
+                     唔會影響管理員自己建房嗰陣所屬嘅池（見
+                     window.setAdminRoomPoolOverride）。 -->
+                <select id="admin-room-pool-select" style="display:none; font-size:12px; padding:3px 6px; border-radius:8px; border:1px solid var(--brand-200); background:#fff; color:var(--brand-800);" onchange="window.setAdminRoomPoolOverride && window.setAdminRoomPoolOverride(this.value)">
+                  <option value="">🛠️ 自動（跟自己帳戶）</option>
+                  <option value="secondary">🛠️ 查看：中學溫習室</option>
+                  <option value="public">🛠️ 查看：公開溫習室</option>
+                </select>
               </div>
               <button class="btn btn-primary" type="button" onclick="openModal('modal-create-room')">
                 🚀 + 建立新溫習房
