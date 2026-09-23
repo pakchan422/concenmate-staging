@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.156.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.157.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2886,13 +2886,17 @@
             </div>
           </div>
 
-          <div style="margin-top:10px;">
+          <!-- 「喜愛學科」／「討厭學科」都係跟中學課程（中一至中六）
+               嘅科目嚟設計，大專/大學／其他自修生冇固定嘅中學科目可
+               揀，所以呢兩組淨係揀咗中一至中六先會顯示（見
+               window.updateRegSchoolOptions()）。 -->
+          <div id="reg-fav-wrap" style="margin-top:10px; display:none;">
             <label style="font-size:13px; font-weight:bold; color:#555;">喜愛學科（可留白，最多揀 4 科）</label>
             <div id="reg-fav-picker"></div>
             <input type="hidden" id="reg-fav">
           </div>
 
-          <div style="margin-top:10px;">
+          <div id="reg-dislike-wrap" style="margin-top:10px; display:none;">
             <label style="font-size:13px; font-weight:bold; color:#555;">討厭學科（可留白，最多揀 4 科）</label>
             <div id="reg-dislike-picker"></div>
             <input type="hidden" id="reg-dislike">

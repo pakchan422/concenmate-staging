@@ -1347,6 +1347,27 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       schoolSelect.required = showSchool;
       if (schoolLabel) schoolLabel.innerText = isTertiary ? '院校名稱 *' : '學校名稱 *';
 
+      // 「喜愛學科」／「討厭學科」跟中學課程科目設計，淨係揀咗中一至
+      // 中六（showDistrict 已經等於「揀咗嘅係中學年級」）先會顯示；
+      // 大專/大學／其他自修生／未揀年級就隱藏埋，並且清空之前揀低嘅
+      // 選擇（連埋 chip picker 嘅內部揀選狀態一齊重畫過，避免個 picker
+      // 記住咗舊選擇，之後暗中將佢寫返落 hidden input）。
+      const favWrap = document.getElementById('reg-fav-wrap');
+      const dislikeWrap = document.getElementById('reg-dislike-wrap');
+      const favInput = document.getElementById('reg-fav');
+      const dislikeInput = document.getElementById('reg-dislike');
+      const isSecondaryGrade = showDistrict;
+      if (favWrap) favWrap.style.display = isSecondaryGrade ? 'block' : 'none';
+      if (dislikeWrap) dislikeWrap.style.display = isSecondaryGrade ? 'block' : 'none';
+      if (!isSecondaryGrade) {
+        if (favInput) favInput.value = '';
+        if (dislikeInput) dislikeInput.value = '';
+        if (typeof window.renderStudentFavSubjectChipPicker === 'function') {
+          window.renderStudentFavSubjectChipPicker('reg-fav-picker', 'reg-fav', 4);
+          window.renderStudentFavSubjectChipPicker('reg-dislike-picker', 'reg-dislike', 4);
+        }
+      }
+
       const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
       if (!showSchool) {
