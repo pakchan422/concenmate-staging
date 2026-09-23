@@ -1329,13 +1329,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (!districtSelect || !schoolSelect) return;
 
       const grade = gradeSelect ? gradeSelect.value : '';
+      const gradeChosen = !!grade;
       const isTertiary = grade === '大專/大學';
       const isOtherSelfStudy = grade === '其他自修生';
-      const showDistrict = !isTertiary && !isOtherSelfStudy; // 淨係中學先要揀地區
-      const showSchool = !isOtherSelfStudy; // 自修生完全冇對應學校要揀
+      // 未揀「現時年級」之前，都未知係中學、大專定自修生，「學校所在
+      // 地區」／「學校名稱」兩個欄位一律先 disable，等揀咗年級先至可
+      // 以填，避免有人喺未揀年級嗰陣就亂咁揀個地區。
+      const showDistrict = gradeChosen && !isTertiary && !isOtherSelfStudy; // 淨係中學先要揀地區
+      const showSchool = gradeChosen && !isOtherSelfStudy; // 自修生完全冇對應學校要揀
 
       if (districtWrap) districtWrap.style.display = showDistrict ? 'block' : 'none';
       districtSelect.required = showDistrict;
+      districtSelect.disabled = !showDistrict;
       if (!showDistrict) districtSelect.value = '';
 
       if (schoolWrap) schoolWrap.style.display = showSchool ? 'block' : 'none';
@@ -1533,6 +1538,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (!isTutor) {
         if (typeof window.populateRegSchoolDistrictOptions === 'function') {
           window.populateRegSchoolDistrictOptions();
+        }
+        // 重新同步返「學校所在地區／學校名稱」嘅顯示同 disable 狀態，
+        // 跟返現時「現時年級」揀咗乜嘢（例如由導師切返學生嗰陣，年級
+        // 可能之前已經揀咗，唔應該仍然當做未揀年級噉樣 disable 晒）。
+        if (typeof window.updateRegSchoolOptions === 'function') {
+          window.updateRegSchoolOptions();
         }
         if (typeof window.renderStudentFavSubjectChipPicker === 'function') {
           window.renderStudentFavSubjectChipPicker('reg-fav-picker', 'reg-fav', 4);
