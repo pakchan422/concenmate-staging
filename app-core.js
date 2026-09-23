@@ -837,6 +837,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           grade: profileData.grade || '',
           favSubjects: profileData.favSubjects || '無',
           dislikeSubjects: profileData.dislikeSubjects || '無',
+          // 出生年月（冇「日」）：純粹自我申報，唔即時用嚟限制任何功能，
+          // 留為日後身份驗證／溫習室分流用途。isSecondaryStudent 同樣係
+          // 自我申報，用戶剔咗都唔代表已經通過身份驗證。
+          birthYear: profileData.birthYear || null,
+          birthMonth: profileData.birthMonth || null,
+          isSecondaryStudent: !!profileData.isSecondaryStudent,
           // accountType 喺呢度就已經寫死（唔使等下面嗰個 applyTutorRole
           // 呼叫完成先有），等揀咗「🎓 我是導師」嗰邊嘅用戶一註冊完成，
           // 側邊欄即刻就顯示導師殼＋審批中提示，唔使畀佢哋先見到一
@@ -1304,6 +1310,47 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       customWrap.style.display = (schoolSelect.value === '__other__') ? 'block' : 'none';
     };
 
+    // 填註冊表格嘅「出生年月」兩級選單（年／月，冇「日」）。淨係填一次
+    // 就夠，喺 app-features.js 嘅 openModal() 一打開「註冊」視窗就會叫。
+    // 年份範圍由（今年 - 8）到（今年 - 90），即係大約涵蓋 8 歲到 90 歲，
+    // 已經足夠寬鬆畀絕大部分會用呢個平台嘅人選擇（中學生、大專生、
+    // 成年人），亦唔使因為範圍太窄而逼住有人揀唔到自己出生年份。
+    window.populateRegBirthDateOptions = function() {
+      const yearSelect = document.getElementById('reg-birth-year');
+      const monthSelect = document.getElementById('reg-birth-month');
+      if (!yearSelect || !monthSelect) return;
+      if (yearSelect.dataset.populated === '1') return;
+      const currentYear = new Date().getFullYear();
+      let yearOptions = '<option value="">年</option>';
+      for (let y = currentYear - 8; y >= currentYear - 90; y--) {
+        yearOptions += `<option value="${y}">${y}</option>`;
+      }
+      yearSelect.innerHTML = yearOptions;
+      let monthOptions = '<option value="">月</option>';
+      for (let m = 1; m <= 12; m++) {
+        monthOptions += `<option value="${m}">${m} 月</option>`;
+      }
+      monthSelect.innerHTML = monthOptions;
+      yearSelect.dataset.populated = '1';
+    };
+
+    // 揀完出生年／月之後，喺隔籬即時顯示返約數年齡，純粹畀學生自己
+    // 核對填啱冇（呢個唔記錄「日」，所以年齡係約數，冇實際用嚟做任何
+    // 硬性判斷）。
+    window.updateRegBirthAgeDisplay = function() {
+      const yearEl = document.getElementById('reg-birth-year');
+      const monthEl = document.getElementById('reg-birth-month');
+      const displayEl = document.getElementById('reg-birth-age-display');
+      if (!yearEl || !monthEl || !displayEl) return;
+      const year = parseInt(yearEl.value, 10);
+      const month = parseInt(monthEl.value, 10);
+      if (!year || !month) { displayEl.innerText = ''; return; }
+      const now = new Date();
+      let age = now.getFullYear() - year;
+      if ((now.getMonth() + 1) < month) age -= 1;
+      displayEl.innerText = (age >= 0 && age <= 120) ? `（現年約 ${age} 歲）` : '';
+    };
+
     // 註冊表格嘅「🎒 我是學生」／「🎓 我是導師」切換：揀導師嗰邊會顯示
     // 導師申請專用欄位（自我介紹、想教嘅科目），同時隱藏埋學生專用嘅
     // 學校／年級／喜愛學科／討厭學科——並且將呢兩組欄位嘅 required
@@ -1396,6 +1443,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         return;
       }
 
+      // 出生年月：學生／導師帳號都要填（唔跟住下面嗰兩組會顯隱切換
+      // 嘅欄位），純粹用嚟顯示約數年齡同留為日後身份驗證用途，唔即時
+      // 影響任何功能。
+      const birthYearRaw = document.getElementById('reg-birth-year').value;
+      const birthMonthRaw = document.getElementById('reg-birth-month').value;
+      if (!birthYearRaw || !birthMonthRaw) {
+        window.showToast('請選擇出生年份及月份', '⚠️');
+        return;
+      }
+      const birthYear = parseInt(birthYearRaw, 10);
+      const birthMonth = parseInt(birthMonthRaw, 10);
+      const isSecondaryStudent = !!document.getElementById('reg-is-secondary-student').checked;
+
       if (accountType === 'student') {
         // 「學校名稱」而家係「先揀地區、再揀學校」嘅兩級選單：一般
         // 情況下 #reg-school 個 select 嘅 value 就係學校名（同以前純
@@ -1423,7 +1483,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         const favSubjects = document.getElementById('reg-fav').value.trim();
         const dislikeSubjects = document.getElementById('reg-dislike').value.trim();
         window.registerWithFirebase(loginId, password, {
-          accountType, username, school, district, grade, favSubjects, dislikeSubjects, contactEmail
+          accountType, username, school, district, grade, favSubjects, dislikeSubjects, contactEmail,
+          birthYear, birthMonth, isSecondaryStudent
         });
       } else {
         const tutorBio = document.getElementById('reg-tutor-bio').value.trim();
@@ -1434,7 +1495,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           return;
         }
         window.registerWithFirebase(loginId, password, {
-          accountType, username, contactEmail, tutorBio, tutorSubjects
+          accountType, username, contactEmail, tutorBio, tutorSubjects,
+          birthYear, birthMonth, isSecondaryStudent
         });
       }
     };

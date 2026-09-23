@@ -67,6 +67,12 @@
       if (id === 'modal-register' && typeof window.setRegisterAccountType === 'function') {
         window.setRegisterAccountType('student');
       }
+      // 出生年月選單同「本人現為中學生」剔選格唔跟住學生／導師嗰兩組
+      // 欄位嘅顯隱切換（見 index.html 註解），所以要喺呢度獨立填一次，
+      // 唔可以淨係靠 setRegisterAccountType() 入面嗰段。
+      if (id === 'modal-register' && typeof window.populateRegBirthDateOptions === 'function') {
+        window.populateRegBirthDateOptions();
+      }
     }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
