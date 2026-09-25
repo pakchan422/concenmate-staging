@@ -444,6 +444,19 @@
       if (nameEl) nameEl.innerText = mySchool || '未設定';
       if (ownRankWrap) ownRankWrap.style.display = 'none';
 
+      // 「其他 / 自修生」帳戶唔屬於任何一間學校嘅排名體系，校內排行榜
+      // 對佢哋而言冇實質意義，一律直接顯示「不適用」，唔理有冇填學校，
+      // 亦唔使查 Firestore；呢個判斷一定要行喺下面「未設定學校名稱」
+      // 嗰個提示之前，否則會錯誤顯示緊要求填學校嘅提示。
+      if (isLeaderboardGradeNotApplicable()) {
+        listEl.innerHTML = '';
+        if (ownRankWrap) {
+          ownRankWrap.style.display = 'block';
+          ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
+        }
+        return;
+      }
+
       if (!mySchool) {
         listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">你的帳戶未設定學校名稱，請先到「我的帳戶」填寫學校，先可以睇到校內排行榜</p>`;
         return;
@@ -474,12 +487,7 @@
         }
 
         const meInList = entries.some((e) => e.uid === window.currentUser.uid);
-        if (isLeaderboardGradeNotApplicable()) {
-          if (ownRankWrap) {
-            ownRankWrap.style.display = 'block';
-            ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
-          }
-        } else if (!meInList) {
+        if (!meInList) {
           const myHours = isMonth
             ? ((window.currentUser.monthlyPeriod === curMonthStr) ? (parseFloat(window.currentUser.monthlyHours) || 0) : 0)
             : (parseFloat(window.currentUser.hours) || 0);
@@ -539,7 +547,12 @@
         }
 
         const meInList = myDocId && entries.some((e) => e.id === myDocId);
-        if (!meInList && myDocId) {
+        if (isLeaderboardGradeNotApplicable()) {
+          if (ownRankWrap) {
+            ownRankWrap.style.display = 'block';
+            ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
+          }
+        } else if (!meInList && myDocId) {
           const mySchoolSnap = await window.fs.getDoc(window.fs.doc(window.db, collectionName, myDocId));
           const myTotalHours = mySchoolSnap.exists() ? (mySchoolSnap.data()[totalField] || 0) : 0;
           const mySchoolName = mySchoolSnap.exists() ? mySchoolSnap.data().schoolName : window.currentUser.school;
