@@ -1870,8 +1870,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       e.preventDefault();
       if (!window.currentUser || !auth.currentUser) return;
 
-      const school = document.getElementById('prof-school').value.trim();
-      const grade = document.getElementById('prof-grade').value;
+      // 聯絡電郵／學校名稱／現時年級呢三個欄位已經喺畫面上改做唯讀
+      // （disabled，唔可以由用戶自己修改，如需更改須電郵聯絡本公司），
+      // 所以呢度一律強制沿用 window.currentUser 現存嘅值，完全唔理會
+      // 表格入面嘅 DOM 值——就算有人用 devtools 手動撳走 disabled 屬性
+      // 再打新值，呢度都會強制覆蓋返做原本嘅值，唔會寫得入去（同時
+      // firestore.rules 嘅 selfUserUpdateOk() 亦都已經封鎖咗呢三個
+      // 欄位，雙重把關）。
+      const school = window.currentUser.school || '';
+      const grade = window.currentUser.grade || '';
       const favSubjects = document.getElementById('prof-fav').value.trim();
       const dislikeSubjects = document.getElementById('prof-dislike').value.trim();
       const username = document.getElementById('prof-username').value.trim();
@@ -1880,21 +1887,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       // devtools 手動撳走 disabled 屬性再剔選嚟繞過呢重年齡限制——就算
       // 真係咁做，呢度都會強制覆蓋返做 false，唔會寫得入去。
       const isSecondaryStudent = !!(secondaryCheckboxEl && !secondaryCheckboxEl.disabled && secondaryCheckboxEl.checked);
-      const contactEmailInput = document.getElementById('prof-contact-email');
-      const contactEmail = contactEmailInput ? contactEmailInput.value.trim() : (window.currentUser.contactEmail || '');
+      const contactEmail = window.currentUser.contactEmail || '';
 
-      if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-        window.showToast('聯絡電郵格式不正確，請檢查後再試', '⚠️');
-        return;
-      }
-
-      // 電郵改咗（同之前存落 Firestore 嗰個唔一樣），就當作未驗證過，要
-      // 重新整過 token 兼寄多次驗證電郵；淨係打多打少個空格唔算改咗
+      // 電郵、學校、年級三個欄位而家一律唯讀，理論上唔會改動，所以
+      // emailChanged／schoolChanged 恆為 false；保留呢兩個變數同下面
+      // 嘅邏輯分支，係為咗日後如果經管理後台或者客服流程重新開放編輯
+      // 時，唔使再重新接返呢段驗證電郵／地區反查嘅邏輯。
       const emailChanged = contactEmail !== (window.currentUser.contactEmail || '');
-
-      // 學校名稱改咗嘅話，盡量喺清單度反查返新嘅地區（見
-      // lookupDistrictBySchoolName）；查唔到（自行輸入或者清單冇）就保
-      // 留返用戶原本已經有嘅 district，唔會因為呢次改資料而清走。
       const schoolChanged = school !== (window.currentUser.school || '');
       let district = window.currentUser.district || '';
       if (schoolChanged) {

@@ -322,6 +322,36 @@
       `;
     }
 
+    // 年級揀咗「其他 / 自修生」嘅帳戶，因為唔屬於任何一個固定年級，個人
+    // 排名（分區個人／校內）對佢哋而言冇實質意義，所以呢類帳戶睇返自己
+    // 嗰行時，一律直接顯示「不適用」，唔會再計算／顯示實際名次。
+    function isLeaderboardGradeNotApplicable() {
+      return !!(window.currentUser && window.currentUser.grade === '其他自修生');
+    }
+
+    // 「不適用」嗰行嘅畫法：保留頭像／使用者名，但名次徽章同時數都換做
+    // 「不適用」，等自修生一睇就明呢個榜對佢哋唔適用，唔使誤會做「0名」
+    // 或者「未上榜」。
+    function renderLeaderboardNotApplicableRow(primaryText, avatarBase64, uid) {
+      const clickable = !!uid;
+      const clickAttr = clickable ? ` onclick="viewUserProfile('${uid}')" style="cursor:pointer;"` : '';
+      const avatarHtml = clickable ? `
+            <div style="width:32px; height:32px; border-radius:50%; background:var(--brand-100); color:var(--brand-800); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; flex-shrink:0; overflow:hidden;">
+              ${avatarBase64 ? `<img src="${avatarBase64}" style="width:100%; height:100%; object-fit:cover;" alt="頭像">` : escapeHtml((primaryText || '同').charAt(0).toUpperCase())}
+            </div>
+      ` : '';
+      return `
+        <div class="card" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:2px solid var(--brand-500); background:var(--brand-50);">
+          <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+            <div style="font-size:12px; font-weight:bold; color:#888; width:34px; flex-shrink:0; text-align:center;">—</div>
+            ${avatarHtml}
+            <div${clickAttr} style="font-size:14px; font-weight:bold; color:var(--brand-800); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(primaryText)} <span style="font-size:12px; color:var(--brand-600); font-weight:normal;">（你）</span></div>
+          </div>
+          <div style="font-size:13px; color:#888; font-weight:700; white-space:nowrap; flex-shrink:0;">不適用</div>
+        </div>
+      `;
+    }
+
     async function renderDistrictLeaderboard() {
       const listEl = document.getElementById('lb-list-container');
       const ownRankWrap = document.getElementById('lb-own-rank-wrap');
@@ -368,7 +398,12 @@
         // 習過，window.currentUser.monthlyPeriod 都會係上個月，代表本月
         // 時數應該當 0，唔可以攞返上個月嘅舊數字嚟顯示，會誤導用戶。
         const meInList = entries.some((e) => e.uid === window.currentUser.uid);
-        if (!meInList && window.currentUser.district === district) {
+        if (isLeaderboardGradeNotApplicable()) {
+          if (ownRankWrap) {
+            ownRankWrap.style.display = 'block';
+            ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
+          }
+        } else if (!meInList && window.currentUser.district === district) {
           const myHours = isMonth
             ? ((window.currentUser.monthlyPeriod === curMonthStr) ? (parseFloat(window.currentUser.monthlyHours) || 0) : 0)
             : (parseFloat(window.currentUser.hours) || 0);
@@ -439,7 +474,12 @@
         }
 
         const meInList = entries.some((e) => e.uid === window.currentUser.uid);
-        if (!meInList) {
+        if (isLeaderboardGradeNotApplicable()) {
+          if (ownRankWrap) {
+            ownRankWrap.style.display = 'block';
+            ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
+          }
+        } else if (!meInList) {
           const myHours = isMonth
             ? ((window.currentUser.monthlyPeriod === curMonthStr) ? (parseFloat(window.currentUser.monthlyHours) || 0) : 0)
             : (parseFloat(window.currentUser.hours) || 0);
