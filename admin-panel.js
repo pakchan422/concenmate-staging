@@ -931,6 +931,83 @@
       return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
+    // 「用戶管理」分頁而家分兩個分頁列表：(1) 中學／大專／大學——即
+    // grade 唔係「其他自修生」嘅帳戶（包括舊帳戶未設定 grade 嘅情況，
+    // 一律歸呢一邊）；(2) 其他／自修生——grade 剛好等於「其他自修生」
+    // 嘅帳戶。兩邊各自獨立一個表格，唔使成頁一齊顯示，方便管理員搵人。
+    let adminUsersGradeGroup = 'school'; // 'school' | 'other'
+    // 最新一次 onSnapshot 返嚟嘅用戶清單，快取喺度，等切換分頁嗰陣可以
+    // 即刻用返呢份資料重新畫table，唔使重新監聽一次 collection。
+    let adminUsersLastSortedDocs = null;
+
+    window.switchAdminUsersGradeGroup = function(group) {
+      adminUsersGradeGroup = (group === 'other') ? 'other' : 'school';
+      renderAdminUsersTable();
+    };
+
+    function renderAdminUsersTable() {
+      const container = document.getElementById('admin-tab-users');
+      if (!container) return;
+      if (!adminUsersLastSortedDocs) return;
+
+      if (adminUsersLastSortedDocs.length === 0) {
+        container.innerHTML = '<div class="admin-card" style="text-align:center; color:#999;">目前沒有任何用戶</div>';
+        return;
+      }
+
+      const filteredDocs = adminUsersLastSortedDocs.filter((docSnap) => {
+        const grade = docSnap.data().grade || '';
+        const isOther = grade === '其他自修生';
+        return adminUsersGradeGroup === 'other' ? isOther : !isOther;
+      });
+
+      const rows = filteredDocs.map(docSnap => {
+        const u = docSnap.data();
+        const uid = docSnap.id;
+        const suspended = !!u.suspended;
+        // Email 欄顯示用戶註冊時真正填嘅聯絡電郵（contactEmail）；呢個先係
+        // 佢哋自己打嗰個地址。u.email 其實係內部合成嘅登入用電郵
+        // （{帳號ID}@concenmate.local，唔係真實可送達嘅地址），舊帳號冇
+        // contactEmail 先 fallback 用返佢
+        const displayEmail = u.contactEmail || u.email || '—';
+        return `
+          <tr style="${suspended ? 'opacity:.55;' : ''}">
+            <td>${escapeHtml(u.username || '—')}${suspended ? ' <span style="color:#c0392b; font-size:13px;">(已停權)</span>' : ''}</td>
+            <td>${u.loginId ? escapeHtml(u.loginId) : '<span style="color:#c99; font-size:13px;">未設定</span>'}</td>
+            <td>${escapeHtml(displayEmail)}</td>
+            <td>${escapeHtml(u.school || '—')}</td>
+            <td>${escapeHtml(u.grade || '—')}</td>
+            <td style="white-space:nowrap;">${formatLastLoginDisplay(u.lastLoginAt)}</td>
+            <td><input class="admin-input-sm" type="number" style="width:70px;" value="${u.points || 0}" id="admin-user-points-${uid}"></td>
+            <td><input class="admin-input-sm" style="width:60px;" value="${(parseFloat(u.hours) || 0).toFixed(1)}" id="admin-user-hours-${uid}"></td>
+            <td><input class="admin-input-sm" type="number" style="width:70px;" value="${u.exp || 0}" id="admin-user-exp-${uid}"></td>
+            <td style="display:flex; gap:4px; flex-wrap:wrap;">
+              <button class="btn btn-outline" style="font-size:13px; padding:3px 8px;" onclick="adminSaveUserStats('${uid}')">💾 儲存</button>
+              <button class="btn ${suspended ? 'btn-primary' : 'btn-red'}" style="font-size:13px; padding:3px 8px;" onclick="adminToggleSuspendUser('${uid}', ${!suspended})">${suspended ? '✅ 解除停權' : '🚫 停權'}</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const emptyGroupMsg = '<tr><td colspan="9" style="text-align:center; color:#999; padding:16px;">此分類目前沒有用戶</td></tr>';
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <p style="font-size:13px; color:#888; margin-bottom:10px;">修改積分／時數／EXP 後，請記得逐行點擊「💾 儲存」；EXP 決定用戶的溫習等級與段位，一般毋須人手修改，只有在特殊情況（例如補發）才使用。「停權」會令該用戶下次登入時被強制登出。</p>
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <button type="button" class="btn ${adminUsersGradeGroup === 'school' ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="switchAdminUsersGradeGroup('school')">中學／大專／大學</button>
+            <button type="button" class="btn ${adminUsersGradeGroup === 'other' ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="switchAdminUsersGradeGroup('other')">其他／自修生</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="admin-table">
+              <thead><tr><th>用戶名</th><th>帳號 ID</th><th>Email</th><th>學校</th><th>年級</th><th>最後上線</th><th>積分</th><th>時數</th><th>EXP</th><th></th></tr></thead>
+              <tbody>${rows || emptyGroupMsg}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
     function renderAdminUsersTab() {
       const container = document.getElementById('admin-tab-users');
       if (!container || !window.db || !window.fs) return;
@@ -938,55 +1015,15 @@
 
       if (adminUsersUnsubscribe) adminUsersUnsubscribe();
       adminUsersUnsubscribe = window.fs.onSnapshot(window.fs.collection(window.db, 'users'), (snapshot) => {
-        if (snapshot.empty) {
-          container.innerHTML = '<div class="admin-card" style="text-align:center; color:#999;">目前沒有任何用戶</div>';
-          return;
-        }
         // 按建立時間由舊到新排（唔靠 Firestore 讀出嚟嗰個順序，實測唔一定係
         // 建立順序）；createdAt 舊帳號可能冇呢個欄位，冇嘅當做「最舊」排最前，
         // 唔會搞亂晒個排序
-        const sortedDocs = [...snapshot.docs].sort((a, b) => {
+        adminUsersLastSortedDocs = [...snapshot.docs].sort((a, b) => {
           const ta = new Date(a.data().createdAt || 0).getTime() || 0;
           const tb = new Date(b.data().createdAt || 0).getTime() || 0;
           return ta - tb;
         });
-        const rows = sortedDocs.map(docSnap => {
-          const u = docSnap.data();
-          const uid = docSnap.id;
-          const suspended = !!u.suspended;
-          // Email 欄顯示用戶註冊時真正填嘅聯絡電郵（contactEmail）；呢個先係
-          // 佢哋自己打嗰個地址。u.email 其實係內部合成嘅登入用電郵
-          // （{帳號ID}@concenmate.local，唔係真實可送達嘅地址），舊帳號冇
-          // contactEmail 先 fallback 用返佢
-          const displayEmail = u.contactEmail || u.email || '—';
-          return `
-            <tr style="${suspended ? 'opacity:.55;' : ''}">
-              <td>${escapeHtml(u.username || '—')}${suspended ? ' <span style="color:#c0392b; font-size:13px;">(已停權)</span>' : ''}</td>
-              <td>${u.loginId ? '🆔 ' + escapeHtml(u.loginId) : '<span style="color:#c99; font-size:13px;">未設定</span>'}</td>
-              <td>${escapeHtml(displayEmail)}</td>
-              <td>${escapeHtml(u.school || '—')}</td>
-              <td style="white-space:nowrap;">${formatLastLoginDisplay(u.lastLoginAt)}</td>
-              <td><input class="admin-input-sm" type="number" style="width:70px;" value="${u.points || 0}" id="admin-user-points-${uid}"></td>
-              <td><input class="admin-input-sm" style="width:60px;" value="${(parseFloat(u.hours) || 0).toFixed(1)}" id="admin-user-hours-${uid}"></td>
-              <td><input class="admin-input-sm" type="number" style="width:70px;" value="${u.exp || 0}" id="admin-user-exp-${uid}"></td>
-              <td style="display:flex; gap:4px; flex-wrap:wrap;">
-                <button class="btn btn-outline" style="font-size:13px; padding:3px 8px;" onclick="adminSaveUserStats('${uid}')">💾 儲存</button>
-                <button class="btn ${suspended ? 'btn-primary' : 'btn-red'}" style="font-size:13px; padding:3px 8px;" onclick="adminToggleSuspendUser('${uid}', ${!suspended})">${suspended ? '✅ 解除停權' : '🚫 停權'}</button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-        container.innerHTML = `
-          <div class="admin-card">
-            <p style="font-size:13px; color:#888; margin-bottom:10px;">修改積分／時數／EXP 後，請記得逐行點擊「💾 儲存」；EXP 決定用戶的溫習等級與段位，一般毋須人手修改，只有在特殊情況（例如補發）才使用。「停權」會令該用戶下次登入時被強制登出。</p>
-            <div style="overflow-x:auto;">
-              <table class="admin-table">
-                <thead><tr><th>用戶名</th><th>帳號 ID</th><th>Email</th><th>學校</th><th>最後上線</th><th>積分</th><th>時數</th><th>EXP</th><th></th></tr></thead>
-                <tbody>${rows}</tbody>
-              </table>
-            </div>
-          </div>
-        `;
+        renderAdminUsersTable();
       }, (err) => {
         container.innerHTML = `<div class="admin-card" style="color:#c0392b;">載入失敗：${err.message || err}</div>`;
       });
