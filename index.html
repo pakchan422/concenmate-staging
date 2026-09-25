@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.167.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.167.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2408,20 +2408,20 @@
              動態產生，呢度淨係擺容器。 -->
         <section id="tab-leaderboard" class="tab-content">
           <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550;">
-            <h2 style="font-size:18px; font-weight:bold;">🏆 溫習排行榜（僅中學適用）</h2>
+            <h2 style="font-size:18px; font-weight:bold;">溫習排行榜（僅中學適用）</h2>
             <p style="font-size:13px; color:#3E5A63; margin-top:4px;">可切換「本月」或「累積」時數排名，只顯示首 50 名，你的名次會在清單最底另外顯示；每個月 1 號「本月排行榜」會自動重新計算</p>
           </div>
 
           <div class="card" style="margin-top:12px;">
             <div style="display:flex; gap:8px; margin-bottom:10px;">
-              <button class="qa-subject-btn active" type="button" id="lb-period-month-btn" onclick="window.switchLeaderboardPeriod('month')" style="flex:1; justify-content:center;">📅 本月排行榜</button>
-              <button class="qa-subject-btn" type="button" id="lb-period-alltime-btn" onclick="window.switchLeaderboardPeriod('alltime')" style="flex:1; justify-content:center;">🏆 累積排行榜</button>
+              <button class="qa-subject-btn active" type="button" id="lb-period-month-btn" onclick="window.switchLeaderboardPeriod('month')" style="flex:1; justify-content:center;">本月排行榜</button>
+              <button class="qa-subject-btn" type="button" id="lb-period-alltime-btn" onclick="window.switchLeaderboardPeriod('alltime')" style="flex:1; justify-content:center;">累積排行榜</button>
             </div>
 
             <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-              <button class="qa-subject-btn active" type="button" id="lb-mode-district-btn" onclick="window.switchLeaderboardMode('district')" style="flex:1; justify-content:center; min-width:120px;">📍 分區個人排行榜</button>
-              <button class="qa-subject-btn" type="button" id="lb-mode-schoolInternal-btn" onclick="window.switchLeaderboardMode('schoolInternal')" style="flex:1; justify-content:center; min-width:120px;">🏫 校內排行榜</button>
-              <button class="qa-subject-btn" type="button" id="lb-mode-school-btn" onclick="window.switchLeaderboardMode('school')" style="flex:1; justify-content:center; min-width:120px;">🏛️ 學校總排行榜</button>
+              <button class="qa-subject-btn active" type="button" id="lb-mode-district-btn" onclick="window.switchLeaderboardMode('district')" style="flex:1; justify-content:center; min-width:120px;">分區個人排行榜</button>
+              <button class="qa-subject-btn" type="button" id="lb-mode-schoolInternal-btn" onclick="window.switchLeaderboardMode('schoolInternal')" style="flex:1; justify-content:center; min-width:120px;">校內排行榜</button>
+              <button class="qa-subject-btn" type="button" id="lb-mode-school-btn" onclick="window.switchLeaderboardMode('school')" style="flex:1; justify-content:center; min-width:120px;">學校總排行榜</button>
             </div>
 
             <div id="lb-district-picker-wrap" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">

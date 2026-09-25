@@ -555,13 +555,26 @@
           ).join('');
         }
 
-        const meInList = myDocId && entries.some((e) => e.id === myDocId);
+        // 「你的學校」呢行一律喺清單最底獨立顯示一次，唔理間學校本身
+        // 有冇入到頭 50 名（同分區個人／校內排行榜嗰種「淨係唔喺頭 50
+        // 名先顯示」做法唔同）——學校總排行榜睇嘅係自己間學校嘅表現，
+        // 就算已經係第一名，都應該喺底部清楚見到自己間學校嘅名次，
+        // 唔使自己喺個清單度逐行搵。
+        const meInListIndex = myDocId ? entries.findIndex((e) => e.id === myDocId) : -1;
         if (isLeaderboardGradeNotApplicable()) {
           if (ownRankWrap) {
             ownRankWrap.style.display = 'block';
             ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
           }
-        } else if (!meInList && myDocId) {
+        } else if (myDocId && meInListIndex !== -1) {
+          // 已經喺頭 50 名入面：直接攞返呢行喺清單入面嘅名次，唔使再
+          // 額外查一次 Firestore。
+          const myEntry = entries[meInListIndex];
+          if (ownRankWrap) {
+            ownRankWrap.style.display = 'block';
+            ownRankWrap.innerHTML = renderLeaderboardRow(meInListIndex + 1, myEntry.schoolName || window.currentUser.school, formatHoursMinutes(myEntry[totalField]), true);
+          }
+        } else if (myDocId) {
           const mySchoolSnap = await window.fs.getDoc(window.fs.doc(window.db, collectionName, myDocId));
           const myTotalHours = mySchoolSnap.exists() ? (mySchoolSnap.data()[totalField] || 0) : 0;
           const mySchoolName = mySchoolSnap.exists() ? mySchoolSnap.data().schoolName : window.currentUser.school;
