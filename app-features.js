@@ -302,7 +302,7 @@
     // 資料卡）——學校總排行榜嗰行係「一間學校」唔係「一個人」，冇 uid
     // 可以傳，就會維持返舊有冇頭像／唔可以撳嘅顯示方式。
     function renderLeaderboardRow(rank, primaryText, secondaryText, isMe, avatarBase64, uid) {
-      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+      const medal = `#${rank}`;
       const clickable = !!uid;
       const clickAttr = clickable ? ` onclick="viewUserProfile('${uid}')" style="cursor:pointer;"` : '';
       const avatarHtml = clickable ? `
@@ -322,11 +322,16 @@
       `;
     }
 
-    // 年級揀咗「其他 / 自修生」嘅帳戶，因為唔屬於任何一個固定年級，個人
-    // 排名（分區個人／校內）對佢哋而言冇實質意義，所以呢類帳戶睇返自己
-    // 嗰行時，一律直接顯示「不適用」，唔會再計算／顯示實際名次。
+    // 「溫習排行榜」（僅中學適用改版起）淨係開放俾現時年級為中一至中六
+    // 嘅帳戶正式上榜；年級揀咗「大專 / 大學」或者「其他 / 自修生」嘅
+    // 帳戶，因為唔屬於中學年級，個人排名（分區個人／校內／學校總）對
+    // 佢哋而言冇實質意義，睇返自己嗰行時一律直接顯示「不適用」，唔會
+    // 再計算／顯示實際名次。呢個判斷同 functions/index.js
+    // syncLeaderboardOnUserWrite 嘅 isGradeEligible 要保持一致，先唔會
+    // 前後台判斷唔啱。
     function isLeaderboardGradeNotApplicable() {
-      return !!(window.currentUser && window.currentUser.grade === '其他自修生');
+      const grade = window.currentUser && window.currentUser.grade;
+      return grade === '其他自修生' || grade === '大專/大學';
     }
 
     // 「不適用」嗰行嘅畫法：保留頭像／使用者名，但名次徽章同時數都換做
@@ -444,21 +449,20 @@
       if (nameEl) nameEl.innerText = mySchool || '未設定';
       if (ownRankWrap) ownRankWrap.style.display = 'none';
 
-      // 「其他 / 自修生」帳戶唔屬於任何一間學校嘅排名體系，校內排行榜
-      // 對佢哋而言冇實質意義，一律直接顯示「不適用」，唔理有冇填學校，
-      // 亦唔使查 Firestore；呢個判斷一定要行喺下面「未設定學校名稱」
-      // 嗰個提示之前，否則會錯誤顯示緊要求填學校嘅提示。
-      if (isLeaderboardGradeNotApplicable()) {
-        listEl.innerHTML = '';
-        if (ownRankWrap) {
-          ownRankWrap.style.display = 'block';
-          ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
-        }
-        return;
-      }
-
       if (!mySchool) {
-        listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">你的帳戶未設定學校名稱，請先到「我的帳戶」填寫學校，先可以睇到校內排行榜</p>`;
+        // 冇填學校：如果本身年級都唔啱睇呢個榜（大專／大學、其他／自
+        // 修生），直接顯示「不適用」；如果係中學生淨係未填學校，先顯
+        // 示返「請填學校」提示（呢個判斷要行喺呢度，先唔會兩個訊息撞
+        // 埋一齊）。
+        if (isLeaderboardGradeNotApplicable()) {
+          listEl.innerHTML = '';
+          if (ownRankWrap) {
+            ownRankWrap.style.display = 'block';
+            ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
+          }
+        } else {
+          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">你的帳戶未設定學校名稱，請先到「我的帳戶」填寫學校，先可以睇到校內排行榜</p>`;
+        }
         return;
       }
 
@@ -487,7 +491,12 @@
         }
 
         const meInList = entries.some((e) => e.uid === window.currentUser.uid);
-        if (!meInList) {
+        if (isLeaderboardGradeNotApplicable()) {
+          if (ownRankWrap) {
+            ownRankWrap.style.display = 'block';
+            ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
+          }
+        } else if (!meInList) {
           const myHours = isMonth
             ? ((window.currentUser.monthlyPeriod === curMonthStr) ? (parseFloat(window.currentUser.monthlyHours) || 0) : 0)
             : (parseFloat(window.currentUser.hours) || 0);
