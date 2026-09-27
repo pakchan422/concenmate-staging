@@ -153,6 +153,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     // 已經攞落嚟嘅資料度做本機篩選，唔使開多條連線。
     let latestRoomsData = [];
     let roomSubjectFilter = '全部';
+    // roomSubjectFilter 存嘅係英文分類代碼（'core'／'elective'／
+    // 'other'，同 getRoomSubjectCategory() 回傳嘅值一致），畫面顯示
+    // 一定要轉返做中文，唔可以將個代碼直接印出嚟畀用戶睇到（見用家
+    // 反映「目前『core』分類沒有公開的溫習房」呢句嘢）。
+    const ROOM_SUBJECT_FILTER_LABELS = { core: '必修科目', elective: '選修科目', other: '其他' };
 
     window.setRoomSubjectFilter = function(category) {
       roomSubjectFilter = category;
@@ -178,7 +183,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         roomsListEl.innerHTML = `
           <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background: white; border-radius: 16px; border: 1px solid var(--brand-200);">
             <div style="font-size:36px; margin-bottom:8px;">🦦📭</div>
-            <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">${roomSubjectFilter === '全部' ? '目前大廳沒有公開的溫習房' : `目前「${window.escapeHtml(roomSubjectFilter)}」分類沒有公開的溫習房`}</p>
+            <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">${roomSubjectFilter === '全部' ? '目前大廳沒有公開的溫習房' : `目前「${window.escapeHtml(ROOM_SUBJECT_FILTER_LABELS[roomSubjectFilter] || roomSubjectFilter)}」分類沒有公開的溫習房`}</p>
             <p style="font-size:13px; color:#666; margin-top:4px;">點擊上方「+ 建立新溫習房」來開立第一個房間吧！</p>
           </div>
         `;
