@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.167.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.168.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2315,15 +2315,15 @@
                      身份驗證；除咗排行榜資格之外，而家亦都會影響「公開
                      溫習大廳」入面睇到邊一邊嘅公開房（中學溫習室／公開
                      溫習室，見 window.getViewerRoomPool()）。 -->
-                <div style="display:flex; align-items:flex-start; gap:8px; background:#F5F7F8; border-radius:10px; padding:10px 12px;">
-                  <input type="checkbox" id="prof-is-secondary-student" style="margin-top:3px; flex-shrink:0; width:16px; height:16px;">
-                  <label for="prof-is-secondary-student" style="font-size:13px; color:#555; line-height:1.6;">
-                    本人確認現時為中學生
-                    <br>
-                    <span style="font-size:12px; color:#888;">請如實填寫。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。</span>
-                    <br>
-                    <span id="prof-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">⚠️ 根據帳戶已登記的出生年月，此項現時不能剔選。</span>
-                  </label>
+                <div style="background:#F5F7F8; border-radius:10px; padding:10px 12px;">
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:6px;">本人現時是否中學生？</label>
+                  <div style="display:flex; gap:8px;">
+                    <button type="button" id="prof-is-secondary-student-yes-btn" class="btn btn-outline" style="flex:1; justify-content:center; padding:8px; font-size:13px;" onclick="window.setSecondaryStudentToggle('prof', 'yes')">是，我是中學生</button>
+                    <button type="button" id="prof-is-secondary-student-no-btn" class="btn btn-outline" style="flex:1; justify-content:center; padding:8px; font-size:13px;" onclick="window.setSecondaryStudentToggle('prof', 'no')">否</button>
+                  </div>
+                  <input type="hidden" id="prof-is-secondary-student" value="">
+                  <p style="font-size:12px; color:#888; margin-top:6px; line-height:1.6;">請如實選擇。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。</p>
+                  <span id="prof-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">⚠️ 根據帳戶已登記的出生年月，此項現時不可以選擇「是」。</span>
                 </div>
 
                 <div>
@@ -2637,7 +2637,7 @@
 
           <div id="social-sub-tabs" style="display:flex; gap:6px; margin-bottom:12px;">
             <button type="button" class="room-subject-tab-btn active" id="social-subtab-btn-friends" onclick="window.setSocialSubTab && window.setSocialSubTab('friends')" style="flex:1; text-align:center;">👥 我的好友</button>
-            <button type="button" class="room-subject-tab-btn" id="social-subtab-btn-wall" onclick="window.setSocialSubTab && window.setSocialSubTab('wall')" style="flex:1; text-align:center;">📝 書伴留言牆</button>
+            <button type="button" class="room-subject-tab-btn" id="social-subtab-btn-wall" onclick="window.setSocialSubTab && window.setSocialSubTab('wall')" style="flex:1; text-align:center;">📝 尋找書伴留言牆</button>
           </div>
 
           <div id="social-friends-panel">
@@ -2668,7 +2668,7 @@
           <div id="social-wall-panel" style="display:none;">
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
-              <h2 style="font-size:17px; font-weight:bold; color:var(--brand-800);">📝 書伴留言牆</h2>
+              <h2 style="font-size:17px; font-weight:bold; color:var(--brand-800);">📝 尋找書伴留言牆</h2>
               <button class="btn btn-primary" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-buddy-post')">✏️ 發佈徵求書伴貼文</button>
             </div>
             <p style="font-size:12px; color:#999; margin-bottom:10px;">請注意：所有已登入用戶都可以看到你的貼文及留言，請勿透露個人聯絡方式或其他敏感資料。</p>
@@ -2927,15 +2927,15 @@
                嘅約數年齡如果去到 20 歲或以上，呢個剔選格會自動變成
                不能剔選（見 window.updateRegBirthAgeDisplay()），減少
                擺明係成年人嘅帳戶都剔到呢個選項嘅情況。 -->
-          <div style="margin-top:10px; display:flex; align-items:flex-start; gap:8px; background:#F5F7F8; border-radius:10px; padding:10px 12px;">
-            <input type="checkbox" id="reg-is-secondary-student" style="margin-top:3px; flex-shrink:0; width:16px; height:16px;">
-            <label for="reg-is-secondary-student" style="font-size:13px; color:#555; line-height:1.6;">
-              本人確認現時為中學生
-              <br>
-              <span style="font-size:12px; color:#888;">請如實填寫。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。</span>
-              <br>
-              <span id="reg-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">⚠️ 根據所填出生年月，此項現時不能剔選。</span>
-            </label>
+          <div style="margin-top:10px; background:#F5F7F8; border-radius:10px; padding:10px 12px;">
+            <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:6px;">本人現時是否中學生？ *</label>
+            <div style="display:flex; gap:8px;">
+              <button type="button" id="reg-is-secondary-student-yes-btn" class="btn btn-outline" style="flex:1; justify-content:center; padding:8px; font-size:13px;" onclick="window.setSecondaryStudentToggle('reg', 'yes')">是，我是中學生</button>
+              <button type="button" id="reg-is-secondary-student-no-btn" class="btn btn-outline" style="flex:1; justify-content:center; padding:8px; font-size:13px;" onclick="window.setSecondaryStudentToggle('reg', 'no')">否</button>
+            </div>
+            <input type="hidden" id="reg-is-secondary-student" value="">
+            <p style="font-size:12px; color:#888; margin-top:6px; line-height:1.6;">請如實選擇。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。</p>
+            <span id="reg-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">⚠️ 根據所填出生年月，此項現時不可以選擇「是」。</span>
           </div>
 
           <!-- 「學校所在地區」／「學校名稱」係咪顯示、係咪必填，都要跟

@@ -1954,8 +1954,9 @@
         document.getElementById('prof-grade').value = window.currentUser.grade || '中六 (S6 DSE)';
         document.getElementById('prof-fav').value = window.currentUser.favSubjects || '';
         document.getElementById('prof-dislike').value = window.currentUser.dislikeSubjects || '';
-        const profIsSecondaryCheckbox = document.getElementById('prof-is-secondary-student');
-        if (profIsSecondaryCheckbox) profIsSecondaryCheckbox.checked = !!window.currentUser.isSecondaryStudent;
+        if (typeof window.setSecondaryStudentToggle === 'function') {
+          window.setSecondaryStudentToggle('prof', window.currentUser.isSecondaryStudent ? 'yes' : 'no');
+        }
         if (typeof window.updateProfileSecondaryStudentAgeGate === 'function') {
           window.updateProfileSecondaryStudentAgeGate();
         }

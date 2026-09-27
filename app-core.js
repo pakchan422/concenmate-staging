@@ -1591,11 +1591,31 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     // 就會將呢幾個 disable 埋（連埋上面「本人確認現時為中學生」嗰個
     // 剔選格），道理一樣：20 歲已經遠超中六 DSE 學生嘅一般年齡範圍。
     const REG_SECONDARY_GRADE_VALUES = ['中一 (S1)', '中二 (S2)', '中三 (S3)', '中四 (S4)', '中五 (S5)', '中六 (S6 DSE)'];
+
+    // 「本人現時是否中學生？」由剔選格（容易漏剔，令真正中學生誤入
+    // 「公開溫習室」池而唔係「中學溫習室」池，見 window.getViewerRoomPool()）
+    // 改做強制揀「是」／「否」嘅按鈕對，用一個隱藏 input（#{prefix}-
+    // is-secondary-student）存返 'yes'／'no'／''（未揀）呢個值，等提交
+    // 表格嗰陣可以照 .value 讀，同時提交前可以檢查有冇漏揀。prefix 係
+    // 'reg'（註冊表格）或者 'prof'（我的帳戶）。
+    window.setSecondaryStudentToggle = function(prefix, value) {
+      const hiddenInput = document.getElementById(prefix + '-is-secondary-student');
+      const yesBtn = document.getElementById(prefix + '-is-secondary-student-yes-btn');
+      const noBtn = document.getElementById(prefix + '-is-secondary-student-no-btn');
+      if (yesBtn && yesBtn.disabled && value === 'yes') return; // 年齡已經唔畀揀「是」
+      if (hiddenInput) hiddenInput.value = value;
+      if (yesBtn) yesBtn.classList.toggle('btn-primary', value === 'yes');
+      if (yesBtn) yesBtn.classList.toggle('btn-outline', value !== 'yes');
+      if (noBtn) noBtn.classList.toggle('btn-primary', value === 'no');
+      if (noBtn) noBtn.classList.toggle('btn-outline', value !== 'no');
+    };
+
     window.updateRegBirthAgeDisplay = function() {
       const yearEl = document.getElementById('reg-birth-year');
       const monthEl = document.getElementById('reg-birth-month');
       const displayEl = document.getElementById('reg-birth-age-display');
-      const secondaryCheckbox = document.getElementById('reg-is-secondary-student');
+      const secondaryYesBtn = document.getElementById('reg-is-secondary-student-yes-btn');
+      const secondaryHidden = document.getElementById('reg-is-secondary-student');
       const ageHint = document.getElementById('reg-is-secondary-student-age-hint');
       const gradeSelect = document.getElementById('reg-grade');
       const gradeAgeHint = document.getElementById('reg-grade-age-hint');
@@ -1604,7 +1624,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const month = parseInt(monthEl.value, 10);
       if (!year || !month) {
         displayEl.innerText = '';
-        if (secondaryCheckbox) secondaryCheckbox.disabled = false;
+        if (secondaryYesBtn) secondaryYesBtn.disabled = false;
         if (ageHint) ageHint.style.display = 'none';
         if (gradeSelect) {
           Array.from(gradeSelect.options).forEach((opt) => {
@@ -1621,9 +1641,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 
       const tooOld = age > REG_SECONDARY_STUDENT_MAX_AGE;
 
-      if (secondaryCheckbox) {
-        secondaryCheckbox.disabled = tooOld;
-        if (tooOld) secondaryCheckbox.checked = false;
+      if (secondaryYesBtn) {
+        secondaryYesBtn.disabled = tooOld;
+        if (tooOld && secondaryHidden && secondaryHidden.value === 'yes') {
+          window.setSecondaryStudentToggle('reg', 'no');
+        }
         if (ageHint) ageHint.style.display = tooOld ? 'block' : 'none';
       }
 
@@ -1651,13 +1673,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     // 資料可以判斷，呢種情況唔會強行 disable（畀返用戶自己憑良心
     // 剔選，總好過完全冇辦法補回呢個聲明）。
     window.updateProfileSecondaryStudentAgeGate = function() {
-      const checkbox = document.getElementById('prof-is-secondary-student');
+      const yesBtn = document.getElementById('prof-is-secondary-student-yes-btn');
+      const hiddenInput = document.getElementById('prof-is-secondary-student');
       const ageHint = document.getElementById('prof-is-secondary-student-age-hint');
-      if (!checkbox) return;
+      if (!yesBtn) return;
       const year = window.currentUser && parseInt(window.currentUser.birthYear, 10);
       const month = window.currentUser && parseInt(window.currentUser.birthMonth, 10);
       if (!year || !month) {
-        checkbox.disabled = false;
+        yesBtn.disabled = false;
         if (ageHint) ageHint.style.display = 'none';
         return;
       }
@@ -1665,8 +1688,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       let age = now.getFullYear() - year;
       if ((now.getMonth() + 1) < month) age -= 1;
       const tooOld = age > REG_SECONDARY_STUDENT_MAX_AGE;
-      checkbox.disabled = tooOld;
-      if (tooOld) checkbox.checked = false;
+      yesBtn.disabled = tooOld;
+      if (tooOld && hiddenInput && hiddenInput.value === 'yes') {
+        window.setSecondaryStudentToggle('prof', 'no');
+      }
       if (ageHint) ageHint.style.display = tooOld ? 'block' : 'none';
     };
 
@@ -1779,7 +1804,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
       const birthYear = parseInt(birthYearRaw, 10);
       const birthMonth = parseInt(birthMonthRaw, 10);
-      const isSecondaryStudent = !!document.getElementById('reg-is-secondary-student').checked;
+      // 由剔選格改做強制揀「是」／「否」之後，呢度要額外檢查有冇漏揀
+      // （hidden input 嘅值一定要係 'yes' 或者 'no'，唔可以係空字串），
+      // 否則就好似冇填「出生年月」咁樣擋住唔畀交表——呢個正正係呢次
+      // 改動想解決嘅問題：之前用剔選格，好多真係中學生嘅用戶漏剔咗都
+      // 照樣交得表，之後就誤入「公開溫習室」池，變相入錯咗視訊室。
+      const secondaryStudentAnswer = document.getElementById('reg-is-secondary-student').value;
+      if (secondaryStudentAnswer !== 'yes' && secondaryStudentAnswer !== 'no') {
+        window.showToast('請選擇你現時是否中學生', '⚠️');
+        return;
+      }
+      const isSecondaryStudent = secondaryStudentAnswer === 'yes';
 
       if (accountType === 'student') {
         const grade = document.getElementById('reg-grade').value;
@@ -1882,11 +1917,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const favSubjects = document.getElementById('prof-fav').value.trim();
       const dislikeSubjects = document.getElementById('prof-dislike').value.trim();
       const username = document.getElementById('prof-username').value.trim();
-      const secondaryCheckboxEl = document.getElementById('prof-is-secondary-student');
-      // disabled（年齡已達 20 歲或以上）嗰陣一律當 false，防止有人用
-      // devtools 手動撳走 disabled 屬性再剔選嚟繞過呢重年齡限制——就算
-      // 真係咁做，呢度都會強制覆蓋返做 false，唔會寫得入去。
-      const isSecondaryStudent = !!(secondaryCheckboxEl && !secondaryCheckboxEl.disabled && secondaryCheckboxEl.checked);
+      const secondaryHiddenEl = document.getElementById('prof-is-secondary-student');
+      const secondaryYesBtnEl = document.getElementById('prof-is-secondary-student-yes-btn');
+      // 「是」個掣 disabled（年齡已達 20 歲或以上）嗰陣一律當 false，
+      // 防止有人用 devtools 手動撳走 disabled 屬性再揀「是」嚟繞過呢
+      // 重年齡限制——就算真係咁做，呢度都會強制覆蓋返做 false，唔會
+      // 寫得入去。
+      const isSecondaryStudent = !!(secondaryHiddenEl && secondaryYesBtnEl && !secondaryYesBtnEl.disabled && secondaryHiddenEl.value === 'yes');
       const contactEmail = window.currentUser.contactEmail || '';
 
       // 電郵、學校、年級三個欄位而家一律唯讀，理論上唔會改動，所以
