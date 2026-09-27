@@ -59,8 +59,8 @@
     'common.cancel': { 'zh-Hant': '取消', 'en': 'Cancel', 'yue': '取消' },
     'common.save': { 'zh-Hant': '💾 儲存', 'en': '💾 Save', 'yue': '💾 儲存' },
     'unit.minutes': { 'zh-Hant': '分鐘', 'en': ' min', 'yue': '分鐘' },
-    'unit.hours': { 'zh-Hant': '小時', 'en': 'h ', 'yue': '個鐘' },
-    'unit.goalDone': { 'zh-Hant': '（已完成）', 'en': ' (Done)', 'yue': '（搞掂）' },
+    'unit.hours': { 'zh-Hant': '小時', 'en': 'h ', 'yue': '小時' },
+    'unit.goalDone': { 'zh-Hant': '（已完成）', 'en': ' (Done)', 'yue': '（已完成）' },
 
     // ── 主頁（第二／三階段：English 由 Claude 翻譯、廣東話口語由
     //    Claude 起草，兩者都仲要 Alvis 過目先算數，未過目之前先當
@@ -70,23 +70,27 @@
     'home.statHours': { 'zh-Hant': '本日時數', 'en': "Today's Time", 'yue': '今日溫咗幾耐' },
     'home.statPoints': { 'zh-Hant': '積分', 'en': 'Points', 'yue': '積分' },
     'home.statMaterials': { 'zh-Hant': '已上架教材', 'en': 'Materials Published', 'yue': '已上架教材' },
-    'home.statStreak': { 'zh-Hant': '連續天', 'en': 'Day Streak', 'yue': '連續溫咗幾日' },
+    'home.statStreak': { 'zh-Hant': '連續天', 'en': 'Day Streak', 'yue': '連續天數' },
     'home.statFollowers': { 'zh-Hant': '粉絲', 'en': 'Followers', 'yue': '粉絲' },
-    'home.statFollowing': { 'zh-Hant': '追蹤中', 'en': 'Following', 'yue': '追蹤緊' },
+    'home.statFollowing': { 'zh-Hant': '追蹤中', 'en': 'Following', 'yue': '追蹤中' },
     'home.otterRenameTitle': { 'zh-Hant': '✏️ 自訂我的水獺', 'en': '✏️ Customize My Otter', 'yue': '✏️ 自己整靚隻水獺' },
     'home.otterRenamePlaceholder': { 'zh-Hant': '輸入新名稱（最多 12 個字）', 'en': 'Enter a new name (up to 12 characters)', 'yue': '打個新名（最多12個字）' },
     'home.otterAvatarLabel': { 'zh-Hant': '🖼️ 頭像（可選擇已收集的貼紙）', 'en': '🖼️ Avatar (choose from collected stickers)', 'yue': '🖼️ 頭像（可以揀已經儲到嘅貼紙）' },
     'otter.stat.level': { 'zh-Hant': '等級', 'en': 'Level', 'yue': '等級' },
-    'otter.stat.expRemaining': { 'zh-Hant': '升級所需 EXP', 'en': 'EXP to Level Up', 'yue': '升級要嘅EXP' },
-    'otter.stat.hours': { 'zh-Hant': '已累計時數', 'en': 'Total Hours', 'yue': '總共溫咗幾耐' },
-    'otter.stat.streak': { 'zh-Hant': '連續天數', 'en': 'Day Streak', 'yue': '連續幾日' },
-    'otter.stat.stickers': { 'zh-Hant': '圖鑑完成度', 'en': 'Sticker Collection', 'yue': '貼紙儲齊未' },
+    'otter.stat.expRemaining': { 'zh-Hant': '升級所需 EXP', 'en': 'EXP to Level Up', 'yue': '升級所需 EXP' },
+    'otter.stat.hours': { 'zh-Hant': '已累計時數', 'en': 'Total Hours', 'yue': '已累計時數' },
+    'otter.stat.streak': { 'zh-Hant': '連續天數', 'en': 'Day Streak', 'yue': '連續天數' },
+    'otter.stat.stickers': { 'zh-Hant': '圖鑑完成度', 'en': 'Sticker Collection', 'yue': '貼紙完成度' },
     'home.primaryDesc': { 'zh-Hant': '📹 與同學一起開鏡頭專注溫習賺積分', 'en': '📹 Study together on camera with classmates and earn points', 'yue': '📹 同同學一齊開鏡頭專心溫書賺積分' },
     'home.joinNow': { 'zh-Hant': '立即加入', 'en': 'Join Now', 'yue': '即刻加入' },
     'home.todayGoal': { 'zh-Hant': '🎯 今日目標', 'en': "🎯 Today's Goal", 'yue': '🎯 今日目標' },
     'home.studyCalendar': { 'zh-Hant': '📅 溫習日曆', 'en': '📅 Study Calendar', 'yue': '📅 溫書日曆' },
-    'home.streakSuffix': { 'zh-Hant': '連續', 'en': 'day streak', 'yue': '日連續' },
-    'home.totalDaysSuffix': { 'zh-Hant': '總日數', 'en': 'total days', 'yue': '日總共' },
+    // {n} 係佔位符，實際數字由 renderStudyCalendar()（app-features.js）
+    // 用 String.replace('{n}', ...) 塞入去；廣東話「總共」要擺喺數字
+    // 前面（同繁體中文／English 慣常擺後面唔同），所以呢兩句改用完整
+    // 樣板，唔再淨係換一個固定字尾。
+    'home.streakTemplate': { 'zh-Hant': '{n} 連續', 'en': '{n} day streak', 'yue': '{n} 日連續' },
+    'home.totalDaysTemplate': { 'zh-Hant': '{n} 總日數', 'en': '{n} total days', 'yue': '總共 {n} 日' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置
@@ -138,6 +142,7 @@
     if (typeof window.updateUserAuthUI === 'function') window.updateUserAuthUI();
     if (typeof window.updateGoalBarDisplay === 'function') window.updateGoalBarDisplay();
     if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard();
+    if (typeof window.renderStudyCalendar === 'function') window.renderStudyCalendar();
     if (typeof window.closeModal === 'function') {
       window.closeModal('modal-language-switcher');
     } else {

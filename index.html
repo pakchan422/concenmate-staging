@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.174.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.175.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1976,8 +1976,15 @@
                 </div>
                 <div id="study-calendar-grid" class="study-calendar-grid"></div>
                 <div style="display:flex; justify-content:space-between; margin-top:8px; padding-top:7px; border-top:1px solid #eee; font-size:13px; color:#888;">
-                  <span>🔥 <b id="study-calendar-streak" style="color:var(--brand-800);">0</b> <span data-i18n="home.streakSuffix">連續</span></span>
-                  <span>📚 <b id="study-calendar-total" style="color:var(--brand-800);">0</b> <span data-i18n="home.totalDaysSuffix">總日數</span></span>
+                  <!-- 「連續」「總日數」呢兩句唔同語言嘅字詞次序唔一樣
+                       （例如廣東話想講「總共 2 日」，數字要擺後面，唔係
+                       好似繁體中文咁擺前面），淨係跟住一個固定字尾冇得
+                       控制次序，所以連數字埋一齊整段文字都交返
+                       renderStudyCalendar()（app-features.js）用
+                       window.t() 嘅樣板（帶 {n} 佔位符）砌返成句，唔再
+                       淨係換字尾。 -->
+                  <span id="study-calendar-streak-wrap">🔥 <b id="study-calendar-streak" style="color:var(--brand-800);">0</b> 連續</span>
+                  <span id="study-calendar-total-wrap">📚 <b id="study-calendar-total" style="color:var(--brand-800);">0</b> 總日數</span>
                 </div>
               </div>
 

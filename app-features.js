@@ -1764,11 +1764,22 @@
       renderStudyCalendar();
     };
 
+    // 樣板 key 入面帶 {n} 佔位符（見 i18n.js 嘅 home.streakTemplate／
+    // home.totalDaysTemplate）：唔同語言想將數字擺前定擺後可以唔一樣
+    // （例如廣東話「總共 2 日」數字擺後面，繁體中文/English 慣常擺前
+    // 面），所以連數字埋一齊由呢個共用 function 砌返成句 HTML，唔再淨
+    // 係幫一個固定字尾換字。numberColor 保留返原本嗰個數字專用嘅顏色。
+    function renderCalendarCountLabel(wrapId, emoji, n, i18nKey, fallbackTemplate) {
+      const wrapEl = document.getElementById(wrapId);
+      if (!wrapEl) return;
+      const tmpl = (typeof window.t === 'function') ? window.t(i18nKey, fallbackTemplate) : fallbackTemplate;
+      const numberHtml = `<b style="color:var(--brand-800);">${n}</b>`;
+      wrapEl.innerHTML = `${emoji} ${tmpl.replace('{n}', numberHtml)}`;
+    }
+
     function renderStudyCalendar() {
       const grid = document.getElementById('study-calendar-grid');
       const monthLabel = document.getElementById('study-calendar-month-label');
-      const streakEl = document.getElementById('study-calendar-streak');
-      const totalEl = document.getElementById('study-calendar-total');
       if (!grid || !window.currentUser) return;
       const studyDays = getStudyDaysMap();
 
@@ -1798,8 +1809,8 @@
       }
       grid.innerHTML = html;
 
-      if (streakEl) streakEl.innerText = computeStudyStreak(studyDays);
-      if (totalEl) totalEl.innerText = Object.keys(studyDays).length;
+      renderCalendarCountLabel('study-calendar-streak-wrap', '🔥', computeStudyStreak(studyDays), 'home.streakTemplate', '{n} 連續');
+      renderCalendarCountLabel('study-calendar-total-wrap', '📚', Object.keys(studyDays).length, 'home.totalDaysTemplate', '{n} 總日數');
     }
     window.renderStudyCalendar = renderStudyCalendar;
 
