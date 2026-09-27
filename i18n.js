@@ -29,6 +29,8 @@
 //        b) JS 入面組出嚟嘅文字（例如 template literal）：改用
 //           window.t('home.welcome', '你好，同學！') 嚟攞，第二個參數
 //           係「字典漏咗呢個 key 都好、都唔會開天窗」嘅保底文字。
+//        c) <input placeholder="..."> 呢類位置（唔算 textContent）：
+//           改加 data-i18n-placeholder="xxx" 屬性（唔係 data-i18n）。
 //
 // 呢個檔案要喺 app-features.js／app-core.js 之前載入（見 index.html
 // 嘅 <script> 次序），等呢兩個檔案入面用到 window.t／
@@ -51,6 +53,40 @@
     'nav.verification': { 'zh-Hant': '學生身份驗證', 'en': 'Student Verification', 'yue': '' },
     'nav.tutorMaterials': { 'zh-Hant': '管理教材', 'en': 'Manage Materials', 'yue': '' },
     'lang.switcher.title': { 'zh-Hant': '選擇語言', 'en': 'Choose Language', 'yue': '' },
+
+    // ── 通用字眼（好多分頁都會用到，一次搬好，之後其他分頁轉換嗰陣
+    //    可以直接重用返呢批 key，唔使逐頁重複做） ──
+    'common.cancel': { 'zh-Hant': '取消', 'en': 'Cancel', 'yue': '取消' },
+    'common.save': { 'zh-Hant': '💾 儲存', 'en': '💾 Save', 'yue': '💾 儲存' },
+    'unit.minutes': { 'zh-Hant': '分鐘', 'en': ' min', 'yue': '分鐘' },
+    'unit.hours': { 'zh-Hant': '小時', 'en': 'h ', 'yue': '個鐘' },
+    'unit.goalDone': { 'zh-Hant': '（已完成）', 'en': ' (Done)', 'yue': '（搞掂）' },
+
+    // ── 主頁（第二／三階段：English 由 Claude 翻譯、廣東話口語由
+    //    Claude 起草，兩者都仲要 Alvis 過目先算數，未過目之前先當
+    //    草稿睇待） ──
+    'home.greeting': { 'zh-Hant': '你好，', 'en': 'Hi, ', 'yue': '你好啊，' },
+    'home.readyToStudy': { 'zh-Hant': '今日準備好溫習了嗎？', 'en': 'Ready to study today?', 'yue': '今日準備好未？可以開始溫書喇！' },
+    'home.statHours': { 'zh-Hant': '本日時數', 'en': "Today's Time", 'yue': '今日溫咗幾耐' },
+    'home.statPoints': { 'zh-Hant': '積分', 'en': 'Points', 'yue': '積分' },
+    'home.statMaterials': { 'zh-Hant': '已上架教材', 'en': 'Materials Published', 'yue': '已上架教材' },
+    'home.statStreak': { 'zh-Hant': '連續天', 'en': 'Day Streak', 'yue': '連續溫咗幾日' },
+    'home.statFollowers': { 'zh-Hant': '粉絲', 'en': 'Followers', 'yue': '粉絲' },
+    'home.statFollowing': { 'zh-Hant': '追蹤中', 'en': 'Following', 'yue': '追蹤緊' },
+    'home.otterRenameTitle': { 'zh-Hant': '✏️ 自訂我的水獺', 'en': '✏️ Customize My Otter', 'yue': '✏️ 自己整靚隻水獺' },
+    'home.otterRenamePlaceholder': { 'zh-Hant': '輸入新名稱（最多 12 個字）', 'en': 'Enter a new name (up to 12 characters)', 'yue': '打個新名（最多12個字）' },
+    'home.otterAvatarLabel': { 'zh-Hant': '🖼️ 頭像（可選擇已收集的貼紙）', 'en': '🖼️ Avatar (choose from collected stickers)', 'yue': '🖼️ 頭像（可以揀已經儲到嘅貼紙）' },
+    'otter.stat.level': { 'zh-Hant': '等級', 'en': 'Level', 'yue': '等級' },
+    'otter.stat.expRemaining': { 'zh-Hant': '升級所需 EXP', 'en': 'EXP to Level Up', 'yue': '升級要嘅EXP' },
+    'otter.stat.hours': { 'zh-Hant': '已累計時數', 'en': 'Total Hours', 'yue': '總共溫咗幾耐' },
+    'otter.stat.streak': { 'zh-Hant': '連續天數', 'en': 'Day Streak', 'yue': '連續幾日' },
+    'otter.stat.stickers': { 'zh-Hant': '圖鑑完成度', 'en': 'Sticker Collection', 'yue': '貼紙儲齊未' },
+    'home.primaryDesc': { 'zh-Hant': '📹 與同學一起開鏡頭專注溫習賺積分', 'en': '📹 Study together on camera with classmates and earn points', 'yue': '📹 同同學一齊開鏡頭專心溫書賺積分' },
+    'home.joinNow': { 'zh-Hant': '立即加入', 'en': 'Join Now', 'yue': '即刻加入' },
+    'home.todayGoal': { 'zh-Hant': '🎯 今日目標', 'en': "🎯 Today's Goal", 'yue': '🎯 今日目標' },
+    'home.studyCalendar': { 'zh-Hant': '📅 溫習日曆', 'en': '📅 Study Calendar', 'yue': '📅 溫書日曆' },
+    'home.streakSuffix': { 'zh-Hant': '連續', 'en': 'day streak', 'yue': '日連續' },
+    'home.totalDaysSuffix': { 'zh-Hant': '總日數', 'en': 'total days', 'yue': '日總共' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置
@@ -94,6 +130,14 @@
       }
     }
     window.applyAppLanguage();
+    // applyAppLanguage() 淨係換得到帶 data-i18n 屬性嘅靜態文字；「本日
+    // 時數」「今日目標」「水獺數據卡」呢幾個位嘅單位／文字係由 JS
+    // 組出嚟先塞落去（formatHoursMinutes／updateGoalBarDisplay 等），
+    // 要主動叫返呢幾個 function 重新畫一次，換完語言先即刻見到返呢
+    // 幾個位一齊跟住變，唔使等到下次有數據變動先自然更新。
+    if (typeof window.updateUserAuthUI === 'function') window.updateUserAuthUI();
+    if (typeof window.updateGoalBarDisplay === 'function') window.updateGoalBarDisplay();
+    if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard();
     if (typeof window.closeModal === 'function') {
       window.closeModal('modal-language-switcher');
     } else {
@@ -109,6 +153,12 @@
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n');
       el.textContent = window.t(key, el.textContent);
+    });
+    // data-i18n-placeholder：用喺 <input placeholder="...">呢類位置——
+    // placeholder 唔算 textContent，要獨立處理先換得到。
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      el.setAttribute('placeholder', window.t(key, el.getAttribute('placeholder')));
     });
     document.querySelectorAll('.lang-option-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.lang === lang);

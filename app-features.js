@@ -220,8 +220,13 @@
       const totalMin = Math.max(0, Math.round((parseFloat(hours) || 0) * 60));
       const hh = Math.floor(totalMin / 60);
       const mm = totalMin % 60;
-      if (hh <= 0) return `${mm}分鐘`;
-      return `${hh}小時${mm}分鐘`;
+      // 「小時／分鐘」單位改用 window.t() 查字典（見 i18n.js 嘅
+      // unit.hours／unit.minutes），呢個 function 好多分頁都用緊（唔
+      // 淨係主頁），轉咗之後所有用到呢個 function 嘅地方會一齊跟住轉。
+      const minUnit = (typeof window.t === 'function') ? window.t('unit.minutes', '分鐘') : '分鐘';
+      const hourUnit = (typeof window.t === 'function') ? window.t('unit.hours', '小時') : '小時';
+      if (hh <= 0) return `${mm}${minUnit}`;
+      return `${hh}${hourUnit}${mm}${minUnit}`;
     }
     window.formatHoursMinutes = formatHoursMinutes;
 
@@ -1806,18 +1811,20 @@
       const today = getTodayDateStr();
       const minsToday = (window.currentUser.todayDate === today) ? (window.currentUser.todayMinutes || 0) : 0;
       const pct = Math.min(100, (minsToday / 60) * 100).toFixed(1);
-      const doneSuffix = minsToday >= 60 ? '（已完成）' : '';
+      const minUnit = (typeof window.t === 'function') ? window.t('unit.minutes', '分鐘') : '分鐘';
+      const doneSuffix = minsToday >= 60 ? ((typeof window.t === 'function') ? window.t('unit.goalDone', '（已完成）') : '（已完成）') : '';
       const goalBar = document.getElementById('home-goal-bar');
       const goalLabel = document.getElementById('home-goal-label');
       if (goalBar) goalBar.style.width = pct + '%';
-      if (goalLabel) goalLabel.innerText = `${Math.round(minsToday)} / 60 分鐘${doneSuffix}`;
+      if (goalLabel) goalLabel.innerText = `${Math.round(minsToday)} / 60 ${minUnit}${doneSuffix}`;
 
       // 全站置頂嗰條「今日目標」進度列（同主頁嗰條數值一樣，淨係擺位唔同）
       const globalGoalBar = document.getElementById('global-goal-bar');
       const globalGoalLabel = document.getElementById('global-goal-label');
       if (globalGoalBar) globalGoalBar.style.width = pct + '%';
-      if (globalGoalLabel) globalGoalLabel.innerText = `${Math.round(minsToday)} / 60 分鐘${doneSuffix}`;
+      if (globalGoalLabel) globalGoalLabel.innerText = `${Math.round(minsToday)} / 60 ${minUnit}${doneSuffix}`;
     }
+    window.updateGoalBarDisplay = updateGoalBarDisplay;
 
     function updateUserAuthUI() {
       // 一判斷完登入狀態，即刻收埋初始載入畫面，換做啱嘅版面（landing
