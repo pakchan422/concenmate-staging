@@ -21,6 +21,7 @@
       roomTotalSeconds: 0, // 呢次入房到而家嘅「總溫習時間」（順時計），閒置暫停計分期間唔會累積
       renderFrameId: null,
       currentRoomId: null,
+      currentRoomCapacity: 4, // 現時所在房間嘅人數上限（2 或 4，見 window.ROOM_CAPACITY_OPTIONS）；未入房或者離房之後預設返 4，等視訊格顯示邏輯有個安全嘅預設值可以跟
       // 呢間房係咪有設密碼鎖（true/false）——真正密碼值而家已經唔再存喺前端
       // 攞得到嘅地方（見 rooms/{roomId}/private/secret 同 firestore.rules），
       // 呢度淨係記低「有冇」，畀房內🔒「查看密碼」掣決定顯唔顯示；撳掣嗰刻
@@ -67,7 +68,18 @@
     const MIC_COOLDOWN_SECONDS = 5 * 60; // 開咪上限一到，要等 5 分鐘冷卻先可以再開
     const MIC_IDLE_RESET_SECONDS = 5 * 60; // 學生未撞到 3 分鐘上限、主動關咪之後，如果連續 5 分鐘都冇再開咪，就當佢已經完全休息返，回復返成套 3 分鐘預算（唔使一定撞晒 3 分鐘先可以歸零）
 
-    const ROOM_CAPACITY = 4; // 同一房間最多同時容納的用家人數（包括自己）
+    const ROOM_CAPACITY = 4; // 舊有嘅全域預設人數上限——而家改為「每間房自己揀 2 人房或
+    // 4 人房」（見建立房間彈窗嘅 #modal-room-capacity），呢個常數淨係用嚟做冇 capacity
+    // 欄位嘅舊房間（呢個功能推出之前建立）嘅後備預設值，唔再係全部房間共用嘅單一上限。
+    const ROOM_CAPACITY_OPTIONS = [2, 4]; // 建立房間嗰陣可以揀嘅人數上限選項
+    // 房間文件讀出嚟嘅 capacity 欄位一定要係 2 或 4 先當有效（防止舊資料
+    // 或者被人手改壞嘅資料令後面嘅版面／格仔分配邏輯出錯），唔啱就當
+    // 冇揀過，跌返去 ROOM_CAPACITY（4）呢個保守預設值。
+    function resolveRoomCapacity(roomData) {
+      const cap = roomData && roomData.capacity;
+      return ROOM_CAPACITY_OPTIONS.includes(cap) ? cap : ROOM_CAPACITY;
+    }
+    window.resolveRoomCapacity = resolveRoomCapacity;
 
     // ------------------------------------------------------------
     // Screen Wake Lock：喺視訊溫習室入面攞住個 wake lock，擋住手機／
@@ -114,10 +126,13 @@
         }
       });
     }
-    window.ROOM_CAPACITY = ROOM_CAPACITY; // 開放俾其他 <script> 區塊（例如大廳房間卡片）讀取
+    window.ROOM_CAPACITY = ROOM_CAPACITY; // 開放俾其他 <script> 區塊（例如大廳房間卡片）讀取，做冇 capacity 欄位嘅舊房間後備預設值
+    window.ROOM_CAPACITY_OPTIONS = ROOM_CAPACITY_OPTIONS;
 
-    // 房間上限 4 人，鏡頭恆常都用 2x2「四格漫畫」版面（見 CSS，唔理
-    // 螢幕幾闊都唔會變 3 欄、4 欄），四格一致大細。想再放到最大、睇得
+    // 版面恆常都用 2 欄嘅格仔（見 CSS，唔理螢幕幾闊都唔會變 3 欄、4
+    // 欄）：4 人房會用晒 2x2 四格；2 人房淨係顯示格 1／格 2（見
+    // resetVideoSlots／getOrCreateRemoteSlot 點樣跟 state.currentRoomCapacity
+    // 決定顯唔顯示格 3／格 4），格仔一致大細。想再放到最大、睇得
     // 更清楚，可以撳「⛶ 全螢幕」——特登連同 room-bar（開鏡頭／咪嘅
     // 按鈕、退出房間等）一齊放大蓋晒成個畫面，唔係淨係得個視訊格，
     // 唔係嘅話全螢幕嗰陣會撳唔到呢啲按鈕（見下面 toggleVideoFullscreenMode）。
@@ -315,9 +330,29 @@
       `;
     }
 
-    // 重置所有格子（返回大廳 / 離開房間時使用）
+    // 依家間房嘅人數上限（state.currentRoomCapacity），計返格 2/3/4
+    // 入面邊幾格應該存在——2 人房淨係格 2，4 人房就格 2/3/4 都要。
+    function getExtraSlotNums() {
+      const cap = state.currentRoomCapacity || ROOM_CAPACITY;
+      const nums = [];
+      for (let n = 2; n <= cap; n++) nums.push(n);
+      return nums;
+    }
+
+    // 重置所有格子（返回大廳 / 離開房間時使用）：跟返現時房間嘅人數
+    // 上限，超出上限嘅格（例如 2 人房嘅格 3／格 4）直接隱藏埋，唔淨係
+    // 顯示「等待用家加入」——2 人房應該淨係見到兩個視訊畫面。
     function resetVideoSlots() {
-      [2, 3, 4].forEach(setSlotPlaceholder);
+      const activeExtraSlots = getExtraSlotNums();
+      [2, 3, 4].forEach((n) => {
+        const el = getSlotElement(n);
+        if (activeExtraSlots.includes(n)) {
+          if (el) el.style.display = '';
+          setSlotPlaceholder(n);
+        } else if (el) {
+          el.style.display = 'none';
+        }
+      });
       state.slotAssignments = {};
       // 「邊個新加入咗」嘅追蹤都要一齊重置，唔係就上一次入嗰間房仲留低嘅
       // 名單會累到落呢一次房，令啱啱入房嗰刻就即刻彈晒堆「XXX 進來了」
@@ -334,7 +369,7 @@
 
       if (!slotNum) {
         const taken = Object.values(state.slotAssignments);
-        slotNum = [2, 3, 4].find(n => !taken.includes(n));
+        slotNum = getExtraSlotNums().find(n => !taken.includes(n));
         if (!slotNum) return null; // 理論上不會發生，因為加入房間時已檢查人數上限
         state.slotAssignments[uid] = slotNum;
       }
@@ -648,7 +683,7 @@
       const countEl = document.getElementById('room-participant-count');
       const tagEl = document.getElementById('room-capacity-tag');
       if (countEl) countEl.innerText = count;
-      if (tagEl) tagEl.classList.toggle('full', count >= ROOM_CAPACITY);
+      if (tagEl) tagEl.classList.toggle('full', count >= (state.currentRoomCapacity || ROOM_CAPACITY));
     }
 
     // 進入房間前檢查人數上限，未滿則寫入自己的 participants 紀錄。回傳 true/false 代表能否加入
@@ -679,9 +714,10 @@
           const [roomSnap, participantSnap] = await Promise.all([tx.get(roomRef), tx.get(participantRef)]);
           const alreadyIn = participantSnap.exists();
           const currentCount = roomSnap.exists() ? (roomSnap.data().participantCount || 0) : 0;
+          const roomCap = resolveRoomCapacity(roomSnap.exists() ? roomSnap.data() : null);
 
-          if (!alreadyIn && currentCount >= ROOM_CAPACITY) {
-            return false; // 房間已滿 4 人，禁止加入
+          if (!alreadyIn && currentCount >= roomCap) {
+            return false; // 房間已滿，禁止加入
           }
 
           tx.set(participantRef, {
@@ -1071,6 +1107,13 @@
           return;
         }
 
+        // 房間人數上限：房主開房嗰陣揀 2 人房定 4 人房，寫死落房間文件
+        // 之後就唔會再改（同 roomPool 一樣一開始定咗就定咗）。如果讀到
+        // 唔識嘅值（例如 modal 冇揀好），就當 4 人房，同舊有行為一致。
+        const capacitySelectEl = document.getElementById('modal-room-capacity');
+        const chosenCapacityRaw = capacitySelectEl ? parseInt(capacitySelectEl.value, 10) : ROOM_CAPACITY;
+        const chosenCapacity = ROOM_CAPACITY_OPTIONS.includes(chosenCapacityRaw) ? chosenCapacityRaw : ROOM_CAPACITY;
+
         const roomId = 'room_' + Date.now();
         const createdAt = Date.now();
         const roomData = {
@@ -1080,6 +1123,7 @@
           hostUid: window.currentUser.uid,
           hostName: window.currentUser.username || '匿名同學',
           participantCount: 0,
+          capacity: chosenCapacity,
           createdAt: createdAt,
           lastActiveAt: createdAt, // 心跳時間戳，畀幽靈房自動清理機制用（見 gcStaleRooms）
           // 兩池公開溫習室：房間一開始建立就跟房主自己所屬嗰池（「中學
@@ -1202,10 +1246,16 @@
       const lockBtn = document.getElementById('room-password-lock-btn');
       if (lockBtn) lockBtn.style.display = state.currentRoomHasPassword ? 'inline-flex' : 'none';
 
-      // 房間人數上限檢查：最多 4 人同時使用同一個房間
+      // 房間人數上限檢查：跟返呢間房自己揀嘅人數上限（2 或 4 人），
+      // 而唔係一律當 4 人房——要喺 joinRoomParticipants／resetVideoSlots
+      // 呢兩步之前就設定好 state.currentRoomCapacity，等視訊格顯示邏輯
+      // 同底下嘅「已滿」提示都跟返正確嘅數字。
+      const roomCapacityForThisRoom = resolveRoomCapacity(roomCheckData);
+      state.currentRoomCapacity = roomCapacityForThisRoom;
+
       const canJoin = await joinRoomParticipants(roomId);
       if (!canJoin) {
-        window.showToast(`房間已滿（${ROOM_CAPACITY}/${ROOM_CAPACITY}），暫時無法加入`, "🚫");
+        window.showToast(`房間已滿（${roomCapacityForThisRoom}/${roomCapacityForThisRoom}），暫時無法加入`, "🚫");
         return false;
       }
 
@@ -1889,6 +1939,10 @@
       state.peerConnections = {};
 
       await leaveRoomParticipants();
+      // 離開房間之後將人數上限還原做預設值 4，等下次入返一間普通（冇特別
+      // 指定）嘅房或者仲未入房嗰段空檔，視訊格顯示邏輯有個穩陣嘅預設可跟；
+      // 一定要喺 resetVideoSlots() 之前做，佢先會攞返啱嘅上限嚟顯示。
+      state.currentRoomCapacity = ROOM_CAPACITY;
       resetVideoSlots();
 
       state.currentRoomId = null;

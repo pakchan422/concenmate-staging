@@ -171,7 +171,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             </div>
             <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">${room.hasPassword ? '🔒 ' : ''}${window.escapeHtml(room.name)}</h4>
             <p style="font-size:13px; color:#666;">房主：<strong>${window.escapeHtml(room.hostName || '匿名同學')}</strong></p>
-            <p style="font-size:13px; color:#888; margin-top:2px;">👥 ${room.participantCount || 0}/${window.ROOM_CAPACITY || 4} 人 · 🍅 每輪專注：${room.duration || 30} 分鐘</p>
+            <p style="font-size:13px; color:#888; margin-top:2px;">👥 ${room.participantCount || 0}/${(typeof window.resolveRoomCapacity === 'function') ? window.resolveRoomCapacity(room) : (window.ROOM_CAPACITY || 4)} 人 · 🍅 每輪專注：${room.duration || 30} 分鐘</p>
           </div>
 
           <div style="display:flex; gap:6px; margin-top:12px;">

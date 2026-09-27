@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.168.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.169.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2719,7 +2719,7 @@
 
           <div class="card">
             <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;" id="diary-photos-heading">📔 我的溫習相片</h3>
-            <div id="diary-photo-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px;"></div>
+            <div id="diary-photo-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; margin-bottom:8px;"></div>
             <p id="diary-photo-empty" style="font-size:13px; color:#999; text-align:center; padding:10px; display:none;">仲未發佈過溫習相片</p>
             <button id="diary-photo-more-btn" class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px; padding:6px; display:none;" onclick="loadMorePhotos('diary')">📷 更多</button>
           </div>
@@ -3181,6 +3181,15 @@
             <option value="公民">公民</option>
             <option value="選修">選修</option>
           </select>
+        </div>
+
+        <div>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">👥 房間人數上限</label>
+          <select id="modal-room-capacity" class="input-field">
+            <option value="2">2 人房</option>
+            <option value="4" selected>4 人房</option>
+          </select>
+          <p style="font-size:13px; color:#999; margin-top:4px;">建立之後就不能再更改，適合想同少數朋友獨用一間房嘅情況</p>
         </div>
 
         <div>

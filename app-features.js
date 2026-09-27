@@ -1002,7 +1002,10 @@
         const { collection, query, where, orderBy, limit, startAfter, getDocs } = window.fs;
         const clauses = [collection(window.db, 'studyPhotos'), where('uid', '==', uid), orderBy('createdAt', 'desc')];
         if (state.cursorDoc) clauses.push(startAfter(state.cursorDoc));
-        clauses.push(limit(9));
+        // 相片牆而家改做一行 5 張（見 index.html 嘅 diary-photo-grid
+        // grid-template-columns），每頁攞 10 張啱啱好兩行，唔會好似之前
+        // 9 張咁樣尾行剩返 3 張、同上面一行 5 張對唔齊。
+        clauses.push(limit(10));
         const snap = await getDocs(query(...clauses));
 
         if (reset && snap.empty && emptyEl) emptyEl.style.display = 'block';
@@ -1015,7 +1018,7 @@
         if (grid) grid.insertAdjacentHTML('beforeend', html);
 
         if (!snap.empty) state.cursorDoc = snap.docs[snap.docs.length - 1];
-        state.done = snap.size < 9;
+        state.done = snap.size < 10;
         if (moreBtn) moreBtn.style.display = state.done ? 'none' : 'block';
       } catch (e) {
         console.error('讀取溫習相片失敗:', e);
@@ -4938,9 +4941,10 @@
         if (!roomSnap.exists()) { window.showToast('房間已經不存在了', '🚫'); return; }
         const room = roomSnap.data();
 
+        const roomCap = (typeof window.resolveRoomCapacity === 'function') ? window.resolveRoomCapacity(room) : (window.ROOM_CAPACITY || 4);
         const participantsSnap = await window.fs.getDocs(window.fs.collection(window.db, 'rooms', state.currentRoomId, 'participants'));
-        if (participantsSnap.size >= window.ROOM_CAPACITY) {
-          window.showToast(`房間已滿（${window.ROOM_CAPACITY}/${window.ROOM_CAPACITY}），暫時無法邀請`, '🚫');
+        if (participantsSnap.size >= roomCap) {
+          window.showToast(`房間已滿（${roomCap}/${roomCap}），暫時無法邀請`, '🚫');
           return;
         }
 
