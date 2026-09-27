@@ -1,15 +1,23 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-HK" translate="no">
 <head>
   <!-- ========================================
        🔧 版本號 — 每次推送 GitHub 前改呢度（刻意擺喺 <head> 最頂，
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.171.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.172.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
+  <!-- 🚫 阻止 Chrome 自動翻譯：有 Android 用家反映開網站嗰陣，成個
+       介面會自動變咗做英文（明明部機系統語言設定係中文）。呢個唔係
+       網站本身有英文字（程式碼入面全部都係中文），而係 Chrome 嘅
+       「自動翻譯」功能誤判／被開啟咗（可能係之前手快撳過一次「一律
+       翻譯」）。呢兩個標記係 Google 官方文件建議嘅做法，等 Chrome（同
+       其他跟呢個慣例嘅瀏覽器）完全唔再提議／自動翻譯呢版，唔理個別
+       用家個人有冇開過「一律翻譯」呢類瀏覽器設定。 -->
+  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ConcenMate 書伴 - 香港中學生線上溫習空間</title>
 
@@ -3220,7 +3228,7 @@
             <option value="2">2 人房</option>
             <option value="4" selected>4 人房</option>
           </select>
-          <p style="font-size:13px; color:#999; margin-top:4px;">建立之後就不能再更改，適合想同少數朋友獨用一間房嘅情況</p>
+          <p style="font-size:13px; color:#999; margin-top:4px;">建立之後就不能在房間中更改，適合想同少數朋友獨用一間房嘅情況</p>
         </div>
 
         <div>

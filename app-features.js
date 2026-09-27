@@ -2819,7 +2819,7 @@
     // 撳落去到 spendGachaPoints 呢個 Cloud Function 真正回應之間，如果啱啱
     // 冇人用過（Cloud Function 冷啟動），可能要等幾秒；淨係擋掣唔改文字
     // 嘅話畫面睇落好似咩都冇發生、當咗個掣壞咗，所以要順便將掣嘅文字
-    // 改做「⏳ 扭緊…」，等用戶知道網站有反應緊，唔係卡住。
+    // 改做「⏳ 扭蛋中…」，等用戶知道網站有反應緊，唔係卡住。
     function setGachaButtonsDisabled(disabled) {
       const normalBtn = document.getElementById('gacha-draw-normal-btn');
       const luckyBtn = document.getElementById('gacha-draw-lucky-btn');
@@ -2828,7 +2828,7 @@
         btn.disabled = disabled;
         if (disabled) {
           if (btn.dataset.origHtml === undefined) btn.dataset.origHtml = btn.innerHTML;
-          btn.innerHTML = '⏳ 扭緊…';
+          btn.innerHTML = '⏳ 扭蛋中…';
         } else if (btn.dataset.origHtml !== undefined) {
           btn.innerHTML = btn.dataset.origHtml;
           delete btn.dataset.origHtml;
