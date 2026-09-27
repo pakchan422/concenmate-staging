@@ -493,6 +493,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.currentUser = null;
         if (suspensionListenerUnsubscribe) { suspensionListenerUnsubscribe(); suspensionListenerUnsubscribe = null; }
       }
+      // 登入／登出狀態一改變，「目前語言」嘅判斷依據都可能跟住變（已
+      // 登入睇 users/{uid}.language，登出返又退返去睇 localStorage——
+      // 見 i18n.js 嘅 window.getAppLanguage），所以要即刻重新套用一次，
+      // 等 header 嗰個語言掣文字、側邊選單都同步跟到。
+      if (typeof window.applyAppLanguage === 'function') {
+        window.applyAppLanguage();
+      }
       if (typeof window.updateUserAuthUI === 'function') {
         window.updateUserAuthUI();
       }
