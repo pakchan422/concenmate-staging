@@ -109,6 +109,11 @@
         return;
       }
 
+      // 窄螢幕嗰陣側邊選單係浮層（見 window.toggleMobileNav），揀咗
+      // 邊個分頁之後應該自動收返去，唔使用家自己再撳一次☰先睇到個
+      // 分頁內容；闊螢幕嗰陣側邊欄本身冇開過呢個浮層狀態，呢句冇效果。
+      if (typeof window.toggleMobileNav === 'function') window.toggleMobileNav(false);
+
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
 
@@ -2811,10 +2816,24 @@
     // flag 加埋兩粒掣（單抽／十連抽）一齊鎖住，確保同一時間淨係得一
     // 次扭蛋請求喺處理緊。
     let gachaDrawInProgress = false;
+    // 撳落去到 spendGachaPoints 呢個 Cloud Function 真正回應之間，如果啱啱
+    // 冇人用過（Cloud Function 冷啟動），可能要等幾秒；淨係擋掣唔改文字
+    // 嘅話畫面睇落好似咩都冇發生、當咗個掣壞咗，所以要順便將掣嘅文字
+    // 改做「⏳ 扭緊…」，等用戶知道網站有反應緊，唔係卡住。
     function setGachaButtonsDisabled(disabled) {
       const normalBtn = document.getElementById('gacha-draw-normal-btn');
       const luckyBtn = document.getElementById('gacha-draw-lucky-btn');
-      [normalBtn, luckyBtn].forEach(btn => { if (btn) btn.disabled = disabled; });
+      [normalBtn, luckyBtn].forEach(btn => {
+        if (!btn) return;
+        btn.disabled = disabled;
+        if (disabled) {
+          if (btn.dataset.origHtml === undefined) btn.dataset.origHtml = btn.innerHTML;
+          btn.innerHTML = '⏳ 扭緊…';
+        } else if (btn.dataset.origHtml !== undefined) {
+          btn.innerHTML = btn.dataset.origHtml;
+          delete btn.dataset.origHtml;
+        }
+      });
     }
 
     window.doGacha = async function(type) {

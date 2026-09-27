@@ -154,17 +154,27 @@
       const GAP = 12; // 要同 .video-grid-container 嘅 CSS gap 一致
       const CELL_RATIO = 4 / 3;
 
-      let cellW = (availW - GAP) / 2;
+      // 呢個格仔版面之前一律當 4 人房計（固定 2x2），2 人房嗰陣就算淨係
+      // 得返兩個鏡頭畫面，都仲係跟住「2 行」嚟計格仔高度，變相谷細咗一
+      // 半、成個畫面上下留返一大嚿冇用嘅黑位（見用家反映「二人房間時
+      // 視訊畫面應該盡量放大及置中」）。而家改跟返呢間房實際嘅人數
+      // 上限：2 人房用 1 行 2 欄（兩格並排，各自可以攞盡成個高度），
+      // 4 人房先維持原本嘅 2x2。
+      const cap = state.currentRoomCapacity || ROOM_CAPACITY;
+      const cols = cap <= 2 ? Math.max(1, cap) : 2;
+      const rows = Math.max(1, Math.ceil(cap / cols));
+
+      let cellW = (availW - GAP * (cols - 1)) / cols;
       let cellH = cellW / CELL_RATIO;
-      if (cellH * 2 + GAP > availH) {
-        cellH = (availH - GAP) / 2;
+      if (cellH * rows + GAP * (rows - 1) > availH) {
+        cellH = (availH - GAP * (rows - 1)) / rows;
         cellW = cellH * CELL_RATIO;
       }
       cellW = Math.max(40, Math.floor(cellW));
       cellH = Math.max(30, Math.floor(cellH));
 
-      grid.style.gridTemplateColumns = `repeat(2, ${cellW}px)`;
-      grid.style.gridTemplateRows = `repeat(2, ${cellH}px)`;
+      grid.style.gridTemplateColumns = `repeat(${cols}, ${cellW}px)`;
+      grid.style.gridTemplateRows = `repeat(${rows}, ${cellH}px)`;
     }
     // 視窗大細改變（例如手機轉方向、電腦拉闊縮窄視窗）都要重新計過
     window.addEventListener('resize', updateFullscreenGridSize);
@@ -1163,10 +1173,32 @@
       }
     };
 
-    window.joinPublicRoom = async function(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid) {
-      const success = await enterRoomSetup(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid);
-      if (success) {
-        window.showToast(`成功加入「${roomName}」！`, "🦦");
+    // btnEl：大廳房間卡片嗰粒「🚪 加入房間」掣本身（可以冇——例如經分享
+    // 連結、或者接受朋友邀請入房嗰兩條路徑，冧㨂冇對應嘅掣可以擋）。
+    // enterRoomSetup 入面要驗證密碼、核對 bannedUids 等，一律要等
+    // verifyRoomPassword 呢個 Cloud Function 回應（見下面），如果啱啱
+    // 冇人用過呢個 function（冷啟動），可能要等幾秒先有反應；擋住個掣
+    // 兼改文字，等用戶知道網站有反應緊、唔係當機。
+    window.joinPublicRoom = async function(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid, btnEl) {
+      let originalBtnHtml = null;
+      if (btnEl) {
+        originalBtnHtml = btnEl.innerHTML;
+        btnEl.disabled = true;
+        btnEl.innerHTML = '⏳ 加入緊…';
+      }
+      try {
+        const success = await enterRoomSetup(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid);
+        if (success) {
+          window.showToast(`成功加入「${roomName}」！`, "🦦");
+        }
+      } finally {
+        // 成功入到房之後，呢張房間卡片好快會隨住大廳列表重新渲染而消失，
+        // 所以呢度照舊還原返個掣都冇問題；主要係防止加入失敗／密碼錯之
+        // 類情況之下，個掣一直卡喺「⏳ 加入緊…」冇得再撳。
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = originalBtnHtml;
+        }
       }
     };
 
@@ -1175,6 +1207,13 @@
         window.showToast("請先登入會員", "⚠️");
         return false;
       }
+
+      // 即刻俾個提示，等用戶知道撳完掣網站有反應緊：入房要核對密碼／
+      // 黑名單，呢一步一律要呼叫 verifyRoomPassword 呢個 Cloud Function
+      // （見下面），如果啱啱冇人用過呢個 function（冷啟動），可能要等
+      // 幾秒先有回應。冇呢句提示嘅話，等候期間畫面完全冇變化，好易俾人
+      // 誤會網站壞咗。
+      window.showToast('正在準備溫習房，請稍等…', '⏳');
 
       // 曾經俾房主踢走過嘅用家唔可以再加入返呢間房（bannedUids 名單一直
       // 留喺房間文件度，唔會自動清走，見 window.kickParticipant）；

@@ -90,6 +90,21 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       return result.data;
     };
 
+    // 側邊選單喺窄螢幕（≤900px，見 index.html 嘅 CSS）變成撳☰先滑出嚟
+    // 嘅浮層選單。forceOpen 冇傳就當「切換」；傳 true/false 就強制開／關
+    // （揀咗某個分頁之後要強制關返，見 switchTab）。加/減 body 嘅捲動
+    // 鎖定，係因為選單開住嗰陣如果個背景版面都仲郁得，會令人以為個
+    // 選單冇真正蓋住成個畫面、好易誤觸背後嘅按鈕。
+    window.toggleMobileNav = function(forceOpen) {
+      const asideEl = document.querySelector('aside');
+      const backdropEl = document.getElementById('mobile-nav-backdrop');
+      if (!asideEl) return;
+      const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !asideEl.classList.contains('mobile-nav-open');
+      asideEl.classList.toggle('mobile-nav-open', shouldOpen);
+      if (backdropEl) backdropEl.classList.toggle('show', shouldOpen);
+      document.body.style.overflow = shouldOpen ? 'hidden' : '';
+    };
+
     // 幽靈房自動清理：房間冇人心跳（見 updateRoomHeartbeat）超過呢個時間，
     // 就當佢係冇人打理嘅幽靈房（例如房主手機突然關機、瀏覽器崩潰，嚟唔切
     // 觸發正常嘅退房流程），下次有人打開大廳就會順手刪走，唔使等房主親自嚟關。
@@ -175,7 +190,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           </div>
 
           <div style="display:flex; gap:6px; margin-top:12px;">
-            <button class="btn btn-primary" style="flex:1; justify-content:center; font-size:13px; padding:6px;" onclick="joinPublicRoom('${roomId}', '${room.name.replace(/'/g, "\\'")}', '${room.subject}', ${room.duration}, '${room.hostName}', ${isMyRoom}, ${createdAtMs}, '${room.hostUid || ''}')">
+            <button class="btn btn-primary" style="flex:1; justify-content:center; font-size:13px; padding:6px;" onclick="joinPublicRoom('${roomId}', '${room.name.replace(/'/g, "\\'")}', '${room.subject}', ${room.duration}, '${room.hostName}', ${isMyRoom}, ${createdAtMs}, '${room.hostUid || ''}', this)">
               🚪 加入房間
             </button>
             ${isMyRoom ? `<button class="btn btn-red" style="font-size:13px; padding:6px;" onclick="deleteRoomQuick('${roomId}')">刪除</button>` : ''}

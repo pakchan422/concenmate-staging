@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.169.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.171.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -224,17 +224,48 @@
     aside { width: 200px; background: white; border-right: 1px solid var(--brand-200); padding: 10px; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0; }
     main { flex: 1; padding: 12px; overflow-y: auto; }
 
+    /* ☰ 選單掣：預設收埋，淨係窄螢幕（見下面 900px 斷面）先顯示。 */
+    .mobile-nav-toggle { display: none; background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 8px; margin-right: 2px; color: var(--brand-800, #1E4550); flex-shrink: 0; align-items: center; justify-content: center; }
+    /* 揭開側邊選單嗰陣嘅背景遮罩：撳一下就會關返個選單（見
+       window.toggleMobileNav），同手機系統嘅慣常做法一致。 */
+    #mobile-nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 65; }
+    #mobile-nav-backdrop.show { display: block; }
+
+    /* ── 側邊選單改做「滑出式選單」(drawer)：以前嘅做法係斷面一路縮，
+       側邊欄先縮到得返圖示、去到好窄嘅手機（≤360px）仲會索性成個
+       收埋、乜都冇剩，用家會完全搵唔到側邊選單（見用家喺 Android
+       手機嘅回報）。而家統一用返一個斷面（900px）：呢個闊度之下，
+       側邊欄唔再佔住版面空間，預設收埋喺畫面左邊，撳 header 嗰粒☰
+       先滑出嚟做浮層選單，文字同圖示都照全部顯示清楚，唔使再靠逐個
+       手機型號嘅斷面嚟湊，任何一部手機／平板嘅螢幕闊度只要細過
+       900px，都會自動變做呢一種顯示方式。 */
+    @media (max-width: 900px) {
+      .mobile-nav-toggle { display: inline-flex; }
+      aside {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 240px;
+        max-width: 78vw;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 70;
+        box-shadow: 2px 0 20px rgba(0,0,0,.2);
+        padding: 14px 10px;
+        padding-top: max(14px, env(safe-area-inset-top));
+      }
+      aside.mobile-nav-open { transform: translateX(0); }
+    }
+
     /* ── Tablet (≤768px) ── */
     @media (max-width: 768px) {
-      aside { width: 56px; padding: 6px 4px; }
-      .nav-text { display: none; }
       /* 用 !important：因為登入之後 JS 會幫呢粒 pill 加返 inline
          style="display:flex"，普通 class 規則蓋唔到 inline style，
          唔加 !important 嘅話喺窄螢幕度就會同右邊嗰組按鈕（管理後台/VIP/
          登入）疊埋一齊，因為呢粒 pill 係用 position:absolute 置中，
          唔受 flex 版面影響，會直接浮喺按鈕上面 */
       .user-stats { display: none !important; }
-      .nav-btn { justify-content: center; padding: 11px 0; font-size: 18px; }
       main { padding: 10px; }
       .home-feature-grid { grid-template-columns: repeat(3, minmax(0, 160px)); gap: 10px; }
       /* 用 #id 揀而唔淨係 .class：因為下面 212 行附近仲有一句冇加 media
@@ -256,8 +287,6 @@
       .header-vip-text { display: none; }    /* 只保留 👑 emoji */
       .header-auth-text { display: none; }   /* 只保留 🔑 emoji */
       .header-admin-text { display: none; }  /* 只保留 ⚙️ emoji */
-      aside { width: 48px; padding: 4px; }
-      .nav-btn { padding: 10px 0; font-size: 17px; border-radius: 8px; }
       main { padding: 8px; }
       .card { padding: 10px; border-radius: 12px; }
       .home-feature-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -295,7 +324,6 @@
 
     /* ── 超小（≤360px，例如舊 Android）── */
     @media (max-width: 360px) {
-      aside { display: none; }          /* 極小螢幕完全收起側邊欄 */
       main { padding: 6px; }
       .home-feature-grid { gap: 6px; }
       .home-feature-btn { padding: 6px; }
@@ -1592,6 +1620,7 @@
   <div id="app-shell" style="display:none;">
   <div id="app-top-sticky">
   <header>
+    <button class="mobile-nav-toggle" id="mobile-nav-toggle-btn" type="button" onclick="window.toggleMobileNav()" aria-label="開啟選單">☰</button>
     <div class="logo-box" onclick="switchTab('home')">
       <div class="logo-avatar" style="background:transparent; border:none; padding:0; width:40px; height:40px;"><img id="header-logo-img" src="logo.png" width="36" height="36" alt="ConcenMate" style="border-radius:50%; object-fit:cover;"></div>
       <div>
@@ -1643,6 +1672,8 @@
     </div>
   </div>
   </div>
+
+  <div id="mobile-nav-backdrop" onclick="window.toggleMobileNav(false)"></div>
 
   <div class="app-container">
 
