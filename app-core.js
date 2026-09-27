@@ -144,16 +144,24 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
     }
 
-    // 大廳嘅學科分類 Tab：淨係揀「全部」或者其中一個學科（中文/英文/數學/公民/選修）。
-    // 房間資料本身淨係靠 Firestore 一條 listener 攞（見 listenToPublicRooms），
-    // 撳唔同 Tab 淨係喺已經攞落嚟嘅資料度做本機篩選，唔使開多條連線。
+    // 大廳嘅學科分類 Tab：揀「全部」或者「必修科目／選修科目／其他」
+    // 呢三個分類（跟疑難解答區一致嘅分法，見 app-features.js 嘅
+    // getRoomSubjectCategory()）——建立房間嗰個下拉選單已經改用晒完整
+    // HKDSE 科目清單（見 index.html 嘅 modal-room-subject），逐科做
+    // Tab 唔切實際，所以改用分類篩選。房間資料本身淨係靠 Firestore
+    // 一條 listener 攞（見 listenToPublicRooms），撳唔同 Tab 淨係喺
+    // 已經攞落嚟嘅資料度做本機篩選，唔使開多條連線。
     let latestRoomsData = [];
     let roomSubjectFilter = '全部';
 
-    window.setRoomSubjectFilter = function(subject) {
-      roomSubjectFilter = subject;
-      document.querySelectorAll('.room-subject-tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.subject === subject);
+    window.setRoomSubjectFilter = function(category) {
+      roomSubjectFilter = category;
+      // 特登淨係揀 #room-subject-tabs 入面嗰幾粒掣（唔係成頁所有
+      // .room-subject-tab-btn）——呢個 class 仲有喺「書伴廣場」嗰邊
+      // 重用緊（見 index.html 嘅註解），淨係揀返自己嗰組先唔會撞埋
+      // 兩邊個 active 狀態。
+      document.querySelectorAll('#room-subject-tabs .room-subject-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.subject === category);
       });
       renderPublicRoomsList();
     };
@@ -164,7 +172,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 
       const filtered = roomSubjectFilter === '全部'
         ? latestRoomsData
-        : latestRoomsData.filter(r => r.room.subject === roomSubjectFilter);
+        : latestRoomsData.filter(r => (typeof window.getRoomSubjectCategory === 'function' ? window.getRoomSubjectCategory(r.room.subject) : 'other') === roomSubjectFilter);
 
       if (filtered.length === 0) {
         roomsListEl.innerHTML = `

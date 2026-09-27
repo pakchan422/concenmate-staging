@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.175.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.176.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1179,7 +1179,7 @@
       100% { opacity: 1; transform: scale(1); }
     }
 
-    /* 視訊溫習大廳嘅學科分類 Tab（全部／中文／英文／數學／公民／選修） */
+    /* 視訊溫習大廳嘅學科分類 Tab（全部／必修科目／選修科目／其他） */
     .room-subject-tab-btn {
       background: #fff;
       border: 1px solid var(--brand-200);
@@ -2018,13 +2018,15 @@
               </button>
             </div>
 
+            <!-- 分類跟疑難解答區一致（全部／必修科目／選修科目／其他，
+                 見 app-features.js 嘅 getRoomSubjectCategory()），唔再係
+                 之前固定嗰 5 個學科名——因為建立房間嗰個下拉選單而家已
+                 經改用晒完整 HKDSE 科目清單，用返分類 Tab 先篩得晒。 -->
             <div id="room-subject-tabs" style="display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px;">
-              <button type="button" class="room-subject-tab-btn active" data-subject="全部" onclick="setRoomSubjectFilter('全部')">全部</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="中文" onclick="setRoomSubjectFilter('中文')">中文</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="英文" onclick="setRoomSubjectFilter('英文')">英文</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="數學" onclick="setRoomSubjectFilter('數學')">數學</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="公民" onclick="setRoomSubjectFilter('公民')">公民</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="選修" onclick="setRoomSubjectFilter('選修')">選修</button>
+              <button type="button" class="room-subject-tab-btn active" data-subject="全部" onclick="setRoomSubjectFilter('全部')">📚 全部</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="core" onclick="setRoomSubjectFilter('core')">📖 必修科目</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="elective" onclick="setRoomSubjectFilter('elective')">🧪 選修科目</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="other" onclick="setRoomSubjectFilter('other')">💬 其他</button>
             </div>
 
             <div id="public-rooms-container" class="rooms-grid">
@@ -3234,12 +3236,38 @@
 
         <div>
           <label style="font-size:13px; font-weight:bold; color:#555; display:block;">溫習學科 *</label>
+          <!-- 學科清單改為同「發起提問」「教材管理」一致嘅完整 HKDSE
+               科目清單（見 tutor-panel.js 嘅 window.TUTOR_DSE_SUBJECTS），
+               揀擇多咗，唔再淨係得返 5 個大類（見用家反映：想同疑難
+               解答區嘅科目清單一樣咁多選擇）。呢個 select 淨係一個學科
+               標籤用途，冇「自行輸入」選項，保持簡單。 -->
           <select id="modal-room-subject" class="input-field">
-            <option value="中文" selected>中文</option>
-            <option value="英文">英文</option>
-            <option value="數學">數學</option>
-            <option value="公民">公民</option>
-            <option value="選修">選修</option>
+            <option value="中國語文" selected>中國語文</option>
+            <option value="英國語文">英國語文</option>
+            <option value="數學（必修部分）">數學（必修部分）</option>
+            <option value="數學延伸部分單元一（M1）">數學延伸部分單元一（M1）</option>
+            <option value="數學延伸部分單元二（M2）">數學延伸部分單元二（M2）</option>
+            <option value="公民與社會發展">公民與社會發展</option>
+            <option value="中國歷史">中國歷史</option>
+            <option value="歷史">歷史</option>
+            <option value="地理">地理</option>
+            <option value="經濟">經濟</option>
+            <option value="企業、會計與財務概論（BAFS）">企業、會計與財務概論（BAFS）</option>
+            <option value="倫理與宗教">倫理與宗教</option>
+            <option value="中國文學">中國文學</option>
+            <option value="英語文學">英語文學</option>
+            <option value="物理">物理</option>
+            <option value="化學">化學</option>
+            <option value="生物">生物</option>
+            <option value="資訊及通訊科技">資訊及通訊科技</option>
+            <option value="健康管理與社會關懷">健康管理與社會關懷</option>
+            <option value="科技與生活">科技與生活</option>
+            <option value="設計與應用科技">設計與應用科技</option>
+            <option value="旅遊與款待">旅遊與款待</option>
+            <option value="視覺藝術">視覺藝術</option>
+            <option value="音樂">音樂</option>
+            <option value="體育">體育</option>
+            <option value="其他">其他</option>
           </select>
         </div>
 

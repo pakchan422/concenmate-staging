@@ -2235,6 +2235,25 @@
     }
     window.getQACategory = getQACategory;
 
+    // 視訊溫習室大廳嘅學科分類（全部／必修科目／選修科目／其他），跟
+    // 疑難解答區用返同一套 QA_CORE_SUBJECTS／getQAElectiveSubjects()
+    // 判斷邏輯，等成個網站對「邊科屬於必修/選修」嘅判斷一致（見用家
+    // 反映想開房嗰個學科清單同疑難解答區一樣多選擇）。開房嗰個下拉
+    // 選單（modal-room-subject，見 index.html）而家用返完整 HKDSE
+    // 科目清單，但之前已經建立咗嘅舊房間，subject 可能仲係舊制嘅
+    // 「中文／英文／數學／公民／選修」呢幾個簡稱，所以呢度加多一個
+    // 兼容表，等舊房都可以歸類得啱，唔會全部跌落「其他」。
+    const ROOM_LEGACY_CATEGORY_MAP = {
+      '中文': 'core', '英文': 'core', '數學': 'core', '公民': 'core', '選修': 'elective',
+    };
+    function getRoomSubjectCategory(subject) {
+      if (Object.prototype.hasOwnProperty.call(ROOM_LEGACY_CATEGORY_MAP, subject)) {
+        return ROOM_LEGACY_CATEGORY_MAP[subject];
+      }
+      return getQACategory(subject);
+    }
+    window.getRoomSubjectCategory = getRoomSubjectCategory;
+
     let qaCurrentSubject = 'all'; // 'all' | 'core' | 'elective' | 'other'——即係而家揀緊邊個分類 Tab
     let qaCurrentSubjectDetail = ''; // 喺某個分類入面再篩多一層嘅實際科目名；空白就係睇成個分類
     let qaUnsubscribe = null;
