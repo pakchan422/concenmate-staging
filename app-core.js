@@ -182,7 +182,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (filtered.length === 0) {
         roomsListEl.innerHTML = `
           <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background: white; border-radius: 16px; border: 1px solid var(--brand-200);">
-            <div style="font-size:36px; margin-bottom:8px;">🦦📭</div>
+            <div style="font-size:36px; margin-bottom:8px;"></div>
             <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">${roomSubjectFilter === '全部' ? '目前大廳沒有公開的溫習房' : `目前「${window.escapeHtml(ROOM_SUBJECT_FILTER_LABELS[roomSubjectFilter] || roomSubjectFilter)}」分類沒有公開的溫習房`}</p>
             <p style="font-size:13px; color:#666; margin-top:4px;">點擊上方「+ 建立新溫習房」來開立第一個房間吧！</p>
           </div>
@@ -195,16 +195,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           <div>
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
               <span class="tag" style="background:#F0F6F8; color:#1E4550;">${window.escapeHtml(room.subject || '數學')}</span>
-              <span style="font-size:13px; color:#3E7A8A; font-weight:bold;">🟢 直播中</span>
+              <span style="font-size:13px; color:#3E7A8A; font-weight:bold;">直播中</span>
             </div>
             <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">${room.hasPassword ? '🔒 ' : ''}${window.escapeHtml(room.name)}</h4>
             <p style="font-size:13px; color:#666;">房主：<strong>${window.escapeHtml(room.hostName || '匿名同學')}</strong></p>
-            <p style="font-size:13px; color:#888; margin-top:2px;">👥 ${room.participantCount || 0}/${(typeof window.resolveRoomCapacity === 'function') ? window.resolveRoomCapacity(room) : (window.ROOM_CAPACITY || 4)} 人 · 🍅 每輪專注：${room.duration || 30} 分鐘</p>
+            <p style="font-size:13px; color:#888; margin-top:2px;">${room.participantCount || 0}/${(typeof window.resolveRoomCapacity === 'function') ? window.resolveRoomCapacity(room) : (window.ROOM_CAPACITY || 4)} 人 · 每輪專注：${room.duration || 30} 分鐘</p>
           </div>
 
           <div style="display:flex; gap:6px; margin-top:12px;">
             <button class="btn btn-primary" style="flex:1; justify-content:center; font-size:13px; padding:6px;" onclick="joinPublicRoom('${roomId}', '${room.name.replace(/'/g, "\\'")}', '${room.subject}', ${room.duration}, '${room.hostName}', ${isMyRoom}, ${createdAtMs}, '${room.hostUid || ''}', this)">
-              🚪 加入房間
+              加入房間
             </button>
             ${isMyRoom ? `<button class="btn btn-red" style="font-size:13px; padding:6px;" onclick="deleteRoomQuick('${roomId}')">刪除</button>` : ''}
           </div>
@@ -281,8 +281,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (adminToggleBtn) adminToggleBtn.style.display = isAdmin ? 'inline-block' : 'none';
       if (!titleEl) return;
       const isSecondary = getLobbyViewPool() === 'secondary';
-      let title = isSecondary ? '🌐 公開溫習大廳（中學溫習室）' : '🌐 公開溫習大廳（公開溫習室）';
-      if (isAdmin && adminRoomPoolOverride) title += ' 🛠️';
+      let title = isSecondary ? '公開溫習大廳（中學溫習室）' : '公開溫習大廳（公開溫習室）';
+      if (isAdmin && adminRoomPoolOverride) title += '（管理員檢視）';
       titleEl.innerText = title;
     };
 
@@ -381,10 +381,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (roomsListEl) {
           roomsListEl.innerHTML = `
             <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background: white; border-radius: 16px; border: 1px solid var(--brand-200);">
-              <div style="font-size:36px; margin-bottom:8px;">🦦⚠️</div>
+              <div style="font-size:36px; margin-bottom:8px;"></div>
               <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">暫時未能載入公開溫習房列表</p>
               <p style="font-size:13px; color:#666; margin-top:4px;">請檢查網絡連線，或稍後再試。</p>
-              <button class="btn btn-primary" type="button" style="margin-top:10px;" onclick="window.retryListenToPublicRooms && window.retryListenToPublicRooms()">🔄 重新載入</button>
+              <button class="btn btn-primary" type="button" style="margin-top:10px;" onclick="window.retryListenToPublicRooms && window.retryListenToPublicRooms()">重新載入</button>
             </div>
           `;
         }
@@ -613,7 +613,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (result && result.alreadyVerified) {
           window.showToast('這個電郵地址已經驗證過了', 'ℹ️');
         } else {
-          window.showToast('🎉 電郵驗證成功！', '✅');
+          window.showToast('電郵驗證成功！', '✅');
         }
         // 如果撳連結嗰部裝置岩岩好登入緊就係嗰個帳戶本人，即刻更新返
         // 本機狀態，唔使用戶自己再撳多次「重新整理」先解鎖到個 app
@@ -712,7 +712,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (!loginId) return;
 
       const btn = document.getElementById('forgot-password-submit-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 處理中...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '處理中...'; }
 
       try {
         const result = await window.callCloudFunction('requestPasswordReset', { loginId });
@@ -728,7 +728,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       } catch (error) {
         window.showToast('處理失敗：' + (error.message || error), '❌');
       } finally {
-        if (btn) { btn.disabled = false; btn.innerText = '📧 寄出重設密碼連結'; }
+        if (btn) { btn.disabled = false; btn.innerText = '寄出重設密碼連結'; }
       }
     };
 
@@ -763,7 +763,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
 
       const btn = document.getElementById('reset-password-submit-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 更改中...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '更改中...'; }
 
       try {
         await window.callCloudFunction('confirmPasswordReset', { token, newPassword: newPwd });
@@ -771,7 +771,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         const form = document.getElementById('reset-password-form');
         if (form) form.reset();
         window.closeModal('modal-reset-password');
-        window.showToast('🎉 密碼已成功重設！現在可以使用新密碼登入', '✅');
+        window.showToast('密碼已成功重設！現在可以使用新密碼登入', '✅');
         window.openModal('modal-login');
       } catch (error) {
         if (error.code === 'functions/not-found' || error.code === 'not-found') {
@@ -782,7 +782,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           window.showToast('重設密碼失敗：' + (error.message || error), '❌');
         }
       } finally {
-        if (btn) { btn.disabled = false; btn.innerText = '🔑 確認重設密碼'; }
+        if (btn) { btn.disabled = false; btn.innerText = '確認重設密碼'; }
       }
     };
 
@@ -793,7 +793,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const toEmail = window.currentUser.contactEmail;
       if (!toEmail) { window.showToast('請先在上面填寫電郵地址，再按「儲存修改資料」', '⚠️'); return; }
       const btn = document.getElementById('resend-verify-email-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 發送中...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '發送中...'; }
       try {
         const token = generateVerifyToken();
         await updateDoc(doc(db, 'users', auth.currentUser.uid), { emailVerifyToken: token, emailVerified: false });
@@ -805,7 +805,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       } catch (e) {
         window.showToast('發送失敗：' + (e.message || e), '❌');
       } finally {
-        if (btn) { btn.disabled = false; btn.innerText = '📧 重新發送驗證電郵'; }
+        if (btn) { btn.disabled = false; btn.innerText = '重新發送驗證電郵'; }
       }
     };
 
@@ -820,7 +820,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           window.currentUser = snap.data();
         }
         if (window.currentUser.emailVerified) {
-          window.showToast('🎉 電郵已驗證，歡迎使用 ConcenMate！', '✅');
+          window.showToast('電郵已驗證，歡迎使用 ConcenMate！', '✅');
         } else {
           window.showToast('尚未完成驗證，請檢查郵件並點擊當中的連結', '📧');
         }
@@ -845,12 +845,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         badge.style.background = 'transparent';
         resendBtn.style.display = 'none';
       } else if (window.currentUser.emailVerified) {
-        badge.innerText = '✅ 已驗證';
+        badge.innerText = '已驗證';
         badge.style.background = '#DFF3E3';
         badge.style.color = '#2A7A46';
         resendBtn.style.display = 'none';
       } else {
-        badge.innerText = '⚠️ 未驗證';
+        badge.innerText = '未驗證';
         badge.style.background = '#FDECEA';
         badge.style.color = '#C0392B';
         resendBtn.style.display = 'inline-block';
@@ -914,7 +914,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       }
 
       const btn = document.getElementById('change-password-submit-btn');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 更改中...'; }
+      if (btn) { btn.disabled = true; btn.innerText = '更改中...'; }
 
       try {
         const credential = EmailAuthProvider.credential(window.currentUser.email, currentPwd);
@@ -922,7 +922,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         await updatePassword(auth.currentUser, newPwd);
         const form = document.getElementById('change-password-form');
         if (form) form.reset();
-        window.showToast('🎉 密碼已成功更改！下次登入請使用新密碼', '✅');
+        window.showToast('密碼已成功更改！下次登入請使用新密碼', '✅');
       } catch (error) {
         if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
           window.showToast('目前密碼輸入錯誤，請再試一次', '❌');
@@ -934,7 +934,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           window.showToast('更改密碼失敗：' + (error.message || error), '❌');
         }
       } finally {
-        if (btn) { btn.disabled = false; btn.innerText = '🔑 更改密碼'; }
+        if (btn) { btn.disabled = false; btn.innerText = '更改密碼'; }
       }
     };
 
@@ -1051,14 +1051,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.updateUserAuthUI();
         if (profileData.accountType === 'tutor') {
           if (tutorApplySucceeded) {
-            window.showToast(`🎉 註冊成功！您的帳號 ID 是「${loginId}」。導師身份申請已經一併送出，請等候管理員審批，審批結果會在「我的帳戶」顯示`, "🎓");
+            window.showToast(`註冊成功！您的帳號 ID 是「${loginId}」。導師身份申請已經一併送出，請等候管理員審批，審批結果會在「我的帳戶」顯示`, "🎓");
           } else {
-            window.showToast(`🎉 註冊成功！您的帳號 ID 是「${loginId}」。不過導師申請未能送出，請登入後在「我的帳戶」重新申請`, "⚠️");
+            window.showToast(`註冊成功！您的帳號 ID 是「${loginId}」。不過導師申請未能送出，請登入後在「我的帳戶」重新申請`, "⚠️");
           }
         } else if (newProfile.contactEmail) {
-          window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」，請記住以用作登入。另外請點擊已寄至你電郵的驗證連結，才能正式開始使用`, "✨");
+          window.showToast(`註冊成功！你的帳號 ID 是「${loginId}」，請記住以用作登入。另外請點擊已寄至你電郵的驗證連結，才能正式開始使用`, "✨");
         } else {
-          window.showToast(`🎉 註冊成功！你的帳號 ID 是「${loginId}」，記住他來登入`, "✨");
+          window.showToast(`註冊成功！你的帳號 ID 是「${loginId}」，記住他來登入`, "✨");
         }
         window.switchTab('home');
       } catch (error) {
@@ -1926,7 +1926,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const submitBtn = document.getElementById('login-submit-btn');
       const cancelBtn = document.getElementById('login-cancel-btn');
       const originalText = submitBtn ? submitBtn.innerText : '登入';
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = '⏳ 登入中...'; }
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = '登入中...'; }
       if (cancelBtn) cancelBtn.disabled = true;
       try {
         await window.loginWithFirebase(email, password);
@@ -2011,7 +2011,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (secondaryStudentChanged && typeof listenToPublicRooms === 'function') {
           listenToPublicRooms();
         }
-        window.showToast(emailChanged && contactEmail ? "💾 已更新資料，並寄出新的驗證電郵" : "💾 個人檔案已同步更新至 Firebase！", "✅");
+        window.showToast(emailChanged && contactEmail ? "已更新資料，並寄出新的驗證電郵" : "個人檔案已同步更新至 Firebase！", "✅");
       } catch (err) {
         window.showToast("更新失敗: " + err.message, "❌");
       }

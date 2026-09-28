@@ -192,7 +192,7 @@
       if (!roomActive) return;
       const willBeFullscreen = !roomActive.classList.contains('video-fullscreen-mode');
       roomActive.classList.toggle('video-fullscreen-mode', willBeFullscreen);
-      if (fsBtn) fsBtn.innerHTML = willBeFullscreen ? '⛶ 退出全螢幕' : '⛶ 全螢幕';
+      if (fsBtn) fsBtn.innerHTML = willBeFullscreen ? '退出全螢幕' : '全螢幕';
       // 全螢幕嗰陣鎖住背景頁面唔畀捲動，唔係嘅話手指喺黑色空隙度拖到
       // 都會意外拉動咗底下嗰版，畀人覺得畫面甩晒版
       document.body.style.overflow = willBeFullscreen ? 'hidden' : '';
@@ -218,7 +218,7 @@
       const roomActive = document.getElementById('room-active');
       const fsBtn = document.getElementById('video-fullscreen-btn');
       if (roomActive) roomActive.classList.remove('video-fullscreen-mode');
-      if (fsBtn) fsBtn.innerHTML = '⛶ 全螢幕';
+      if (fsBtn) fsBtn.innerHTML = '全螢幕';
       document.body.style.overflow = '';
       // 清返 inline style，唔係就會用返呢啲 px 數值蓋晒返正常（非全
       // 螢幕）嗰個 CSS 版面規則
@@ -335,7 +335,7 @@
         <div class="slot-empty-inner">
           <div class="slot-empty-icon">➕</div>
           <p>等待用家加入...</p>
-          <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">🤝 邀請朋友</button>
+          <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">邀請朋友</button>
         </div>
       `;
     }
@@ -392,19 +392,19 @@
         el.innerHTML = `
           <video class="remote-video-element" autoplay playsinline muted></video>
           <div class="video-overlay" style="display:none;">
-            <div class="avatar-circle" style="opacity:.6;">🚫</div>
+            <div class="avatar-circle" style="opacity:.6;"></div>
             <p style="font-size:13px; color:#ccc; margin-top:6px;">對方鏡頭已關閉</p>
           </div>
           <div class="video-header">
-            <span class="video-tag" style="cursor:pointer;" onclick="viewUserProfile('${uid}')" title="點擊查看資料／加好友">📹 ${name || '其他用家'}</span>
-            <span class="video-tag" id="remote-host-badge-${slotNum}" style="background:#D9EBEF; color:#1E4550; display:none;">👑 房主</span>
-            <span class="video-tag" id="stream-status-${uid}" style="background:#3E7A8A; color:#fff;">🔗 連線中...</span>
+            <span class="video-tag" style="cursor:pointer;" onclick="viewUserProfile('${uid}')" title="點擊查看資料／加好友">${name || '其他用家'}</span>
+            <span class="video-tag" id="remote-host-badge-${slotNum}" style="background:#D9EBEF; color:#1E4550; display:none;">房主</span>
+            <span class="video-tag" id="stream-status-${uid}" style="background:#3E7A8A; color:#fff;">連線中...</span>
             <div class="video-more-menu-wrap">
               <span class="video-tag video-more-menu-toggle" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}')" title="更多選項">⋮</span>
               <div class="video-more-menu-dropdown" id="video-more-menu-${uid}" style="display:none;">
-                <button type="button" class="video-more-menu-item" id="transfer-host-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.transferHostTo('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">👑 轉移房主給他</button>
-                <button type="button" class="video-more-menu-item danger" id="kick-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.kickParticipant('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">🚫 踢走呢位同學</button>
-                <button type="button" class="video-more-menu-item danger" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.openReportModal('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">🚩 舉報呢位同學</button>
+                <button type="button" class="video-more-menu-item" id="transfer-host-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.transferHostTo('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">轉移房主給他</button>
+                <button type="button" class="video-more-menu-item danger" id="kick-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.kickParticipant('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">踢走呢位同學</button>
+                <button type="button" class="video-more-menu-item danger" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.openReportModal('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">舉報呢位同學</button>
               </div>
             </div>
           </div>
@@ -428,7 +428,7 @@
       if (selfHostTag) {
         if (hostUid && myUid && hostUid === myUid) {
           selfHostTag.style.display = 'flex';
-          selfHostTag.innerText = '你是房主 👑';
+          selfHostTag.innerText = '你是房主';
         } else {
           selfHostTag.style.display = 'none';
           selfHostTag.innerText = '';
@@ -623,12 +623,12 @@
           return;
         }
 
-        window.showToast('已送出舉報，管理員會盡快跟進，多謝你保障大家的安全 🙏', '🚩');
+        window.showToast('已送出舉報，管理員會盡快跟進，多謝你保障大家的安全', '🚩');
         window.closeReportModal();
       } catch (e) {
         window.showToast('舉報送出失敗：' + (e.message || e), '❌');
       } finally {
-        if (btn) { btn.disabled = false; btn.innerText = '🚩 確認送出舉報'; }
+        if (btn) { btn.disabled = false; btn.innerText = '確認送出舉報'; }
       }
     };
 
@@ -672,7 +672,7 @@
       const statusTag = document.getElementById('stream-status-' + uid);
       if (statusTag) {
         statusTag.style.background = '#D2C4AD';
-        statusTag.innerText = '🟢 即時串流';
+        statusTag.innerText = '即時串流';
       }
     }
 
@@ -827,7 +827,7 @@
         roomActiveEl.appendChild(container);
       }
       const note = document.createElement('div');
-      note.textContent = `👋 ${name || '同學'} 進來了`;
+      note.textContent = `${name || '同學'} 進來了`;
       note.style.cssText = 'background:rgba(20,20,20,0.72); color:#fff; padding:10px 20px; border-radius:999px; font-size:14px; font-weight:bold; box-shadow:0 4px 14px rgba(0,0,0,0.25); backdrop-filter:blur(4px); opacity:0; transform:translateY(-8px); transition:opacity .25s ease, transform .25s ease;';
       container.appendChild(note);
       requestAnimationFrame(() => {
@@ -918,7 +918,7 @@
           // 俾 enterRoomSetup 嗰個檢查擋返出去，唔可以再入返嚟。
           const myUid = window.currentUser ? window.currentUser.uid : null;
           if (myUid && data && Array.isArray(data.bannedUids) && data.bannedUids.includes(myUid)) {
-            doLeaveRoom(false, '你已被房主移出這個溫習房，之後都不可以再加入 🚫');
+            doLeaveRoom(false, '你已被房主移出這個溫習房，之後都不可以再加入');
           }
         }
       });
@@ -1161,14 +1161,14 @@
         closeModal('modal-create-room');
 
         await enterRoomSetup(roomId, roomName, subject, durationMins, window.currentUser.username || '匿名同學', true, createdAt, window.currentUser.uid);
-        window.showToast("🚀 溫習房建立成功並已廣播至公開大廳！", "✨");
+        window.showToast("溫習房建立成功並已廣播至公開大廳！", "✨");
       } catch (err) {
         window.showToast("建立房間失敗: " + err.message, "❌");
       } finally {
         state.creatingRoom = false;
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerText = originalBtnText || '🚀 立即建立並廣播';
+          submitBtn.innerText = originalBtnText || '立即建立並廣播';
         }
       }
     };
@@ -1656,7 +1656,7 @@
       const newLevel = calcLevelInfo(window.currentUser.exp).level;
       if (newLevel > prevLevel) {
         const rank = getRankTitle(newLevel);
-        window.showToast(`🎉 升級了！現在是 Lv.${newLevel} ${rank.emoji} ${rank.title}！`, '⬆️');
+        window.showToast(`升級了！現在是 Lv.${newLevel} ${rank.emoji} ${rank.title}！`, '⬆️');
       }
       if (hoursIncrement > 0) {
         const newHours = (parseFloat(window.currentUser.hours) || 0) + hoursIncrement;
@@ -1797,7 +1797,7 @@
       resumePresenceSilently();
       // 主動確認「仲喺度」都算係一種投入專注嘅表現，順手獎多 2 分鼓勵一下
       awardStudyPoint(2);
-      window.showToast('讚！繼續加油溫習，額外送你 +2 PTS 🎁', '💪');
+      window.showToast('讚！繼續加油溫習，額外送你 +2 PTS', '💪');
     };
 
     window.leaveRoom = async function() {
@@ -1939,7 +1939,7 @@
       if (canvasEl) canvasEl.style.display = 'none';
       if (overlayEl) overlayEl.style.display = 'flex';
       if (statusTag) statusTag.style.display = 'none';
-      if (btn) { btn.innerText = '📹 開啟鏡頭'; btn.className = 'btn btn-primary'; }
+      if (btn) { btn.innerText = '開啟鏡頭'; btn.className = 'btn btn-primary'; }
       updateMicButtonUI();
 
       if (state.signalingUnsubscribe) {
@@ -2216,11 +2216,11 @@
         const remainSec = Math.ceil((state.micCooldownUntil - Date.now()) / 1000);
         const countdown = formatMicCountdown(remainSec);
         micBtn.disabled = true;
-        micBtn.innerText = `🧊 冷卻中 ${countdown}`;
+        micBtn.innerText = `冷卻中 ${countdown}`;
         micBtn.className = 'btn btn-outline';
         if (micTag) {
           micTag.style.display = state.isCameraOn ? 'flex' : 'none';
-          micTag.innerText = `🧊 咪冷卻中 ${countdown}`;
+          micTag.innerText = `咪冷卻中 ${countdown}`;
           micTag.style.background = 'rgba(125,184,197,0.7)';
         }
         return;
@@ -2232,19 +2232,19 @@
         // 房間嘅番茄鐘）一樣淨係用空格分隔，唔加括號
         const remainSec = state.micOpenUntil ? Math.ceil((state.micOpenUntil - Date.now()) / 1000) : null;
         const countdown = remainSec !== null ? ` ${formatMicCountdown(remainSec)}` : '';
-        micBtn.innerText = `🎤 已開咪${countdown}`;
+        micBtn.innerText = `已開咪${countdown}`;
         micBtn.className = 'btn btn-outline';
         if (micTag) {
           micTag.style.display = state.isCameraOn ? 'flex' : 'none';
-          micTag.innerText = `🎤 已開啟麥克風${countdown}`;
+          micTag.innerText = `已開啟麥克風${countdown}`;
           micTag.style.background = 'rgba(134,239,172,0.9)';
         }
       } else {
-        micBtn.innerText = '🔇 已靜音';
+        micBtn.innerText = '已靜音';
         micBtn.className = 'btn btn-red';
         if (micTag) {
           micTag.style.display = state.isCameraOn ? 'flex' : 'none';
-          micTag.innerText = '🔇 已靜音';
+          micTag.innerText = '已靜音';
           micTag.style.background = 'rgba(125,184,197,0.7)';
         }
       }
@@ -2332,7 +2332,7 @@
         canvasEl.style.display = 'none';
         overlayEl.style.display = 'flex';
         statusTag.style.display = 'none';
-        btn.innerText = '📹 開啟鏡頭';
+        btn.innerText = '開啟鏡頭';
         btn.className = 'btn btn-primary';
         updateMicButtonUI();
 
@@ -2390,7 +2390,7 @@
           canvasEl.style.display = 'block';
           overlayEl.style.display = 'none';
           statusTag.style.display = 'flex';
-          btn.innerText = '🔴 關閉鏡頭';
+          btn.innerText = '關閉鏡頭';
           btn.className = 'btn btn-red';
           updateMicButtonUI();
 
@@ -2415,7 +2415,7 @@
         } catch (err) {
           console.error("相機存取失敗:", err);
           window.showToast(describeMediaError(err), '❌');
-          btn.innerText = '📹 開啟鏡頭';
+          btn.innerText = '開啟鏡頭';
           btn.className = 'btn btn-primary';
         }
       }
@@ -2431,7 +2431,7 @@
       if (!state.isMicOn && state.micCooldownUntil && Date.now() < state.micCooldownUntil) {
         const remainSec = Math.max(0, Math.ceil((state.micCooldownUntil - Date.now()) / 1000));
         const mins = Math.ceil(remainSec / 60);
-        window.showToast(`麥克風仍在冷卻中，大約 ${mins} 分鐘後才可以再開啟 🧊`, '⏳');
+        window.showToast(`麥克風仍在冷卻中，大約 ${mins} 分鐘後才可以再開啟`, '⏳');
         return;
       }
 
@@ -2508,7 +2508,7 @@
           if (state.isMicOn && state.mediaStream) {
             state.isMicOn = false;
             state.mediaStream.getAudioTracks().forEach(track => track.enabled = false);
-            window.showToast('開啟麥克風已滿 3 分鐘，已為你自動關閉，請專心繼續溫習！麥克風按鈕進入 5 分鐘冷卻 🧊', '⏳');
+            window.showToast('開啟麥克風已滿 3 分鐘，已為你自動關閉，請專心繼續溫習！麥克風按鈕進入 5 分鐘冷卻', '⏳');
             // 額外彈出一個唔會自動關閉嘅提示視窗（書面語），確保學生真正留意到，
             // 唔止係一閃即逝嘅 toast——要學生主動按掣確認先關得閉。
             openModal('modal-mic-limit-reminder');
@@ -2564,7 +2564,7 @@
         state.micUsedSeconds = 0;
         if (state.micCooldownUiTimer) { clearInterval(state.micCooldownUiTimer); state.micCooldownUiTimer = null; }
         updateMicButtonUI();
-        window.showToast('麥克風冷卻完成，可以重新開啟 🎤', '✅');
+        window.showToast('麥克風冷卻完成，可以重新開啟', '✅');
       }, MIC_COOLDOWN_SECONDS * 1000);
     }
 

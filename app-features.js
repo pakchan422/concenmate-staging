@@ -1076,7 +1076,7 @@
         if (state.ok) {
           btn.style.opacity = '1';
           btn.style.cursor = 'pointer';
-          btn.innerText = '➕ 發佈今日溫習相片';
+          btn.innerText = '發佈今日溫習相片';
         } else {
           btn.style.opacity = '0.5';
           btn.style.cursor = 'not-allowed';
@@ -1234,9 +1234,9 @@
         const followId = `${window.currentUser.uid}_${targetUid}`;
         const snap = await window.fs.getDoc(window.fs.doc(window.db, 'follows', followId));
         if (snap.exists()) {
-          wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">✅ 已追蹤（點擊取消）</button>`;
+          wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">已追蹤（點擊取消）</button>`;
         } else {
-          wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">➕ 追蹤${verb}</button>`;
+          wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">追蹤${verb}</button>`;
         }
       } catch (e) {
         console.error('讀取追蹤狀態失敗:', e);
@@ -1250,7 +1250,7 @@
       try {
         await window.callCloudFunction('followUser', { targetUid });
         const wrap = document.getElementById(wrapId);
-        if (wrap) wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">✅ 已追蹤（點擊取消）</button>`;
+        if (wrap) wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">已追蹤（點擊取消）</button>`;
         const countEl = document.getElementById(_followCountIdFor(wrapId));
         if (countEl) countEl.innerText = (parseInt(countEl.innerText, 10) || 0) + 1;
         // 追蹤緊嘅係自己嘅「追蹤中」數，唔係對方嘅「粉絲」數——呢兩個
@@ -1272,7 +1272,7 @@
       try {
         await window.callCloudFunction('unfollowUser', { targetUid });
         const wrap = document.getElementById(wrapId);
-        if (wrap) wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">➕ 追蹤${_followVerbFor(wrapId)}</button>`;
+        if (wrap) wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">追蹤${_followVerbFor(wrapId)}</button>`;
         const countEl = document.getElementById(_followCountIdFor(wrapId));
         if (countEl) countEl.innerText = Math.max(0, (parseInt(countEl.innerText, 10) || 0) - 1);
         window.currentUser.followingCount = Math.max(0, (window.currentUser.followingCount || 0) - 1);
@@ -1313,7 +1313,7 @@
         if (backWrap) backWrap.style.display = 'none';
         if (uploadSection) uploadSection.style.display = 'block';
         if (followWrap) { followWrap.style.display = 'none'; followWrap.innerHTML = ''; }
-        if (headingEl) headingEl.innerText = '📔 我的溫習相片';
+        if (headingEl) headingEl.innerText = '我的溫習相片';
         if (!window.currentUser) return;
         if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
         if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
@@ -1325,7 +1325,7 @@
       if (backWrap) backWrap.style.display = 'block';
       if (uploadSection) uploadSection.style.display = 'none';
       if (followWrap) followWrap.style.display = 'block';
-      if (headingEl) headingEl.innerText = '📔 溫習相片';
+      if (headingEl) headingEl.innerText = '溫習相片';
 
       const avatarEl = document.getElementById('diary-avatar');
       const usernameEl = document.getElementById('diary-username');
@@ -1380,7 +1380,7 @@
       const titleEl = document.getElementById('follow-list-title');
       const listEl = document.getElementById('follow-list-container');
       if (titleEl) titleEl.innerText = type === 'following' ? '追蹤中名單' : '粉絲名單';
-      if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">🔄 載入中...</p>';
+      if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">載入中...</p>';
       openModal('modal-follow-list');
 
       try {
@@ -2011,7 +2011,7 @@
         if (typeof window.closeAllChatWindows === 'function') window.closeAllChatWindows();
 
         headerAuthBtn.className = "btn btn-primary";
-        headerAuthBtn.innerHTML = `🔑 登入 / 註冊`;
+        headerAuthBtn.innerHTML = `登入 / 註冊`;
       }
     }
     window.updateUserAuthUI = updateUserAuthUI;
@@ -2083,7 +2083,7 @@
       if (window.currentUser.role === 'tutor') {
         area.innerHTML = `
           <div style="background:#EAF6EC; border:1px solid #B7E0BE; border-radius:10px; padding:10px 12px; font-size:13px; color:#2F6B3A; text-align:left;">
-            🎓 您已經是 ConcenMate 認證導師。請在左側選單點選「管理教材」，即可上傳與管理您的科目、課題及教材。
+            您已經是 ConcenMate 認證導師。請在左側選單點選「管理教材」，即可上傳與管理您的科目、課題及教材。
           </div>
         `;
         return;
@@ -2109,9 +2109,9 @@
         } else if (app.status === 'rejected') {
           area.innerHTML = `
             <div style="background:#FBEAEA; border:1px solid #E3B4B4; border-radius:10px; padding:10px 12px; font-size:13px; color:#8a2f2f; text-align:left; margin-bottom:8px;">
-              ❌ 上一次的導師申請未獲批准。${app.rejectionReason ? ('原因：' + escapeHtml(app.rejectionReason)) : ''}
+              上一次的導師申請未獲批准。${app.rejectionReason ? ('原因：' + escapeHtml(app.rejectionReason)) : ''}
             </div>
-            <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="openTutorApplyModal()">🔁 重新申請</button>
+            <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="openTutorApplyModal()">重新申請</button>
           `;
         } else {
           // status === 'approved'，但 users/{uid}.role 未及時同步（理論上
@@ -2119,7 +2119,7 @@
           // 極微，保留呢個分支純粹係防禦性顯示）
           area.innerHTML = `
             <div style="background:#EAF6EC; border:1px solid #B7E0BE; border-radius:10px; padding:10px 12px; font-size:13px; color:#2F6B3A; text-align:left;">
-              🎓 您的導師申請已經批核，重新登入後即可生效。
+              您的導師申請已經批核，重新登入後即可生效。
             </div>
           `;
         }
@@ -2201,8 +2201,8 @@
     // 係實際科目全名（例如「數學（必修部分）」），QA_SUBJECTS 淨係
     // 用嚟兼容返舊制提問嘅標籤，新制科目直接顯示返個名就得。
     const QA_SUBJECTS = {
-      all: '📚 全部', math: '➕ 數學', chi: '📝 中文',
-      eng: '🔤 英文', sci: '🔬 科學', econ: '💹 經濟', other: '💬 其他'
+      all: '全部', math: '數學', chi: '中文',
+      eng: '英文', sci: '科學', econ: '經濟', other: '其他'
     };
 
     // HKDSE 必修科（中國語文／英國語文／數學（必修部分）／公民與
@@ -2331,14 +2331,14 @@
           <div class="qa-post-card" onclick="openQADetail('${p.id}')">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
               <span class="qa-subject-label">${QA_SUBJECTS[p.subject] || p.subject}</span>
-              ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}')">🗑️ 刪除</button>` : ''}
+              ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}')">刪除</button>` : ''}
             </div>
             <h4 style="font-size:13px; font-weight:700; margin:4px 0; color:var(--brand-800);">${escapeHtml(p.title)}</h4>
             <p style="font-size:13px; color:#666; line-height:1.5; margin-bottom:6px;">${escapeHtml(p.body || '').substring(0,100)}${(p.body||'').length > 100 ? '…' : ''}</p>
             ${photos ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">${photos}</div>` : ''}
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#aaa;">
-              <span>👤 ${escapeHtml(p.authorName || '匿名')} · ${formatTime(p.createdAt)}</span>
-              <span>💬 ${p.commentCount || 0} 個回答</span>
+              <span>${escapeHtml(p.authorName || '匿名')} · ${formatTime(p.createdAt)}</span>
+              <span>${p.commentCount || 0} 個回答</span>
             </div>
           </div>
         `;
@@ -2511,12 +2511,12 @@
       document.getElementById('qa-detail-content').innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
           <span class="qa-subject-label">${QA_SUBJECTS[p.subject] || p.subject}</span>
-          ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}'); closeModal('modal-qa-detail');">🗑️ 刪除</button>` : ''}
+          ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}'); closeModal('modal-qa-detail');">刪除</button>` : ''}
         </div>
         <h3 style="font-size:15px; font-weight:700; color:var(--brand-800); margin-bottom:8px;">${escapeHtml(p.title)}</h3>
         ${p.body ? `<p style="font-size:13px; color:#555; line-height:1.6; margin-bottom:10px;">${escapeHtml(p.body)}</p>` : ''}
         ${photos ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${photos}</div>` : ''}
-        <div style="font-size:13px; color:#aaa; margin-bottom:14px;">👤 ${escapeHtml(p.authorName || '匿名')} · ${formatTime(p.createdAt)}</div>
+        <div style="font-size:13px; color:#aaa; margin-bottom:14px;">${escapeHtml(p.authorName || '匿名')} · ${formatTime(p.createdAt)}</div>
         <div id="qa-comment-list" style="display:flex; flex-direction:column; gap:8px;">
           <div style="font-size:13px; color:#aaa; text-align:center;">載入留言中…</div>
         </div>
@@ -2541,18 +2541,18 @@
           ).join('');
           const isOwn = myUid && c.uid === myUid;
           const editedNote = c.editedAt
-            ? `<span style="font-size:13px; color:#7DB8C5; margin-left:6px;">✏️ 已編輯 ${formatTime(c.editedAt)}</span>`
+            ? `<span style="font-size:13px; color:#7DB8C5; margin-left:6px;">已編輯 ${formatTime(c.editedAt)}</span>`
             : '';
           const actions = isOwn ? `
             <div style="display:flex; gap:6px; margin-top:8px;">
               <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;"
-                onclick="startEditComment('${c.id}', \`${escapeHtml(c.body).replace(/`/g,'\\`')}\`)">✏️ 編輯</button>
+                onclick="startEditComment('${c.id}', \`${escapeHtml(c.body).replace(/`/g,'\\`')}\`)">編輯</button>
               <button class="btn btn-red" style="font-size:13px; padding:4px 10px;"
-                onclick="deleteComment('${c.id}')">🗑️ 刪除</button>
+                onclick="deleteComment('${c.id}')">刪除</button>
             </div>` : '';
           return `
           <div id="comment-${c.id}" style="background:var(--brand-50); border-radius:12px; padding:12px; border:1px solid var(--brand-200);">
-            <div style="font-size:13px; font-weight:bold; color:var(--brand-700);">👤 ${escapeHtml(c.authorName || '匿名')}</div>
+            <div style="font-size:13px; font-weight:bold; color:var(--brand-700);">${escapeHtml(c.authorName || '匿名')}</div>
             <p id="comment-body-${c.id}" style="font-size:13px; color:#333; margin-top:5px; line-height:1.6;">${escapeHtml(c.body)}</p>
             ${cPhotos ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">${cPhotos}</div>` : ''}
             <div style="font-size:13px; color:#aaa; margin-top:5px;">
@@ -2647,7 +2647,7 @@
           <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;"
             onclick="cancelEditComment('${commentId}')">取消</button>
           <button class="btn btn-primary" style="font-size:13px; padding:4px 10px;"
-            onclick="saveEditComment('${commentId}')">✅ 儲存</button>
+            onclick="saveEditComment('${commentId}')">儲存</button>
         </div>
       `;
       parent.insertBefore(editArea, bodyEl.nextSibling);
@@ -2951,7 +2951,7 @@
         resultEmojiEl.innerText = sticker.emoji || '🦦';
       }
       const tierEl = document.getElementById('gacha-result-tier');
-      tierEl.innerText = isNew ? '🆕 新貼紙！' : `已擁有 ×${wasOwnedCount + 1}`;
+      tierEl.innerText = isNew ? '新貼紙！' : `已擁有 ×${wasOwnedCount + 1}`;
       tierEl.style.color = isNew ? '#C0524A' : '#2F6070';
       document.getElementById('gacha-result-name').innerText = sticker.name;
       document.getElementById('gacha-result-desc').innerText = `貼紙圖鑑收集進度：${getOwnedStickerTypeCount()}/${GACHA_STICKERS.length}`;
@@ -2961,7 +2961,7 @@
       showGachaSingleResult();
 
       if (isNew) {
-        window.showToast(`🎉 恭喜！抽到新貼紙「${sticker.name}」！`, '🆕');
+        window.showToast(`恭喜！抽到新貼紙「${sticker.name}」！`, '🆕');
       }
 
       // 加入歷史記錄（本頁顯示 + 儲存去 Firestore 給個人資料頁查閱）
@@ -3099,7 +3099,7 @@
           ? `<img src="${sticker.photo}" alt="${escapeHtml(sticker.name || '')}" style="width:38px; height:38px; object-fit:cover; border-radius:8px;">`
           : `<span style="font-size:30px;">${escapeHtml(sticker.emoji || '🦦')}</span>`;
         const badgeColor = isNew ? '#C0524A' : '#2F6070';
-        const badgeText = isNew ? '🆕 新貼紙' : `×${ownedCountAfter}`;
+        const badgeText = isNew ? '新貼紙' : `×${ownedCountAfter}`;
         return `
           <div onclick="showGachaPrizeDetail(${idx})" style="cursor:pointer; background:${isNew ? '#FBEAE8' : '#F0F6F8'}; border:2px solid ${badgeColor}; border-radius:12px; padding:8px 4px; text-align:center;" title="點擊放大查看：${escapeHtml(sticker.name || '')}">
             <div>${thumb}</div>
@@ -3112,7 +3112,7 @@
 
       const newCount = rolls.filter(r => r.isNew).length;
       if (newCount > 0) {
-        window.showToast(`🎉 十連抽入面攞到 ${newCount} 張新貼紙！`, '🆕');
+        window.showToast(`十連抽入面攞到 ${newCount} 張新貼紙！`, '🆕');
       } else {
         window.showToast('十連抽完成，這次全部都是已擁有的貼紙～', '🔁');
       }
@@ -3144,7 +3144,7 @@
         emojiEl.innerText = sticker.emoji || '🦦';
       }
       const tierEl = document.getElementById('gacha-lightbox-tier');
-      tierEl.innerText = isNew ? '🆕 新貼紙！' : `已擁有 ×${ownedCountAfter}`;
+      tierEl.innerText = isNew ? '新貼紙！' : `已擁有 ×${ownedCountAfter}`;
       tierEl.style.color = isNew ? '#C0524A' : '#2F6070';
       document.getElementById('gacha-lightbox-name').innerText = sticker.name || '';
       document.getElementById('gacha-lightbox-desc').innerText = `貼紙圖鑑收集進度：${getOwnedStickerTypeCount()}/${GACHA_STICKERS.length}`;
@@ -3220,8 +3220,8 @@
             <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:#F0F6F8; border:1px solid #B3D6DE55;">
               ${thumb}
               <div style="flex:1;">
-                <strong style="color:${e.isNew ? '#C0524A' : '#2F6070'};">${e.isNew ? '🆕 新貼紙' : '重複'}</strong> · ${escapeHtml(e.name || '')}
-                <div style="color:#7DB8C5; font-size:13px;">${e.type === 'lucky' ? '🎉 十連抽' : '🎯 抽一次'} · ${time} · -${e.cost || 0} PTS</div>
+                <strong style="color:${e.isNew ? '#C0524A' : '#2F6070'};">${e.isNew ? '新貼紙' : '重複'}</strong> · ${escapeHtml(e.name || '')}
+                <div style="color:#7DB8C5; font-size:13px;">${e.type === 'lucky' ? '十連抽' : '抽一次'} · ${time} · -${e.cost || 0} PTS</div>
               </div>
             </div>`;
         }).join('');
@@ -3276,8 +3276,8 @@
         <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:${isNew ? '#FBEAE8' : '#F0F6F8'}; border:1px solid ${color}33;">
           ${thumb}
           <div style="flex:1;">
-            <strong style="color:${color};">${isNew ? '🆕 新貼紙' : '重複'}</strong> · ${escapeHtml(sticker.name || '')}
-            <div style="color:#7DB8C5; font-size:13px;">${type === 'lucky' ? '🎉 十連抽' : '🎯 抽一次'} · ${time} · -${cost} PTS</div>
+            <strong style="color:${color};">${isNew ? '新貼紙' : '重複'}</strong> · ${escapeHtml(sticker.name || '')}
+            <div style="color:#7DB8C5; font-size:13px;">${type === 'lucky' ? '十連抽' : '抽一次'} · ${time} · -${cost} PTS</div>
           </div>
         </div>`;
       }).join('');
@@ -3418,7 +3418,7 @@
         if (typeof window.renderFollowButton === 'function') await renderFollowButton(uid, u);
         // 完整嘅相片牆搬咗去獨立嘅「溫習日記」分頁顯示，呢度淨係擺一粒
         // 掣，撳落去就去嗰個分頁睇呢位同學嘅溫習日記（見 openDiaryView()）
-        if (popDiaryWrap) popDiaryWrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile'); switchTab('diary', null, '${uid}');">📔 查看溫習日記</button>`;
+        if (popDiaryWrap) popDiaryWrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile'); switchTab('diary', null, '${uid}');">查看溫習日記</button>`;
         await renderFriendActionButtons(uid, u);
       } catch (e) {
         console.error('讀取用戶資料失敗:', e);
@@ -3444,9 +3444,9 @@
           const safeChatName = (targetUserData.username || '同學').replace(/'/g, "\\'");
           container.innerHTML = `
             <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">
-              <span class="tag" style="background:var(--brand-100); color:var(--brand-700);">👥 已經是好友</span>
-              <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="closeModal('modal-view-profile'); window.openChatWindow('${targetUid}', '${safeChatName}')">💬 傳送訊息</button>
-              <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="removeFriendAction('${targetUid}')">🗑️ 移除好友</button>
+              <span class="tag" style="background:var(--brand-100); color:var(--brand-700);">已經是好友</span>
+              <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="closeModal('modal-view-profile'); window.openChatWindow('${targetUid}', '${safeChatName}')">傳送訊息</button>
+              <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="removeFriendAction('${targetUid}')">移除好友</button>
             </div>
           `;
           return;
@@ -3458,8 +3458,8 @@
             container.innerHTML = `
               <p style="font-size:13px; color:#888; margin-bottom:6px;">對方想加你做好友</p>
               <div style="display:flex; gap:8px; justify-content:center;">
-                <button class="btn btn-primary" type="button" onclick="respondFriendRequest('${reqId}', true)">✅ 接受</button>
-                <button class="btn btn-outline" type="button" onclick="respondFriendRequest('${reqId}', false)">❌ 拒絕</button>
+                <button class="btn btn-primary" type="button" onclick="respondFriendRequest('${reqId}', true)">接受</button>
+                <button class="btn btn-outline" type="button" onclick="respondFriendRequest('${reqId}', false)">拒絕</button>
               </div>
             `;
           } else {
@@ -3470,7 +3470,7 @@
 
         const safeLoginId = (targetUserData.loginId || '').replace(/'/g, "\\'");
         const safeUsername = (targetUserData.username || '').replace(/'/g, "\\'");
-        container.innerHTML = `<button class="btn btn-primary" type="button" onclick="sendFriendRequest('${targetUid}', '${safeLoginId}', '${safeUsername}')">🤝 加好友</button>`;
+        container.innerHTML = `<button class="btn btn-primary" type="button" onclick="sendFriendRequest('${targetUid}', '${safeLoginId}', '${safeUsername}')">加好友</button>`;
       } catch (e) {
         console.error('讀取好友狀態失敗:', e);
         container.innerHTML = '<p style="font-size:13px; color:#D9764A;">讀取好友狀態失敗</p>';
@@ -3503,7 +3503,7 @@
           createdAt: Date.now(),
           respondedAt: null
         });
-        window.showToast('✅ 好友邀請已送出，等對方接受', '🤝');
+        window.showToast('好友邀請已送出，等對方接受', '🤝');
         renderFriendActionButtons(targetUid, { loginId: targetLoginId, username: targetUsername });
       } catch (e) {
         window.showToast('送出邀請失敗：' + (e.message || e), '❌');
@@ -3527,7 +3527,7 @@
           await window.fs.setDoc(window.fs.doc(window.db, 'users', data.fromUid, 'friends', data.toUid), {
             uid: data.toUid, loginId: data.toLoginId, username: data.toUsername, addedAt: now
           });
-          window.showToast('🎉 已成為好友！', '🤝');
+          window.showToast('已成為好友！', '🤝');
         } else {
           await window.fs.updateDoc(reqRef, { status: 'declined', respondedAt: Date.now() });
           window.showToast('已拒絕邀請', 'ℹ️');
@@ -3632,7 +3632,7 @@
       if (buddyWallUnsubscribe) { window.renderBuddyWallList(); return; }
 
       const listEl = document.getElementById('buddy-wall-list');
-      if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:24px;">🔄 載入中...</p>';
+      if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:24px;">載入中...</p>';
 
       const q = window.fs.query(
         window.fs.collection(window.db, 'buddyPosts'),
@@ -3708,8 +3708,8 @@
         ).join('');
         const isOwn = window.currentUser && post.authorUid === window.currentUser.uid;
         const secondBtnHtml = isOwn
-          ? `<button class="btn btn-red" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.deleteBuddyPost && window.deleteBuddyPost('${post.id}')">🗑️ 刪除</button>`
-          : `<button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.addFriendFromWallPost && window.addFriendFromWallPost('${post.id}')">➕ 加好友</button>`;
+          ? `<button class="btn btn-red" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.deleteBuddyPost && window.deleteBuddyPost('${post.id}')">刪除</button>`
+          : `<button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.addFriendFromWallPost && window.addFriendFromWallPost('${post.id}')">加好友</button>`;
         const isOpen = buddyOpenPanels.has(post.id);
         const cachedComments = buddyCommentsCache[post.id];
         const commentsListHtml = cachedComments
@@ -3728,7 +3728,7 @@
             <div style="margin-bottom:6px;">${subjectTagsHtml}</div>
             <p style="font-size:14px; color:#333; line-height:1.6; margin-bottom:10px;">${escapeHtml(post.content)}</p>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.toggleBuddyPostComments && window.toggleBuddyPostComments('${post.id}')">💬 留言（${post.commentCount || 0}）</button>
+              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.toggleBuddyPostComments && window.toggleBuddyPostComments('${post.id}')">留言（${post.commentCount || 0}）</button>
               ${secondBtnHtml}
             </div>
             <div id="buddy-comments-${post.id}" style="display:${isOpen ? 'block' : 'none'}; margin-top:8px;">
@@ -3936,7 +3936,7 @@
         });
         window.resetBuddyPostForm();
         closeModal('modal-buddy-post');
-        window.showToast && window.showToast('📮 貼文已發佈！', '✨');
+        window.showToast && window.showToast('貼文已發佈！', '✨');
       } catch (e) {
         console.error('發佈貼文失敗:', e);
         window.showToast && window.showToast('發佈失敗，請稍後再試', '❌');
@@ -3964,7 +3964,7 @@
         }
         const targetUid = mapSnap.data().uid;
         if (targetUid === window.currentUser.uid) {
-          resultEl.innerHTML = '<p style="font-size:13px; color:#999;">這個是你自己的帳號 ID 😄</p>';
+          resultEl.innerHTML = '<p style="font-size:13px; color:#999;">這個是你自己的帳號 ID</p>';
           return;
         }
         const userSnap = await window.fs.getDoc(window.fs.doc(window.db, 'users', targetUid));
@@ -3988,14 +3988,14 @@
               <div class="avatar-circle" style="width:40px; height:40px; font-size:16px;">${(u.username||'U').charAt(0).toUpperCase()}</div>
               <div>
                 <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(u.username||'同學')}</div>
-                <div style="font-size:13px; color:#888;">🆔 ${escapeHtml(u.loginId || idLower)}</div>
+                <div style="font-size:13px; color:#888;">${escapeHtml(u.loginId || idLower)}</div>
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <div style="text-align:right; font-size:13px; color:#888; line-height:1.5;">
-                <div>🎓 ${escapeHtml(u.grade || '未填寫')}</div>
+                <div>${escapeHtml(u.grade || '未填寫')}</div>
                 <div style="color:${rank.color};">${rank.emoji} Lv.${levelInfo.level} ${escapeHtml(rank.title)}</div>
-                <div>⏱️ 累積溫習 ${(parseFloat(u.hours) || 0).toFixed(1)} 小時</div>
+                <div>累積溫習 ${(parseFloat(u.hours) || 0).toFixed(1)} 小時</div>
               </div>
               <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="viewUserProfile('${targetUid}')">看資料 / 加好友</button>
             </div>
@@ -4068,7 +4068,7 @@
               </div>
               <div style="min-width:0;">
                 <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(f.username||'同學')} <span style="font-weight:normal; font-size:13px; color:${online ? '#4CAF50' : '#999'};">${online ? '● 在線' : ''}</span></div>
-                <div style="font-size:13px; color:#888;">🆔 ${escapeHtml(f.loginId||'')}</div>
+                <div style="font-size:13px; color:#888;">${escapeHtml(f.loginId||'')}</div>
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
@@ -4119,11 +4119,11 @@
             <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
               <div style="cursor:pointer;" onclick="viewUserProfile('${r.fromUid}')">
                 <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(r.fromUsername||'同學')}</div>
-                <div style="font-size:13px; color:#888;">🆔 ${escapeHtml(r.fromLoginId||'')}</div>
+                <div style="font-size:13px; color:#888;">${escapeHtml(r.fromLoginId||'')}</div>
               </div>
               <div style="display:flex; gap:6px;">
-                <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="respondFriendRequest('${d.id}', true)">✅ 接受</button>
-                <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="respondFriendRequest('${d.id}', false)">❌ 拒絕</button>
+                <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="respondFriendRequest('${d.id}', true)">接受</button>
+                <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="respondFriendRequest('${d.id}', false)">拒絕</button>
               </div>
             </div>
           `;
@@ -4468,7 +4468,7 @@
         }).join('');
       } catch (renderErr) {
         console.error('畫「即時對話」清單失敗:', renderErr);
-        listEl.innerHTML = '<p style="text-align:center; color:#e74c3c; font-size:13px; padding:16px;">⚠️ 對話清單畫面出錯，請截圖 console 錯誤訊息給開發者</p>';
+        listEl.innerHTML = '<p style="text-align:center; color:#e74c3c; font-size:13px; padding:16px;">對話清單畫面出錯，請截圖 console 錯誤訊息給開發者</p>';
       }
     };
 
@@ -4526,7 +4526,7 @@
             if (!win || win.minimized) {
               const friend = (window.friendsListDataCache || []).find(f => f.uid === c.friendUid);
               const friendName = c.friendName || (friend ? friend.username : null) || '朋友';
-              window.showToast(`💬 ${friendName}：${c.lastMessage}`, '💬');
+              window.showToast(`${friendName}：${c.lastMessage}`, '💬');
             }
           }
         }
@@ -4560,8 +4560,8 @@
       }, (err) => {
         console.error('載入對話清單失敗:', err);
         const dockDebugEl = document.getElementById('chat-dock-debug');
-        if (dockDebugEl) { dockDebugEl.style.color = '#ff8080'; dockDebugEl.innerText = '❌ 監聽失敗：' + (err.message || err); }
-        window.showToast('⚠️ 對話清單監聽失敗：' + (err.message || err), '❌');
+        if (dockDebugEl) { dockDebugEl.style.color = '#ff8080'; dockDebugEl.innerText = '監聽失敗：' + (err.message || err); }
+        window.showToast('對話清單監聽失敗：' + (err.message || err), '❌');
       });
     };
 
@@ -4579,8 +4579,8 @@
       } catch (e) {
         console.error('強制重新整理對話清單失敗:', e);
         const dockDebugEl = document.getElementById('chat-dock-debug');
-        if (dockDebugEl) { dockDebugEl.style.color = '#ff8080'; dockDebugEl.innerText = '❌ 強制重整失敗：' + (e.message || e); }
-        window.showToast('⚠️ 對話清單強制重整失敗：' + (e.message || e), '❌');
+        if (dockDebugEl) { dockDebugEl.style.color = '#ff8080'; dockDebugEl.innerText = '強制重整失敗：' + (e.message || e); }
+        window.showToast('對話清單強制重整失敗：' + (e.message || e), '❌');
       }
     };
 
@@ -4819,7 +4819,7 @@
           await window.fs.setDoc(chatRef, chatSummaryPayload, { merge: true });
         } catch (e2) {
           console.error('更新對話摘要失敗（重試都失敗）:', e2);
-          window.showToast('⚠️ 對話摘要未同步給對方（' + (e2.message || e2) + '），訊息本身已送出', '⚠️');
+          window.showToast('對話摘要未同步給對方（' + (e2.message || e2) + '），訊息本身已送出', '⚠️');
         }
       }
 
@@ -4959,10 +4959,10 @@
             </div>
             <div>
               <div style="font-weight:bold; color:var(--brand-800); font-size:13px;">${escapeHtml(f.username||'同學')} <span style="font-weight:normal; font-size:13px; color:${online ? '#4CAF50' : '#999'};">${online ? '● 在線' : ''}</span></div>
-              <div style="font-size:13px; color:#888;">🆔 ${escapeHtml(f.loginId||'')}</div>
+              <div style="font-size:13px; color:#888;">${escapeHtml(f.loginId||'')}</div>
             </div>
           </div>
-          <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="inviteFriendToRoom('${f.uid}', '${escapeHtml((f.username||'同學')).replace(/'/g, "\\'")}')">📨 邀請</button>
+          <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="inviteFriendToRoom('${f.uid}', '${escapeHtml((f.username||'同學')).replace(/'/g, "\\'")}')">邀請</button>
         </div>
       `;
       }).join('');
@@ -5031,7 +5031,7 @@
           invitedAt: now,
           fromUid: window.currentUser.uid
         });
-        window.showToast(`✅ 已經邀請 ${friendUsername} 入房，等待他回應`, '📨');
+        window.showToast(`已經邀請 ${friendUsername} 入房，等待他回應`, '📨');
         window.closeModal('modal-invite-friend');
       } catch (e) {
         window.showToast('邀請失敗：' + (e.message || e), '❌');
@@ -5082,7 +5082,7 @@
 
       // 就算已經彈咗出嚟，都要重新核對一次有冇過期先真正放行入房
       if (invite.expiresAt && Date.now() > invite.expiresAt) {
-        window.showToast('⌛ 這個邀請已經過期，請朋友重新發送邀請', '⌛');
+        window.showToast('這個邀請已經過期，請朋友重新發送邀請', '⌛');
         try { await window.fs.updateDoc(window.fs.doc(window.db, 'roomInvites', invite.id), { status: 'expired' }); } catch (e) {}
         showNextRoomInvitePopup();
         return;

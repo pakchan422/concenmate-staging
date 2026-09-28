@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.176.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.177.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1458,7 +1458,7 @@
         'background:#f59e0b;color:#1a1a1a;font-weight:700;font-size:13px;' +
         'text-align:center;padding:4px 8px;font-family:sans-serif;' +
         'box-shadow:0 1px 4px rgba(0,0,0,.2);">' +
-        '🧪 開發／測試環境（concenmate-dev） —— 此處的任何操作都不會影響真實學生資料' +
+        '開發／測試環境（concenmate-dev） —— 此處的任何操作都不會影響真實學生資料' +
         '</div>'
       );
     }
@@ -1475,9 +1475,9 @@
         <span><span class="pulse-dot"></span>環境除錯面板</span>
         <span style="cursor:pointer; opacity:.7; font-size:13px;" onclick="window.toggleDevBuildBadge()">✕</span>
       </div>
-      🔧 靜態版號: <span id="version-display" style="color:#4A8FA0; font-weight:bold;"></span> <span style="font-size:13px; color:#888;">(於檔案頂部修改)</span><br>
-      ⏱️ 載入時間: <span id="load-timestamp" style="color:#7DB8C5;">讀取中...</span><br>
-      💬 對話清單: <span id="chat-dock-debug" style="color:#7DB8C5;">未載入</span>
+      靜態版號: <span id="version-display" style="color:#4A8FA0; font-weight:bold;"></span> <span style="font-size:13px; color:#888;">(於檔案頂部修改)</span><br>
+      載入時間: <span id="load-timestamp" style="color:#7DB8C5;">讀取中...</span><br>
+      對話清單: <span id="chat-dock-debug" style="color:#7DB8C5;">未載入</span>
     </div>
   </div>
 
@@ -1493,7 +1493,7 @@
     <span class="chat-dock-badge" id="chat-dock-badge">0</span>
   </button>
   <div id="chat-dock-panel">
-    <div class="chat-dock-panel-header">💬 即時對話</div>
+    <div class="chat-dock-panel-header">即時對話</div>
     <div class="chat-dock-panel-list" id="chat-dock-panel-list">
       <p style="text-align:center; color:#999; font-size:13px; padding:16px;">尚未有好友，請先到「書伴廣場」新增幾位！</p>
     </div>
@@ -1555,19 +1555,19 @@
         <div class="landing-steps-grid">
           <div class="landing-step-card">
             <div class="landing-step-num">1</div>
-            <div class="landing-step-icon">📝</div>
+            <div class="landing-step-icon"></div>
             <h3 class="landing-step-title">建立帳戶</h3>
             <p class="landing-step-desc">只需一分鐘完成註冊，即可解鎖專注溫習室、貼紙圖鑑及全部功能。</p>
           </div>
           <div class="landing-step-card">
             <div class="landing-step-num">2</div>
-            <div class="landing-step-icon">📹</div>
+            <div class="landing-step-icon"></div>
             <h3 class="landing-step-title">專注溫習室</h3>
             <p class="landing-step-desc">與其他學生一同在鏡頭前互相督促專注溫習，同時累積積分與經驗值。</p>
           </div>
           <div class="landing-step-card">
             <div class="landing-step-num">3</div>
-            <div class="landing-step-icon">🦦</div>
+            <div class="landing-step-icon"></div>
             <h3 class="landing-step-title">成長與獎勵</h3>
             <p class="landing-step-desc">累積的溫習時數與積分可兌換 Ottiee 貼紙，並提升等級，見證自己一步步累積的溫習成果。</p>
           </div>
@@ -1644,11 +1644,11 @@
     </div>
 
     <div class="user-stats" id="header-user-stats" style="display:none;">
-      <span id="header-level-badge" style="font-weight:bold; color:#4A8FA0;">🌱 Lv.1</span>
+      <span id="header-level-badge" style="font-weight:bold; color:#4A8FA0;">Lv.1</span>
       <span style="color:#ccc">|</span>
-      <span>⏱️ <span id="stat-hours">0.0</span>h</span>
+      <span><span id="stat-hours">0.0</span>h</span>
       <span style="color:#ccc">|</span>
-      <span>🪙 <span id="stat-points">180</span> PTS</span>
+      <span><span id="stat-points">180</span> PTS</span>
     </div>
 
     <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
@@ -1658,10 +1658,10 @@
            名，等用戶一眼睇到而家揀緊邊種；窄螢幕淨係見到 🌐 呢個圖示
            （同 header 其他掣一致嘅收窄方式，見 .header-auth-text 呢類
            class 嘅做法）。 -->
-      <button class="btn btn-outline" id="header-lang-btn" type="button" onclick="openModal('modal-language-switcher')" style="padding:6px 10px;">🌐 <span class="header-lang-text" id="current-lang-label">繁體中文</span></button>
-      <button class="btn btn-outline" id="header-admin-btn" type="button" onclick="window.location.hash='admin'" style="padding:6px 10px; display:none;">⚙️ <span class="header-admin-text">管理後台</span></button>
+      <button class="btn btn-outline" id="header-lang-btn" type="button" onclick="openModal('modal-language-switcher')" style="padding:6px 10px;"><span class="header-lang-text" id="current-lang-label">繁體中文</span></button>
+      <button class="btn btn-outline" id="header-admin-btn" type="button" onclick="window.location.hash='admin'" style="padding:6px 10px; display:none;"><span class="header-admin-text">管理後台</span></button>
       <button class="btn btn-primary" id="header-auth-btn" type="button" onclick="handleHeaderUserClick()" style="padding:6px 10px;">
-        🔑 <span class="header-auth-text">登入</span>
+        <span class="header-auth-text">登入</span>
       </button>
     </div>
   </header>
@@ -1671,7 +1671,7 @@
     <div style="max-width:480px; margin:0 auto; display:flex; align-items:stretch; gap:10px;">
       <div style="flex:1; min-width:0;">
         <div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px;">
-          <span style="font-size:13px; font-weight:700; color:#fff; white-space:nowrap;" data-i18n="home.todayGoal">🎯 今日目標</span>
+          <span style="font-size:13px; font-weight:700; color:#fff; white-space:nowrap;" data-i18n="home.todayGoal">今日目標</span>
           <span id="global-goal-label" style="font-size:13px; color:rgba(255,255,255,.9); white-space:nowrap;">0/60分鐘</span>
         </div>
         <div style="background:rgba(255,255,255,.3); border-radius:99px; height:5px; overflow:hidden; margin-top:3px;">
@@ -1681,7 +1681,7 @@
       <div style="width:1px; align-self:stretch; background:rgba(255,255,255,.3); flex-shrink:0;"></div>
       <div style="flex:1; min-width:0; cursor:pointer;" onclick="openLevelInfoModal()" title="看升級詳情">
         <div style="display:flex; align-items:baseline; gap:4px; overflow:hidden;">
-          <span id="global-level-badge" style="color:#fff; font-size:13px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🌱 Lv.1 溫習新手 · 仍欠 20 EXP 升級</span>
+          <span id="global-level-badge" style="color:#fff; font-size:13px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Lv.1 溫習新手 · 仍欠 20 EXP 升級</span>
           <span onclick="event.stopPropagation(); openPtsExpInfoModal();" title="PTS 及 EXP 如何獲得？" style="display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:50%; background:rgba(255,255,255,.35); font-size:11px; font-weight:900; font-style:normal; flex-shrink:0; cursor:pointer;">!</span>
         </div>
         <div style="background:rgba(255,255,255,.3); border-radius:6px; height:5px; margin-top:3px; overflow:hidden;">
@@ -1698,7 +1698,7 @@
 
     <aside>
       <div>
-        <button class="nav-btn active" id="nav-btn-home" type="button" onclick="switchTab('home', this)"><span class="nav-icon" id="nav-icon-home">🏠</span> <span class="nav-text" data-i18n="nav.home">主頁</span></button>
+        <button class="nav-btn active" id="nav-btn-home" type="button" onclick="switchTab('home', this)"><span class="nav-icon" id="nav-icon-home"></span> <span class="nav-text" data-i18n="nav.home">主頁</span></button>
         <!-- 以下呢一批係「學生／Admin」帳戶先見到嘅功能，導師帳戶登入
              之後會由 applyRoleBasedSidebar()（tutor-panel.js）將佢哋全部
              隱藏，淨係留低「主頁」＋「管理教材」兩項——導師介面同學生
@@ -1707,46 +1707,46 @@
              呢批 <span> 加咗 data-i18n：多語言切換第一階段（見
              i18n.js）示範性咁轉咗嘅位，揀 English／廣東話嗰陣呢幾句
              會自動跟住轉，其餘畫面文字暫時未轉，仍然顯示繁體中文。 -->
-        <button class="nav-btn student-only-nav" id="nav-btn-room" type="button" onclick="switchTab('room', this)"><span class="nav-icon" id="nav-icon-room">📹</span> <span class="nav-text" data-i18n="nav.room">視訊溫習室</span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-qa" type="button" onclick="switchTab('qa', this)"><span class="nav-icon" id="nav-icon-qa">❓</span> <span class="nav-text" data-i18n="nav.qa">疑難解答區</span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-vip" type="button" onclick="switchTab('vip', this)"><span class="nav-icon" id="nav-icon-vip">👑</span> <span class="nav-text" data-i18n="nav.vip">溫習資源</span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-store" type="button" onclick="switchTab('store', this)"><span class="nav-icon" id="nav-icon-store">🎁</span> <span class="nav-text" data-i18n="nav.store">時數扭蛋機</span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-leaderboard" type="button" onclick="switchTab('leaderboard', this)"><span class="nav-icon" id="nav-icon-leaderboard">🏆</span> <span class="nav-text" data-i18n="nav.leaderboard">溫習排行榜</span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-social" type="button" onclick="switchTab('social', this)"><span class="nav-icon" id="nav-icon-social">👥</span> <span class="nav-text" data-i18n="nav.social">書伴廣場</span> <span class="home-sec-badge" id="nav-social-badge" style="display:none; margin-left:auto;"></span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-diary" type="button" onclick="switchTab('diary', this)"><span class="nav-icon" id="nav-icon-diary">📔</span> <span class="nav-text" data-i18n="nav.diary">溫習日記</span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-verification" type="button" onclick="switchTab('verification', this)"><span class="nav-icon" id="nav-icon-verification">🎓</span> <span class="nav-text" data-i18n="nav.verification">學生身份驗證</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-room" type="button" onclick="switchTab('room', this)"><span class="nav-icon" id="nav-icon-room"></span> <span class="nav-text" data-i18n="nav.room">視訊溫習室</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-qa" type="button" onclick="switchTab('qa', this)"><span class="nav-icon" id="nav-icon-qa"></span> <span class="nav-text" data-i18n="nav.qa">疑難解答區</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-vip" type="button" onclick="switchTab('vip', this)"><span class="nav-icon" id="nav-icon-vip"></span> <span class="nav-text" data-i18n="nav.vip">溫習資源</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-store" type="button" onclick="switchTab('store', this)"><span class="nav-icon" id="nav-icon-store"></span> <span class="nav-text" data-i18n="nav.store">時數扭蛋機</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-leaderboard" type="button" onclick="switchTab('leaderboard', this)"><span class="nav-icon" id="nav-icon-leaderboard"></span> <span class="nav-text" data-i18n="nav.leaderboard">溫習排行榜</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-social" type="button" onclick="switchTab('social', this)"><span class="nav-icon" id="nav-icon-social"></span> <span class="nav-text" data-i18n="nav.social">書伴廣場</span> <span class="home-sec-badge" id="nav-social-badge" style="display:none; margin-left:auto;"></span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-diary" type="button" onclick="switchTab('diary', this)"><span class="nav-icon" id="nav-icon-diary"></span> <span class="nav-text" data-i18n="nav.diary">溫習日記</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-verification" type="button" onclick="switchTab('verification', this)"><span class="nav-icon" id="nav-icon-verification"></span> <span class="nav-text" data-i18n="nav.verification">學生身份驗證</span></button>
         <!-- 導師帳戶專用：淨係批核通過（role==='tutor'）先會顯示，見
              applyRoleBasedSidebar()。 -->
-        <button class="nav-btn" id="nav-btn-tutor-materials" type="button" onclick="switchTab('tutor-materials', this)" style="display:none;"><span class="nav-icon">🗂️</span> <span class="nav-text" data-i18n="nav.tutorMaterials">管理教材</span></button>
+        <button class="nav-btn" id="nav-btn-tutor-materials" type="button" onclick="switchTab('tutor-materials', this)" style="display:none;"><span class="nav-icon"></span> <span class="nav-text" data-i18n="nav.tutorMaterials">管理教材</span></button>
       </div>
     </aside>
 
     <main>
 
       <div id="unauth-screen" class="auth-wall-container" style="display:none;">
-        <div style="font-size:52px; margin-bottom:12px;">🦦🔐</div>
+        <div style="font-size:52px; margin-bottom:12px;"></div>
         <h2 style="font-size:22px; font-weight:bold; color:var(--brand-800);">請先登入 ConcenMate 書伴</h2>
         <p style="font-size:14px; color:#666; margin-top:6px; line-height:1.5;">
           登入後即可暢玩公開溫習大廳、建立專屬房間、<br>開啟即時 Canvas 鏡頭直播與參與線上讀書會！
         </p>
 
         <div style="display:flex; justify-content:center; gap:12px; margin-top:20px; flex-wrap:wrap;">
-          <button class="btn btn-primary" style="padding:10px 20px; font-size:16px;" onclick="typeof window.openModal==='function' && window.openModal('modal-login')">🔑 會員登入</button>
-          <button class="btn btn-amber" style="padding:10px 20px; font-size:16px;" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">📝 新用戶註冊</button>
+          <button class="btn btn-primary" style="padding:10px 20px; font-size:16px;" onclick="typeof window.openModal==='function' && window.openModal('modal-login')">會員登入</button>
+          <button class="btn btn-amber" style="padding:10px 20px; font-size:16px;" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">新用戶註冊</button>
         </div>
       </div>
 
       <div id="verify-email-screen" class="auth-wall-container" style="display:none;">
-        <div style="font-size:52px; margin-bottom:12px;">📧🔒</div>
+        <div style="font-size:52px; margin-bottom:12px;">🔒</div>
         <h2 style="font-size:22px; font-weight:bold; color:var(--brand-800);">請先驗證你的電郵地址</h2>
         <p style="font-size:14px; color:#666; margin-top:6px; line-height:1.5;">
           我們已經寄了一封驗證電郵去 <strong id="verify-gate-email">-</strong><br>
           請點擊郵件內的連結完成驗證，方可開始使用 ConcenMate 書伴。
         </p>
         <div style="display:flex; justify-content:center; gap:12px; margin-top:20px; flex-wrap:wrap;">
-          <button class="btn btn-primary" id="verify-gate-resend-btn" type="button" onclick="resendVerificationEmail()">📧 重新發送驗證電郵</button>
-          <button class="btn btn-outline" type="button" onclick="recheckEmailVerification()">🔄 已經驗證了，重新整理</button>
-          <button class="btn btn-outline" type="button" onclick="logoutWithFirebase()">🚪 登出</button>
+          <button class="btn btn-primary" id="verify-gate-resend-btn" type="button" onclick="resendVerificationEmail()">重新發送驗證電郵</button>
+          <button class="btn btn-outline" type="button" onclick="recheckEmailVerification()">已經驗證了，重新整理</button>
+          <button class="btn btn-outline" type="button" onclick="logoutWithFirebase()">登出</button>
         </div>
         <p style="font-size:13px; color:#999; margin-top:16px;">收不到郵件？請檢查垃圾郵件夾，或按「重新發送」。</p>
       </div>
@@ -1762,20 +1762,20 @@
               <img id="home-hero-avatar" src="logo.png" width="52" height="52" alt="ConcenMate"
                 style="border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid rgba(255,255,255,.4);">
               <div>
-                <div class="home-hero-greeting"><span data-i18n="home.greeting">你好，</span><span id="home-username">同學</span>👋</div>
+                <div class="home-hero-greeting"><span data-i18n="home.greeting">你好，</span><span id="home-username">同學</span></div>
                 <div class="home-hero-sub student-only-nav" id="home-hero-sub" data-i18n="home.readyToStudy">今日準備好溫習了嗎？</div>
               </div>
             </div>
             <div class="home-hero-stats">
               <div class="home-stat-pill" id="home-stat-hours-pill">
-                <span class="home-stat-icon">⏱️</span>
+                <span class="home-stat-icon"></span>
                 <div>
                   <div class="home-stat-val"><span id="home-stat-hours">0分鐘</span></div>
                   <div class="home-stat-label" data-i18n="home.statHours">本日時數</div>
                 </div>
               </div>
               <div class="home-stat-pill" id="home-stat-pts-pill">
-                <span class="home-stat-icon">🪙</span>
+                <span class="home-stat-icon"></span>
                 <div>
                   <div class="home-stat-val"><span id="home-stat-pts">0</span></div>
                   <div class="home-stat-label" data-i18n="home.statPoints">積分</div>
@@ -1785,28 +1785,28 @@
                    預設 display:none，只有 applyRoleBasedSidebar() 判斷
                    到係導師帳戶先會顯示（見 tutor-panel.js）。 -->
               <div class="home-stat-pill" id="home-stat-materials-pill" style="display:none;">
-                <span class="home-stat-icon">🗂️</span>
+                <span class="home-stat-icon"></span>
                 <div>
                   <div class="home-stat-val" id="home-stat-materials">0</div>
                   <div class="home-stat-label" data-i18n="home.statMaterials">已上架教材</div>
                 </div>
               </div>
               <div class="home-stat-pill student-only-nav" id="home-stat-streak-pill">
-                <span class="home-stat-icon">🔥</span>
+                <span class="home-stat-icon"></span>
                 <div>
                   <div class="home-stat-val" id="home-stat-streak">1</div>
                   <div class="home-stat-label" data-i18n="home.statStreak">連續天</div>
                 </div>
               </div>
               <div class="home-stat-pill" style="cursor:pointer;" onclick="openFollowListModal(window.currentUser && window.currentUser.uid, 'followers')" title="查看粉絲名單">
-                <span class="home-stat-icon">👥</span>
+                <span class="home-stat-icon"></span>
                 <div>
                   <div class="home-stat-val" id="home-stat-followers">0</div>
                   <div class="home-stat-label" data-i18n="home.statFollowers">粉絲</div>
                 </div>
               </div>
               <div class="home-stat-pill student-only-nav" id="home-stat-following-pill" style="cursor:pointer;" onclick="openFollowListModal(window.currentUser && window.currentUser.uid, 'following')" title="查看追蹤中名單">
-                <span class="home-stat-icon">➕</span>
+                <span class="home-stat-icon"></span>
                 <div>
                   <div class="home-stat-val" id="home-stat-following">0</div>
                   <div class="home-stat-label" data-i18n="home.statFollowing">追蹤中</div>
@@ -1824,18 +1824,18 @@
                出嚟，撳「儲存」先會一齊連改名寫落 Firestore。 -->
           <div class="modal-backdrop" id="modal-otter-rename" style="display:none;">
             <div class="modal-box" style="text-align:center;">
-              <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;" data-i18n="home.otterRenameTitle">✏️ 自訂我的水獺</h3>
+              <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;" data-i18n="home.otterRenameTitle">自訂我的水獺</h3>
               <input type="text" id="otter-rename-input" class="input-field" maxlength="12" placeholder="輸入新名稱（最多 12 個字）" data-i18n-placeholder="home.otterRenamePlaceholder" style="width:100%; text-align:center;">
               <p id="otter-rename-error" style="display:none; color:#C0524A; font-size:13px; margin-top:8px;"></p>
 
               <div style="margin-top:16px; text-align:left;">
-                <p style="font-size:13px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;" data-i18n="home.otterAvatarLabel">🖼️ 頭像（可選擇已收集的貼紙）</p>
+                <p style="font-size:13px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;" data-i18n="home.otterAvatarLabel">頭像（可選擇已收集的貼紙）</p>
                 <div id="otter-avatar-picker-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; max-height:200px; overflow-y:auto; padding:2px;"></div>
               </div>
 
               <div style="display:flex; gap:8px; margin-top:16px;">
                 <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="closeModal('modal-otter-rename')" data-i18n="common.cancel">取消</button>
-                <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="saveOtterRename()" data-i18n="common.save">💾 儲存</button>
+                <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="saveOtterRename()" data-i18n="common.save">儲存</button>
               </div>
             </div>
           </div>
@@ -1852,13 +1852,13 @@
               <div class="card" id="otter-pet-card" style="text-align:center; position:relative;">
                 <button type="button" onclick="openOtterRenameModal()" title="自訂我的水獺" style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; font-size:16px; padding:4px; color:#7DB8C5; line-height:1;">✏️</button>
                 <h3 style="font-size:15px; font-weight:bold; margin-bottom:6px; color:var(--brand-800); display:flex; align-items:center; justify-content:center; gap:6px;">
-                  🦦 <span id="otter-name-display">Ottiee</span>
+                  <span id="otter-name-display">Ottiee</span>
                 </h3>
                 <div id="otter-pet-wrap" class="otter-mood-happy" style="display:inline-block; margin:4px 0;">
                   <!-- 管理員如果有上傳自訂水獺相片，會優先顯示呢張相，取代下面嘅插畫 -->
                   <img id="otter-photo-img" style="display:none; max-width:150px; max-height:150px; width:auto; height:auto; object-fit:contain;" alt="我的水獺">
                   <!-- 管理員未上傳呢個等級嘅相片時，顯示呢個簡單佔位圖示，唔會用返預設插畫 -->
-                  <div id="otter-blank-placeholder" style="display:none; width:120px; height:120px; border-radius:50%; background:#EFEAE0; border:3px solid #C08B57; box-shadow:0 2px 10px rgba(0,0,0,.15); align-items:center; justify-content:center; font-size:44px;">🦦</div>
+                  <div id="otter-blank-placeholder" style="display:none; width:120px; height:120px; border-radius:50%; background:#EFEAE0; border:3px solid #C08B57; box-shadow:0 2px 10px rgba(0,0,0,.15); align-items:center; justify-content:center; font-size:44px;"></div>
                   <svg id="otter-pet-svg" width="120" height="120" viewBox="0 0 140 140" style="display:none;">
                     <!-- 尾巴 -->
                     <ellipse cx="112" cy="100" rx="18" ry="10" fill="#A9764F" transform="rotate(25 112 100)"/>
@@ -1908,7 +1908,7 @@
                      統一更新（見下面 JS）。 -->
                 <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:4px; margin-top:10px; max-width:520px; margin-left:auto; margin-right:auto;">
                   <div style="min-width:0;">
-                    <div id="otter-stat-level" style="font-size:clamp(13px,3.8vw,17px); font-weight:bold; color:#1E4550; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🌱 Lv.1</div>
+                    <div id="otter-stat-level" style="font-size:clamp(13px,3.8vw,17px); font-weight:bold; color:#1E4550; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Lv.1</div>
                     <div style="font-size:11px; color:#999; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" data-i18n="otter.stat.level">等級</div>
                   </div>
                   <div style="min-width:0;">
@@ -1933,10 +1933,10 @@
               <!-- 主打功能：視訊溫習室（導師帳號暫時唔顯示呢個卡，因為
                    視訊溫習室係學生專用功能，導師個位暫時留空） -->
               <button class="home-primary-card student-only-nav" id="home-video-room-card" onclick="switchTab('room')">
-                <div class="home-primary-icon">📹</div>
+                <div class="home-primary-icon"></div>
                 <div class="home-primary-text">
                   <div class="home-primary-title" data-i18n="nav.room">視訊溫習室</div>
-                  <div class="home-primary-desc" data-i18n="home.primaryDesc">📹 與同學一起開鏡頭專注溫習賺積分</div>
+                  <div class="home-primary-desc" data-i18n="home.primaryDesc">與同學一起開鏡頭專注溫習賺積分</div>
                 </div>
                 <div class="home-primary-badge" id="home-room-badge">
                   <span class="live-dot"></span><span data-i18n="home.joinNow">立即加入</span>
@@ -1950,7 +1950,7 @@
               <!-- 積分進度 -->
               <div class="home-side-card" id="home-goal-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                  <span style="font-size:14px; font-weight:700; color:var(--brand-800);" data-i18n="home.todayGoal">🎯 今日目標</span>
+                  <span style="font-size:14px; font-weight:700; color:var(--brand-800);" data-i18n="home.todayGoal">今日目標</span>
                   <span style="font-size:13px; color:var(--brand-600);" id="home-goal-label">0 / 60 分鐘</span>
                 </div>
                 <div style="background:var(--brand-200); border-radius:99px; height:8px; overflow:hidden;">
@@ -1967,7 +1967,7 @@
                    個細細嘅月曆俾用家睇返自己邊幾日有溫習過 -->
               <div class="home-side-card" id="study-calendar-card" style="padding:10px;">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-                  <span style="font-size:13px; font-weight:700; color:var(--brand-800);" data-i18n="home.studyCalendar">📅 溫習日曆</span>
+                  <span style="font-size:13px; font-weight:700; color:var(--brand-800);" data-i18n="home.studyCalendar">溫習日曆</span>
                   <div style="display:flex; align-items:center; gap:2px;">
                     <button type="button" class="study-calendar-nav-btn" onclick="window.shiftStudyCalendarMonth(-1)">‹</button>
                     <span id="study-calendar-month-label" style="font-size:13px; font-weight:bold; color:var(--brand-700); min-width:46px; text-align:center;">--</span>
@@ -1983,8 +1983,8 @@
                        renderStudyCalendar()（app-features.js）用
                        window.t() 嘅樣板（帶 {n} 佔位符）砌返成句，唔再
                        淨係換字尾。 -->
-                  <span id="study-calendar-streak-wrap">🔥 <b id="study-calendar-streak" style="color:var(--brand-800);">0</b> 連續</span>
-                  <span id="study-calendar-total-wrap">📚 <b id="study-calendar-total" style="color:var(--brand-800);">0</b> 總日數</span>
+                  <span id="study-calendar-streak-wrap"><b id="study-calendar-streak" style="color:var(--brand-800);">0</b> 連續</span>
+                  <span id="study-calendar-total-wrap"><b id="study-calendar-total" style="color:var(--brand-800);">0</b> 總日數</span>
                 </div>
               </div>
 
@@ -2000,7 +2000,7 @@
           <div id="room-lobby">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <div style="display:flex; align-items:center; gap:6px;">
-                <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800);" id="room-lobby-title">🌐 公開溫習大廳</h2>
+                <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800);" id="room-lobby-title">公開溫習大廳</h2>
                 <!-- 撳呢粒「！」會彈出解釋大廳分咗「中學溫習室」／「公開溫習室」
                      兩池嘅彈窗（見 window.openRoomPoolInfoModal，同下面
                      #modal-room-pool-info）。 -->
@@ -2011,10 +2011,10 @@
                      測試兩邊嘅房間，唔使開多個帳戶。呢個切換淨係影響
                      「而家睇緊邊個池」，唔會影響管理員自己建房嗰陣所屬
                      嘅池（見 window.toggleAdminRoomPool）。 -->
-                <button type="button" id="admin-room-pool-toggle-btn" style="display:none; font-size:12px; padding:4px 10px; border-radius:8px; border:1px solid var(--brand-200); background:#fff; color:var(--brand-800); cursor:pointer; white-space:nowrap;" onclick="window.toggleAdminRoomPool && window.toggleAdminRoomPool()">🛠️ 轉換溫習室</button>
+                <button type="button" id="admin-room-pool-toggle-btn" style="display:none; font-size:12px; padding:4px 10px; border-radius:8px; border:1px solid var(--brand-200); background:#fff; color:var(--brand-800); cursor:pointer; white-space:nowrap;" onclick="window.toggleAdminRoomPool && window.toggleAdminRoomPool()">轉換溫習室</button>
               </div>
               <button class="btn btn-primary" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-create-room')">
-                🚀 + 建立新溫習房
+                + 建立新溫習房
               </button>
             </div>
 
@@ -2023,15 +2023,15 @@
                  之前固定嗰 5 個學科名——因為建立房間嗰個下拉選單而家已
                  經改用晒完整 HKDSE 科目清單，用返分類 Tab 先篩得晒。 -->
             <div id="room-subject-tabs" style="display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px;">
-              <button type="button" class="room-subject-tab-btn active" data-subject="全部" onclick="setRoomSubjectFilter('全部')">📚 全部</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="core" onclick="setRoomSubjectFilter('core')">📖 必修科目</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="elective" onclick="setRoomSubjectFilter('elective')">🧪 選修科目</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="other" onclick="setRoomSubjectFilter('other')">💬 其他</button>
+              <button type="button" class="room-subject-tab-btn active" data-subject="全部" onclick="setRoomSubjectFilter('全部')">全部</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="core" onclick="setRoomSubjectFilter('core')">必修科目</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="elective" onclick="setRoomSubjectFilter('elective')">選修科目</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="other" onclick="setRoomSubjectFilter('other')">其他</button>
             </div>
 
             <div id="public-rooms-container" class="rooms-grid">
               <div style="grid-column: 1 / -1; text-align:center; padding: 40px; color: #888; font-size: 13px;">
-                🔄 正在透過 Firebase 加載公開溫習房列表...
+                正在透過 Firebase 加載公開溫習房列表...
               </div>
             </div>
           </div>
@@ -2056,8 +2056,8 @@
               </button>
 
               <div class="room-bar-btn-group" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                <button class="btn btn-primary" type="button" id="btn-camera" onclick="toggleCamera()">📹 開啟鏡頭</button>
-                <button class="btn btn-red" type="button" id="btn-mic" onclick="toggleMic()">🔇 已靜音</button>
+                <button class="btn btn-primary" type="button" id="btn-camera" onclick="toggleCamera()">開啟鏡頭</button>
+                <button class="btn btn-red" type="button" id="btn-mic" onclick="toggleMic()">已靜音</button>
 
                 <!-- 全螢幕專用嘅背景音掣：平時（唔係全螢幕）呢粒掣係收埋嘅，正常
                      背景音控制擺喺下面嗰個 .fs-hide-in-fullscreen div 度顯示緊。
@@ -2067,7 +2067,7 @@
                      擺喺呢個位置（開鏡頭／靜音之後）係跟返用家
                      喺全螢幕控制列想要嘅第 3 個位置。 -->
                 <div class="fs-bg-noise-only" style="display:none; position:relative;">
-                  <button class="btn btn-outline" type="button" id="fs-bg-noise-toggle-btn" onclick="toggleFsBgNoisePanel()" title="選擇背景音" style="border-color:#DDCABB; color:#1E4550;">🔊 背景音</button>
+                  <button class="btn btn-outline" type="button" id="fs-bg-noise-toggle-btn" onclick="toggleFsBgNoisePanel()" title="選擇背景音" style="border-color:#DDCABB; color:#1E4550;">背景音</button>
                   <!-- ⚠️ position:fixed（唔係 absolute）：room-bar 喺橫向全螢幕
                        嗰陣係個 148px 闊嘅直向窄條，仲有 overflow-y:auto（會連
                        帶令 overflow-x 都變成 auto），如果個面板用 absolute
@@ -2079,12 +2079,12 @@
                     <select id="fs-bg-noise-select" style="background:#222; color:#fff; border:1px solid #444; border-radius:6px; font-size:13px; padding:4px;" onchange="setBgNoiseType(this.value)">
                       <option value="off">背景音：關閉</option>
                       <option value="white">白噪音</option>
-                      <option value="rain1">🌧️ 雨聲 1</option>
-                      <option value="rain2">🌧️ 雨聲 2</option>
-                      <option value="cafe1">☕ 咖啡室環境聲 1</option>
-                      <option value="cafe2">☕ 咖啡室環境聲 2</option>
-                      <option value="train1">🚆 火車聲 1</option>
-                      <option value="train2">🚆 火車聲 2</option>
+                      <option value="rain1">雨聲 1</option>
+                      <option value="rain2">雨聲 2</option>
+                      <option value="cafe1">咖啡室環境聲 1</option>
+                      <option value="cafe2">咖啡室環境聲 2</option>
+                      <option value="train1">火車聲 1</option>
+                      <option value="train2">火車聲 2</option>
                     </select>
                     <div style="display:flex; align-items:center; gap:6px;">
                       <input type="range" id="fs-bg-noise-volume" min="0" max="1" step="0.05" value="0.39" style="flex:1;" oninput="setBgNoiseVolume(this.value)">
@@ -2097,29 +2097,29 @@
                      而家嘅「總溫習時間」：順時計，只在被判定為閒置、暫停計分
                      嗰陣先會跟住暫停累積 -->
                 <div id="room-total-time-widget" style="background:#fff; color:var(--brand-800); padding:6px 10px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:6px; border:1px solid var(--brand-200);" title="這次入房到現在的總溫習時間（正向計時，閒置暫停計分時會暫停累積）">
-                  <span>⏱️ 已溫習</span>
+                  <span>已溫習</span>
                   <span id="room-total-time" style="font-family:monospace; font-size:14px; font-weight:700; white-space:nowrap;">00:00</span>
                 </div>
 
                 <div class="fs-hide-in-fullscreen bg-noise-inline-row" style="background:#111; color:white; padding:4px 8px; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:6px;" title="專注背景音，建議戴耳機使用">
-                  <span>🔊</span>
+                  <span></span>
                   <select id="bg-noise-select" style="background:#222; color:#fff; border:1px solid #444; border-radius:6px; font-size:13px; padding:2px 4px;" onchange="setBgNoiseType(this.value)">
                     <option value="off">背景音：關閉</option>
                     <option value="white">白噪音</option>
-                    <option value="rain1">🌧️ 雨聲 1</option>
-                    <option value="rain2">🌧️ 雨聲 2</option>
-                    <option value="cafe1">☕ 咖啡室環境聲 1</option>
-                    <option value="cafe2">☕ 咖啡室環境聲 2</option>
-                    <option value="train1">🚆 火車聲 1</option>
-                    <option value="train2">🚆 火車聲 2</option>
+                    <option value="rain1">雨聲 1</option>
+                    <option value="rain2">雨聲 2</option>
+                    <option value="cafe1">咖啡室環境聲 1</option>
+                    <option value="cafe2">咖啡室環境聲 2</option>
+                    <option value="train1">火車聲 1</option>
+                    <option value="train2">火車聲 2</option>
                   </select>
                   <input type="range" id="bg-noise-volume" min="0" max="1" step="0.05" value="0.39" style="width:60px;" oninput="setBgNoiseVolume(this.value)">
                   <button type="button" id="bg-noise-pause-btn" onclick="toggleBgNoisePause()" disabled title="暫停／繼續背景音" style="background:#333; color:#fff; border:1px solid #555; border-radius:6px; font-size:13px; padding:2px 6px; cursor:pointer; opacity:.4; line-height:1.4;">⏸️</button>
                 </div>
 
-                <button class="btn btn-outline" type="button" id="video-fullscreen-btn" style="border-color:#DDCABB; color:#1E4550;" onclick="toggleVideoFullscreenMode()" title="四格鏡頭放到全螢幕，一次過看清楚晒所有人">⛶ 全螢幕</button>
+                <button class="btn btn-outline" type="button" id="video-fullscreen-btn" style="border-color:#DDCABB; color:#1E4550;" onclick="toggleVideoFullscreenMode()" title="四格鏡頭放到全螢幕，一次過看清楚晒所有人">全螢幕</button>
 
-                <button class="btn btn-outline fs-hide-in-fullscreen" type="button" style="border-color:#DDCABB; color:#1E4550;" onclick="leaveRoom()">🚪 退出房間</button>
+                <button class="btn btn-outline fs-hide-in-fullscreen" type="button" style="border-color:#DDCABB; color:#1E4550;" onclick="leaveRoom()">退出房間</button>
               </div>
 
               <!-- 全螢幕控制列收埋掣：平時收埋（inline display:none），入咗
@@ -2140,7 +2140,7 @@
                 <div class="video-overlay" id="self-overlay">
                   <div class="avatar-circle" id="room-self-avatar">A</div>
                   <p style="font-size:14px; font-weight:bold; color:#fff;" id="overlay-msg">溫習房已就緒！</p>
-                  <p style="font-size:13px; margin-top:4px; color:#aaa;">請點擊上方「📹 開啟鏡頭」加入 P2P 視訊互聯</p>
+                  <p style="font-size:13px; margin-top:4px; color:#aaa;">請點擊上方「開啟鏡頭」加入 P2P 視訊互聯</p>
                 </div>
 
                 <div class="video-header">
@@ -2151,8 +2151,8 @@
                 </div>
 
                 <div class="video-footer">
-                  <span class="video-tag" id="camera-status-tag" style="background:rgba(134,239,172,0.9); color:#1E4550; display:none;">🔴 鏡頭即時串流中</span>
-                  <span class="video-tag" id="mic-status-tag" style="background:rgba(134,239,172,0.9); color:#1E4550; display:none; margin-left:4px;">🎤 已開啟麥克風</span>
+                  <span class="video-tag" id="camera-status-tag" style="background:rgba(134,239,172,0.9); color:#1E4550; display:none;">鏡頭即時串流中</span>
+                  <span class="video-tag" id="mic-status-tag" style="background:rgba(134,239,172,0.9); color:#1E4550; display:none; margin-left:4px;">已開啟麥克風</span>
                 </div>
 
                 <!-- 表情反應：平時收埋（唔常用），撳個細圓掣先彈出嚟揀，
@@ -2178,23 +2178,23 @@
               <!-- 預留 3 個空位卡片，供其他用家加入房間後填補（房間上限 4 人） -->
               <div class="video-card-single video-slot-placeholder" id="video-slot-2">
                 <div class="slot-empty-inner">
-                  <div class="slot-empty-icon">➕</div>
+                  <div class="slot-empty-icon"></div>
                   <p>等待用家加入...</p>
-                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">🤝 邀請朋友</button>
+                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">邀請朋友</button>
                 </div>
               </div>
               <div class="video-card-single video-slot-placeholder" id="video-slot-3">
                 <div class="slot-empty-inner">
-                  <div class="slot-empty-icon">➕</div>
+                  <div class="slot-empty-icon"></div>
                   <p>等待用家加入...</p>
-                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">🤝 邀請朋友</button>
+                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">邀請朋友</button>
                 </div>
               </div>
               <div class="video-card-single video-slot-placeholder" id="video-slot-4">
                 <div class="slot-empty-inner">
-                  <div class="slot-empty-icon">➕</div>
+                  <div class="slot-empty-icon"></div>
                   <p>等待用家加入...</p>
-                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">🤝 邀請朋友</button>
+                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">邀請朋友</button>
                 </div>
               </div>
             </div>
@@ -2215,10 +2215,10 @@
                唔揀就繼續顯示成個分類嘅全部提問。「其他」分類科目冇
                固定清單（學生自行輸入），所以冇呢個下拉選單。 -->
           <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
-            <button class="qa-subject-btn active" onclick="switchQASubject('all', this)">📚 全部</button>
-            <button class="qa-subject-btn" onclick="switchQASubject('core', this)">📖 必修科目</button>
-            <button class="qa-subject-btn" onclick="switchQASubject('elective', this)">🧪 選修科目</button>
-            <button class="qa-subject-btn" onclick="switchQASubject('other', this)">💬 其他</button>
+            <button class="qa-subject-btn active" onclick="switchQASubject('all', this)">全部</button>
+            <button class="qa-subject-btn" onclick="switchQASubject('core', this)">必修科目</button>
+            <button class="qa-subject-btn" onclick="switchQASubject('elective', this)">選修科目</button>
+            <button class="qa-subject-btn" onclick="switchQASubject('other', this)">其他</button>
           </div>
 
           <div id="qa-subject-detail-wrap" style="display:none; margin-bottom:14px;">
@@ -2227,7 +2227,7 @@
 
           <!-- 發起提問按鈕 -->
           <button class="btn btn-primary" type="button" onclick="openQAModal()" style="margin-bottom:14px; width:100%;">
-            ✏️ 發起提問
+            發起提問
           </button>
 
           <!-- 問題列表 -->
@@ -2240,7 +2240,7 @@
         <!-- ===== 發起提問 Modal ===== -->
         <div class="modal-backdrop" id="modal-qa-post" style="display:none;">
           <div class="modal-box">
-            <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">✏️ 發起提問</h3>
+            <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">發起提問</h3>
 
             <div style="display:flex; flex-direction:column; gap:10px;">
               <div>
@@ -2288,7 +2288,7 @@
               </div>
               <div style="display:flex; gap:8px; margin-top:10px;">
                 <button class="btn btn-outline" type="button" onclick="closeModal('modal-qa-detail')" style="flex:1;">關閉</button>
-                <button class="btn btn-primary" type="button" id="qa-comment-submit-btn" onclick="submitQAComment()" style="flex:2;">💬 送出回答</button>
+                <button class="btn btn-primary" type="button" id="qa-comment-submit-btn" onclick="submitQAComment()" style="flex:2;">送出回答</button>
               </div>
             </div>
           </div>
@@ -2298,8 +2298,8 @@
         <section id="tab-profile" class="tab-content">
           <div class="profile-edit-card">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:14px;">
-              <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800);">👤 會員個人資料</h2>
-              <button class="btn btn-red" type="button" onclick="logoutWithFirebase()">🚪 登出帳號</button>
+              <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800);">會員個人資料</h2>
+              <button class="btn btn-red" type="button" onclick="logoutWithFirebase()">登出帳號</button>
             </div>
 
             <!-- 個人資料 / 更改登入密碼：分成兩個 Tab，等用戶更容易發現
@@ -2307,8 +2307,8 @@
                  好多用戶都無留意到）。兩個 Tab 內容都擺喺同一個
                  .profile-edit-card 入面，闊度自然一致。 -->
             <div style="display:flex; gap:6px; border-bottom:1px solid #eee; margin-bottom:16px;">
-              <button type="button" id="profile-subtab-btn-info" class="btn" onclick="switchProfileSubtab('info')" style="flex:1; justify-content:center; border-radius:10px 10px 0 0; background:var(--brand-100); color:var(--brand-800); font-weight:bold;">👤 個人資料</button>
-              <button type="button" id="profile-subtab-btn-password" class="btn" onclick="switchProfileSubtab('password')" style="flex:1; justify-content:center; border-radius:10px 10px 0 0; background:transparent; color:#999; font-weight:bold;">🔑 更改登入密碼</button>
+              <button type="button" id="profile-subtab-btn-info" class="btn" onclick="switchProfileSubtab('info')" style="flex:1; justify-content:center; border-radius:10px 10px 0 0; background:var(--brand-100); color:var(--brand-800); font-weight:bold;">個人資料</button>
+              <button type="button" id="profile-subtab-btn-password" class="btn" onclick="switchProfileSubtab('password')" style="flex:1; justify-content:center; border-radius:10px 10px 0 0; background:transparent; color:#999; font-weight:bold;">更改登入密碼</button>
             </div>
 
             <div id="profile-subtab-info">
@@ -2320,7 +2320,7 @@
               <div style="text-align:center; margin-bottom:6px;">
                 <div id="prof-avatar-preview" class="avatar-circle" style="margin:0 auto 8px; width:84px; height:84px; font-size:32px; background:var(--brand-500); border-color:var(--brand-200); overflow:hidden;">A</div>
                 <input type="file" id="prof-avatar-input" accept="image/*" style="display:none;" onchange="handleAvatarFileSelected(event)">
-                <button type="button" class="btn btn-outline" style="padding:6px 14px; font-size:13px;" onclick="document.getElementById('prof-avatar-input').click()">📷 更換頭像</button>
+                <button type="button" class="btn btn-outline" style="padding:6px 14px; font-size:13px;" onclick="document.getElementById('prof-avatar-input').click()">更換頭像</button>
                 <p style="font-size:12px; color:#999; margin-top:6px; line-height:1.5;">上傳後會經系統自動檢測，如相片含有不當內容將會被拒絕。</p>
               </div>
 
@@ -2340,7 +2340,7 @@
                   <input type="email" id="prof-contact-email" class="input-field" placeholder="例如：abc@gmail.com" disabled style="background:#B3D6DE; cursor:not-allowed;">
                   <div style="margin-top:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                     <span id="prof-email-verify-badge" style="font-size:13px; font-weight:bold; padding:3px 8px; border-radius:12px;"></span>
-                    <button type="button" id="resend-verify-email-btn" onclick="resendVerificationEmail()" class="btn" style="display:none; font-size:13px; padding:4px 10px; background:#E5EEF0; color:var(--brand-800);">📧 重新發送驗證電郵</button>
+                    <button type="button" id="resend-verify-email-btn" onclick="resendVerificationEmail()" class="btn" style="display:none; font-size:13px; padding:4px 10px; background:#E5EEF0; color:var(--brand-800);">重新發送驗證電郵</button>
                   </div>
                 </div>
 
@@ -2385,7 +2385,7 @@
                   </div>
                   <input type="hidden" id="prof-is-secondary-student" value="">
                   <p style="font-size:12px; color:#888; margin-top:6px; line-height:1.6;">請如實選擇。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。</p>
-                  <span id="prof-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">⚠️ 根據帳戶已登記的出生年月，此項現時不可以選擇「是」。</span>
+                  <span id="prof-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">根據帳戶已登記的出生年月，此項現時不可以選擇「是」。</span>
                 </div>
 
                 <div>
@@ -2399,7 +2399,7 @@
                 </div>
 
                 <button class="btn btn-primary" type="submit" style="padding:10px; font-size:15px; margin-top:8px; justify-content:center;">
-                  💾 儲存修改資料
+                  儲存修改資料
                 </button>
               </form>
             </div>
@@ -2422,25 +2422,25 @@
                   <input type="password" id="chpwd-confirm" class="input-field" autocomplete="new-password" minlength="6" placeholder="再打一次新密碼" required>
                 </div>
                 <button class="btn btn-primary" type="submit" id="change-password-submit-btn" style="padding:10px; font-size:15px; justify-content:center;">
-                  🔑 更改密碼
+                  更改密碼
                 </button>
               </form>
             </div>
           </div>
 
           <div class="card" style="margin-top:16px; text-align:center;">
-            <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;">🎮 溫習等級</h3>
+            <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;">溫習等級</h3>
             <div id="profile-level-num" style="font-size:32px; font-weight:900; color:var(--brand-800);">Lv.1</div>
-            <div id="profile-rank-title" style="font-size:14px; font-weight:bold; margin-top:2px;">🌱 溫習新手 (Novice)</div>
+            <div id="profile-rank-title" style="font-size:14px; font-weight:bold; margin-top:2px;">溫習新手 (Novice)</div>
             <div style="background:#E5EEF0; border-radius:8px; height:10px; margin-top:12px; overflow:hidden;">
               <div id="profile-exp-bar" style="background:linear-gradient(90deg,#4A8FA0,#7DB8C5); height:100%; width:0%; transition:width .4s ease;"></div>
             </div>
             <div id="profile-exp-text" style="font-size:13px; color:#999; margin-top:4px;">0 / 20 EXP</div>
-            <p style="font-size:13px; color:#aaa; margin-top:8px;">💡 每溫習 1 分鐘就會獲得 1 點 EXP，EXP 只升不跌，記錄你的總溫習成就；PTS 則用作扭蛋。</p>
+            <p style="font-size:13px; color:#aaa; margin-top:8px;">每溫習 1 分鐘就會獲得 1 點 EXP，EXP 只升不跌，記錄你的總溫習成就；PTS 則用作扭蛋。</p>
           </div>
 
           <div class="card" style="margin-top:16px;">
-            <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;">🎁 我的中獎記錄</h3>
+            <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;">我的中獎記錄</h3>
             <div id="profile-gacha-history-list" style="display:flex; flex-direction:column; gap:6px; font-size:13px;"></div>
             <p id="profile-gacha-history-empty" style="display:none; text-align:center; color:#999; font-size:13px; padding:10px;">你尚未扭過蛋，請到「時數扭蛋機」試試手氣！</p>
           </div>
@@ -2452,7 +2452,7 @@
              tutor-panel.js 嘅 renderTutorDirectoryTab() 產生。 -->
         <section id="tab-vip" class="tab-content">
           <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550;">
-            <h2 style="font-size:18px; font-weight:bold;">👑 溫習資源</h2>
+            <h2 style="font-size:18px; font-weight:bold;">溫習資源</h2>
             <p style="font-size:13px; color:#3E5A63; margin-top:4px;">瀏覽已上架的導師，點擊卡片可以查看資料並追蹤，接收最新消息</p>
           </div>
           <div id="tutor-directory-tabs" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;"></div>
@@ -2487,12 +2487,12 @@
             </div>
 
             <div id="lb-district-picker-wrap" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-              <label for="lb-district-select" style="font-size:13px; font-weight:bold; color:#555; white-space:nowrap;">📍 地區：</label>
+              <label for="lb-district-select" style="font-size:13px; font-weight:bold; color:#555; white-space:nowrap;">地區：</label>
               <select id="lb-district-select" class="input-field" style="flex:1;" onchange="window.loadLeaderboardTab()"></select>
             </div>
 
             <div id="lb-school-internal-label-wrap" style="display:none; margin-bottom:10px; font-size:13px; color:#555;">
-              🏫 你的學校：<strong id="lb-school-internal-name" style="color:var(--brand-800);">未設定</strong>
+              你的學校：<strong id="lb-school-internal-name" style="color:var(--brand-800);">未設定</strong>
             </div>
 
             <div id="lb-list-container" style="display:flex; flex-direction:column; gap:6px;">
@@ -2508,7 +2508,7 @@
              淨係擺幾個掛勾用嘅容器。 -->
         <section id="tab-tutor-materials" class="tab-content">
           <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550;">
-            <h2 style="font-size:18px; font-weight:bold;">🗂️ 管理教材</h2>
+            <h2 style="font-size:18px; font-weight:bold;">管理教材</h2>
             <p style="font-size:13px; color:#3E5A63; margin-top:4px;">管理您的科目、課題分類，以及上架給學生購買的 PDF 筆記</p>
           </div>
 
@@ -2520,9 +2520,9 @@
           <div id="tutor-materials-approved-panel" style="display:none;">
             <div class="card">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📚 我的科目</h3>
+                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">我的科目</h3>
                 <div style="display:flex; gap:6px;">
-                  <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorSubject(window.getSelectedTutorSubjectId())">🗑️ 刪除目前科目</button>
+                  <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorSubject(window.getSelectedTutorSubjectId())">刪除目前科目</button>
                   <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.openTutorAddSubjectModal()">＋ 新增科目</button>
                 </div>
               </div>
@@ -2531,9 +2531,9 @@
 
             <div class="card" id="tutor-topics-card" style="display:none;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📑 課題</h3>
+                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">課題</h3>
                 <div style="display:flex; gap:6px;">
-                  <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorTopic(window.getSelectedTutorTopicId())">🗑️ 刪除目前課題</button>
+                  <button class="btn btn-outline" type="button" style="font-size:12px; padding:5px 9px; color:#c0392b; border-color:#e0b0b0;" onclick="window.deleteTutorTopic(window.getSelectedTutorTopicId())">刪除目前課題</button>
                   <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.promptCreateTutorTopic()">＋ 新增課題</button>
                 </div>
               </div>
@@ -2542,8 +2542,8 @@
 
             <div class="card" id="tutor-notes-card" style="display:none;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">📄 教材</h3>
-                <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.openTutorNoteUploadForm()">⬆️ 上傳教材</button>
+                <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">教材</h3>
+                <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="window.openTutorNoteUploadForm()">上傳教材</button>
               </div>
               <div id="tutor-note-upload-panel" style="display:none; background:var(--brand-50); border:1px solid var(--brand-200); border-radius:10px; padding:12px; margin-bottom:12px;"></div>
               <div id="tutor-notes-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;"></div>
@@ -2556,7 +2556,7 @@
 
           <!-- 頁首卡片 -->
           <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550; text-align:center;">
-            <div style="font-size:28px; margin-bottom:4px;">🎰</div>
+            <div style="font-size:28px; margin-bottom:4px;"></div>
             <h2 style="font-size:18px; font-weight:bold;">Ottiee 時數幸運扭蛋機</h2>
             <div style="margin-top:10px; background:rgba(255,255,255,0.2); border-radius:10px; padding:8px; display:inline-block;">
               <span style="font-size:15px; font-weight:bold;">你的積分：<span id="gacha-pts-display">180</span> PTS</span>
@@ -2597,7 +2597,7 @@
                    計算，先至係「扭蛋頁面部分」視覺上嘅正中央，唔係成個
                    瀏覽器視窗（連側邊欄）嘅正中央。 -->
               <div id="gacha-result-box-batch" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:2000; width:400px; max-width:94vw; padding:18px; border-radius:16px; background:rgba(240,246,248,.98); border:2px solid #B3D6DE; box-shadow:0 8px 32px rgba(0,0,0,.35); animation: gacha-pop-center .4s ease; text-align:center;">
-                <div style="font-size:17px; font-weight:bold; color:#1E4550; margin-bottom:12px;">🎉 連續抽十次結果</div>
+                <div style="font-size:17px; font-weight:bold; color:#1E4550; margin-bottom:12px;">連續抽十次結果</div>
                 <div id="gacha-result-batch-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;"></div>
               </div>
               <!-- 扭蛋機外殼 SVG -->
@@ -2614,7 +2614,7 @@
                   display:flex; align-items:center; justify-content:center;
                   font-size:16px; background:rgba(255,255,255,.92);
                   box-shadow: 0 4px 20px rgba(0,0,0,.25);
-                ">🎁</div>
+                "></div>
               </div>
             </div>
 
@@ -2637,7 +2637,7 @@
           <!-- 貼紙圖鑑入口：扭蛋抽到嘅而家全部都係 Ottiee 貼紙，儲齊一套
                做目標，撳「開啟我的貼紙圖鑑」睇返自己收集咗幾多款。 -->
           <div class="card" style="text-align:center;">
-            <h3 style="font-size:15px; font-weight:bold; margin-bottom:8px;">📖 Ottiee 貼紙圖鑑</h3>
+            <h3 style="font-size:15px; font-weight:bold; margin-bottom:8px;">Ottiee 貼紙圖鑑</h3>
             <p style="font-size:13px; color:#666; margin-bottom:10px;">扭蛋抽到的都是 Ottiee 貼紙，集齊一套為目標！</p>
             <div style="margin-bottom:12px;">
               <div style="background:#EEE; border-radius:99px; height:10px; overflow:hidden;">
@@ -2645,13 +2645,13 @@
               </div>
               <p style="font-size:13px; color:#2F6070; margin-top:6px; font-weight:bold;">已收集 <span id="sticker-progress-text">0/0</span></p>
             </div>
-            <button type="button" class="btn btn-outline" style="display:inline-block; padding:8px 24px;" onclick="openStickerCollection()">📖 開啟我的貼紙圖鑑</button>
+            <button type="button" class="btn btn-outline" style="display:inline-block; padding:8px 24px;" onclick="openStickerCollection()">開啟我的貼紙圖鑑</button>
           </div>
 
           <!-- 抽獎歷史：只顯示頭 10 筆，撳「顯示更多」先再攞多 10 筆出嚟，
                如此類推，唔會一次過成頁都係記錄。 -->
           <div class="card" id="gacha-history-card" style="display:none;">
-            <h3 style="font-size:15px; font-weight:bold; margin-bottom:8px;">📜 最近抽獎記錄</h3>
+            <h3 style="font-size:15px; font-weight:bold; margin-bottom:8px;">最近抽獎記錄</h3>
             <div id="gacha-history-list" style="display:flex; flex-direction:column; gap:6px; font-size:13px;"></div>
             <button type="button" id="gacha-history-more-btn" onclick="showMoreGachaHistory()" class="btn btn-outline" style="display:none; width:100%; margin-top:10px; font-size:13px;">顯示更多</button>
           </div>
@@ -2664,7 +2664,7 @@
         <div id="sticker-collection-modal" style="display:none; position:fixed; inset:0; z-index:2500; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:16px;" onclick="if(event.target===this) closeStickerCollection();">
           <div style="background:#fff; border-radius:16px; padding:18px; max-width:520px; width:100%; max-height:82vh; overflow-y:auto;" onclick="event.stopPropagation();">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="font-size:16px; font-weight:bold; color:#1E4550;">📖 我的貼紙圖鑑</h3>
+              <h3 style="font-size:16px; font-weight:bold; color:#1E4550;">我的貼紙圖鑑</h3>
               <button type="button" onclick="closeStickerCollection()" class="btn btn-outline" style="padding:2px 10px; font-size:13px;">✕</button>
             </div>
             <p style="font-size:13px; color:#2F6070; margin-bottom:10px; font-weight:bold;">已收集 <span id="sticker-modal-progress-text">0/0</span></p>
@@ -2698,14 +2698,14 @@
         <section id="tab-social" class="tab-content">
 
           <div id="social-sub-tabs" style="display:flex; gap:6px; margin-bottom:12px;">
-            <button type="button" class="room-subject-tab-btn active" id="social-subtab-btn-friends" onclick="window.setSocialSubTab && window.setSocialSubTab('friends')" style="flex:1; text-align:center;">👥 我的好友</button>
-            <button type="button" class="room-subject-tab-btn" id="social-subtab-btn-wall" onclick="window.setSocialSubTab && window.setSocialSubTab('wall')" style="flex:1; text-align:center;">📝 尋找書伴留言牆</button>
+            <button type="button" class="room-subject-tab-btn active" id="social-subtab-btn-friends" onclick="window.setSocialSubTab && window.setSocialSubTab('friends')" style="flex:1; text-align:center;">我的好友</button>
+            <button type="button" class="room-subject-tab-btn" id="social-subtab-btn-wall" onclick="window.setSocialSubTab && window.setSocialSubTab('wall')" style="flex:1; text-align:center;">尋找書伴留言牆</button>
           </div>
 
           <div id="social-friends-panel">
 
             <div class="card" style="margin-bottom:12px;">
-              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">🔍 用帳號 ID 搜尋朋友</h3>
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">用帳號 ID 搜尋朋友</h3>
               <div style="display:flex; gap:8px;">
                 <input type="text" id="friend-search-input" class="input-field" style="flex:1;" placeholder="輸入完整帳號 ID，例如：student001" onkeydown="if(event.key==='Enter'){event.preventDefault(); searchAccountById();}">
                 <button class="btn btn-primary" type="button" onclick="searchAccountById()">搜尋</button>
@@ -2714,14 +2714,14 @@
             </div>
 
             <div class="card" id="friend-requests-card" style="margin-bottom:12px; display:none;">
-              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">📨 收到的好友邀請</h3>
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">收到的好友邀請</h3>
               <div id="friend-requests-list"></div>
             </div>
 
             <div class="card">
-              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">👥 我的好友（<span id="friends-count">0</span>）</h3>
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">我的好友（<span id="friends-count">0</span>）</h3>
               <div id="friends-list-container">
-                <p style="text-align:center; color:#999; font-size:13px; padding:20px;">🔄 載入中好友名單...</p>
+                <p style="text-align:center; color:#999; font-size:13px; padding:20px;">載入中好友名單...</p>
               </div>
             </div>
 
@@ -2730,8 +2730,8 @@
           <div id="social-wall-panel" style="display:none;">
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
-              <h2 style="font-size:17px; font-weight:bold; color:var(--brand-800);">📝 尋找書伴留言牆</h2>
-              <button class="btn btn-primary" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-buddy-post')">✏️ 發佈徵求書伴貼文</button>
+              <h2 style="font-size:17px; font-weight:bold; color:var(--brand-800);">尋找書伴留言牆</h2>
+              <button class="btn btn-primary" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-buddy-post')">發佈徵求書伴貼文</button>
             </div>
             <p style="font-size:12px; color:#999; margin-bottom:10px;">請注意：所有已登入用戶都可以看到你的貼文及留言，請勿透露個人聯絡方式或其他敏感資料。</p>
 
@@ -2774,16 +2774,16 @@
 
             <div id="diary-upload-section">
               <input type="file" id="diary-photo-input" accept="image/*" style="display:none;" onchange="handleStudyPhotoFileSelected(event)">
-              <button id="diary-photo-upload-btn" class="btn btn-primary" type="button" style="width:100%; justify-content:center; margin-bottom:6px;" onclick="handlePostPhotoButtonClick()">➕ 發佈今日溫習相片</button>
+              <button id="diary-photo-upload-btn" class="btn btn-primary" type="button" style="width:100%; justify-content:center; margin-bottom:6px;" onclick="handlePostPhotoButtonClick()">發佈今日溫習相片</button>
               <p style="font-size:12px; color:#999;">每日限發佈一張，需條件：在視訊溫習室累積溫習滿 15 分鐘</p>
             </div>
           </div>
 
           <div class="card">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;" id="diary-photos-heading">📔 我的溫習相片</h3>
+            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;" id="diary-photos-heading">我的溫習相片</h3>
             <div id="diary-photo-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; margin-bottom:8px;"></div>
             <p id="diary-photo-empty" style="font-size:13px; color:#999; text-align:center; padding:10px; display:none;">仲未發佈過溫習相片</p>
-            <button id="diary-photo-more-btn" class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px; padding:6px; display:none;" onclick="loadMorePhotos('diary')">📷 更多</button>
+            <button id="diary-photo-more-btn" class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px; padding:6px; display:none;" onclick="loadMorePhotos('diary')">更多</button>
           </div>
 
         </section>
@@ -2800,7 +2800,7 @@
           </div>
 
           <div class="card" style="text-align:center;">
-            <div class="avatar-circle" style="margin:0 auto 10px; width:64px; height:64px; font-size:26px; background:var(--brand-500); border-color:var(--brand-200);" id="tutorview-avatar">🎓</div>
+            <div class="avatar-circle" style="margin:0 auto 10px; width:64px; height:64px; font-size:26px; background:var(--brand-500); border-color:var(--brand-200);" id="tutorview-avatar"></div>
             <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);" id="tutorview-name">導師</h3>
             <p style="font-size:13px; color:#888; margin-top:4px; white-space:pre-line;" id="tutorview-bio"></p>
             <div id="tutorview-subjects" style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-top:8px;"></div>
@@ -2811,7 +2811,7 @@
           </div>
 
           <div class="card" style="margin-top:12px; text-align:left;">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">📚 已上架教材</h3>
+            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">已上架教材</h3>
             <div id="tutorview-notes-wrap">
               <p style="font-size:13px; color:#999; text-align:center; padding:10px;">載入中…</p>
             </div>
@@ -2821,9 +2821,9 @@
 
         <section id="tab-verification" class="tab-content">
           <div style="text-align:center; padding:60px 20px;">
-            <div style="font-size:64px; margin-bottom:16px;">🚧</div>
+            <div style="font-size:64px; margin-bottom:16px;"></div>
             <h2 style="font-size:20px; font-weight:800; color:var(--brand-800); margin-bottom:10px;">學生身份驗證</h2>
-            <p style="font-size:15px; color:#7DB8C5; font-weight:600; margin-bottom:8px;">⏳ 期待日後更新</p>
+            <p style="font-size:15px; color:#7DB8C5; font-weight:600; margin-bottom:8px;">期待日後更新</p>
             <p style="font-size:13px; color:#aaa; line-height:1.7; max-width:320px; margin:0 auto;">
               功能仍在開發中，敬請期待！
             </p>
@@ -2839,7 +2839,7 @@
 
   <div class="modal-backdrop" id="modal-login" style="display:none;">
     <div class="modal-box">
-      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">🔑 會員登入</h3>
+      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">會員登入</h3>
       <form onsubmit="handleLoginSubmit(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
         <div>
           <label style="font-size:13px; font-weight:bold; color:#555;">帳號 ID</label>
@@ -2865,7 +2865,7 @@
 
   <div class="modal-backdrop" id="modal-forgot-password" style="display:none;">
     <div class="modal-box">
-      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">🔑 忘記密碼</h3>
+      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">忘記密碼</h3>
       <p style="font-size:13px; color:#777; text-align:center; margin-top:6px;">輸入你的帳號 ID，如果此帳戶已經登記電郵，我們將寄出一個重設密碼的連結至該電郵信箱</p>
       <form onsubmit="handleForgotPasswordSubmit(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
         <div>
@@ -2874,7 +2874,7 @@
         </div>
         <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:10px;">
           <button class="btn btn-outline" type="button" onclick="closeModal('modal-forgot-password')">取消</button>
-          <button class="btn btn-primary" type="submit" id="forgot-password-submit-btn">📧 寄出重設密碼連結</button>
+          <button class="btn btn-primary" type="submit" id="forgot-password-submit-btn">寄出重設密碼連結</button>
         </div>
       </form>
     </div>
@@ -2882,7 +2882,7 @@
 
   <div class="modal-backdrop" id="modal-reset-password" style="display:none;">
     <div class="modal-box">
-      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">🔑 設定新密碼</h3>
+      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">設定新密碼</h3>
       <form id="reset-password-form" onsubmit="handleResetPasswordSubmit(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
         <div>
           <label style="font-size:13px; font-weight:bold; color:#555;">新密碼</label>
@@ -2894,7 +2894,7 @@
         </div>
         <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:10px;">
           <button class="btn btn-outline" type="button" onclick="closeModal('modal-reset-password')">取消</button>
-          <button class="btn btn-primary" type="submit" id="reset-password-submit-btn">🔑 確認重設密碼</button>
+          <button class="btn btn-primary" type="submit" id="reset-password-submit-btn">確認重設密碼</button>
         </div>
       </form>
     </div>
@@ -2902,7 +2902,7 @@
 
   <div class="modal-backdrop" id="modal-register" style="display:none;">
     <div class="modal-box">
-      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">📝 註冊 ConcenMate 會員</h3>
+      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">註冊 ConcenMate 會員</h3>
 
       <!-- 帳號類型：學生／導師 兩邊，一開始註冊就要揀，唔係先開學生
            帳號再事後申請升級。揀「導師」嗰邊會直接喺呢個表格入面收埋
@@ -2911,10 +2911,10 @@
            嘅狀態運作（審批批准之前，功能同學生帳戶一樣，唔會因為
            揀咗導師就即刻解鎖導師後台）。見 window.setRegisterAccountType()。 -->
       <div style="display:flex; gap:8px; margin-top:12px;">
-        <button type="button" id="reg-type-student-btn" class="btn btn-primary" style="flex:1; justify-content:center;" onclick="setRegisterAccountType('student')">🎒 我是學生</button>
-        <button type="button" id="reg-type-tutor-btn" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="setRegisterAccountType('tutor')">🎓 我是導師</button>
+        <button type="button" id="reg-type-student-btn" class="btn btn-primary" style="flex:1; justify-content:center;" onclick="setRegisterAccountType('student')">我是學生</button>
+        <button type="button" id="reg-type-tutor-btn" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="setRegisterAccountType('tutor')">我是導師</button>
       </div>
-      <p id="reg-type-tutor-hint" style="display:none; font-size:13px; color:#8a6d1f; background:#FFF7E6; border:1px solid #F0D9A0; border-radius:8px; padding:8px 10px; margin-top:8px;">📌 導師帳號需要管理員審批，通過之前可以正常以學生身份使用平台其他功能，審批結果會在「我的帳戶」顯示。</p>
+      <p id="reg-type-tutor-hint" style="display:none; font-size:13px; color:#8a6d1f; background:#FFF7E6; border:1px solid #F0D9A0; border-radius:8px; padding:8px 10px; margin-top:8px;">導師帳號需要管理員審批，通過之前可以正常以學生身份使用平台其他功能，審批結果會在「我的帳戶」顯示。</p>
 
       <form onsubmit="handleRegisterSubmit(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
         <input type="hidden" id="reg-account-type" value="student">
@@ -2937,7 +2937,7 @@
         <div>
           <label style="font-size:13px; font-weight:bold; color:#555;">確認密碼 *</label>
           <input type="password" id="reg-password-confirm" class="input-field" required placeholder="請再次輸入相同的密碼" oninput="window.checkRegisterPasswordMatch && window.checkRegisterPasswordMatch()">
-          <p id="reg-password-mismatch-hint" style="display:none; font-size:13px; color:#c0392b; margin-top:4px;">⚠️ 兩次輸入的密碼不一致，請重新確認</p>
+          <p id="reg-password-mismatch-hint" style="display:none; font-size:13px; color:#c0392b; margin-top:4px;">兩次輸入的密碼不一致，請重新確認</p>
         </div>
 
         <!-- 出生年月：唔記錄「日」，純粹用嚟計返約數年齡顯示，畀學生
@@ -2977,7 +2977,7 @@
               <option value="大專/大學">大專 / 大學</option>
               <option value="其他自修生">其他 / 自修生</option>
             </select>
-            <span id="reg-grade-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">⚠️ 根據所填出生年月，中一至中六已不可選擇。</span>
+            <span id="reg-grade-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">根據所填出生年月，中一至中六已不可選擇。</span>
           </div>
 
           <!-- 「本人確認現時為中學生」剔選格：純粹自我申報，唔係身份
@@ -2997,7 +2997,7 @@
             </div>
             <input type="hidden" id="reg-is-secondary-student" value="">
             <p style="font-size:12px; color:#888; margin-top:6px; line-height:1.6;">請如實選擇。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。</p>
-            <span id="reg-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">⚠️ 根據所填出生年月，此項現時不可以選擇「是」。</span>
+            <span id="reg-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">根據所填出生年月，此項現時不可以選擇「是」。</span>
           </div>
 
           <!-- 「學校所在地區」／「學校名稱」係咪顯示、係咪必填，都要跟
@@ -3089,7 +3089,7 @@
   <!-- ===== 服務條款 Modal ===== -->
   <div class="modal-backdrop" id="modal-terms" style="display:none; align-items:flex-start; padding-top:40px;">
     <div class="modal-box" style="max-width:640px; max-height:85vh; overflow-y:auto;">
-      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">📄 服務條款</h3>
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">服務條款</h3>
       <p style="font-size:12px; color:#999; margin-bottom:14px;">生效日期：2026 年 9 月 1 日　最後更新日期：2026 年 9 月</p>
       <div style="font-size:13px; color:#444; line-height:1.8;">
         <p>歡迎使用 ConcenMate 書伴（下稱「本服務」）。本服務由 ConcenMate 書伴（下稱「本公司」或「我們」）營運。本服務條款（下稱「本條款」）構成閣下（下稱「使用者」或「閣下」）與本公司之間具法律約束力之協議。</p>
@@ -3200,7 +3200,7 @@
   <div class="modal-backdrop" id="modal-room-pool-info" style="display:none;">
     <div class="modal-box">
       <div style="text-align:center; margin-bottom:12px;">
-        <div style="font-size:32px;">🦦🔖</div>
+        <div style="font-size:32px;"></div>
         <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);">公開溫習大廳的分類方式</h3>
       </div>
       <div style="font-size:13px; color:#444; line-height:1.7;">
@@ -3223,7 +3223,7 @@
   <div class="modal-backdrop" id="modal-create-room" style="display:none;">
     <div class="modal-box">
       <div style="text-align:center; margin-bottom:12px;">
-        <div style="font-size:32px;">🦦📚</div>
+        <div style="font-size:32px;"></div>
         <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);">建立公開溫習房</h3>
         <p style="font-size:13px; color:#666; margin-top:2px;">讓其他同學在公開大廳看到並加入你的房間</p>
       </div>
@@ -3272,7 +3272,7 @@
         </div>
 
         <div>
-          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">👥 房間人數上限</label>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">房間人數上限</label>
           <select id="modal-room-capacity" class="input-field">
             <option value="2">2 人房</option>
             <option value="4" selected>4 人房</option>
@@ -3281,7 +3281,7 @@
         </div>
 
         <div>
-          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">⏱️ 預計溫習時間 (分鐘)</label>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">預計溫習時間 (分鐘)</label>
           <select id="modal-room-duration" class="input-field">
             <option value="15">15 分鐘</option>
             <option value="30" selected>30 分鐘</option>
@@ -3300,7 +3300,7 @@
 
         <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
           <button class="btn btn-outline" type="button" onclick="closeModal('modal-create-room')">取消</button>
-          <button class="btn btn-primary" type="submit" id="btn-create-room-submit">🚀 立即建立並廣播</button>
+          <button class="btn btn-primary" type="submit" id="btn-create-room-submit">立即建立並廣播</button>
         </div>
       </form>
     </div>
@@ -3312,15 +3312,15 @@
        renderStudentFavSubjectChipPicker 呢啲現成元件，唔重新寫一套。 -->
   <div class="modal-backdrop" id="modal-buddy-post" style="display:none;">
     <div class="modal-box">
-      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">✏️ 發佈徵求書伴貼文</h3>
+      <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800); text-align:center;">發佈徵求書伴貼文</h3>
 
       <form onsubmit="window.submitBuddyPost && window.submitBuddyPost(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
         <div>
           <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:6px;">身份標籤 *</label>
           <div id="buddy-post-role-picker" style="display:flex; flex-wrap:wrap; gap:6px;">
-            <button type="button" class="tag buddy-role-chip" data-role="want_taught" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">🙋 想找人教我</button>
-            <button type="button" class="tag buddy-role-chip" data-role="can_teach" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">🎓 我可以教人</button>
-            <button type="button" class="tag buddy-role-chip" data-role="study_together" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">👥 想找人一齊溫書</button>
+            <button type="button" class="tag buddy-role-chip" data-role="want_taught" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">想找人教我</button>
+            <button type="button" class="tag buddy-role-chip" data-role="can_teach" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">我可以教人</button>
+            <button type="button" class="tag buddy-role-chip" data-role="study_together" style="cursor:pointer; border:1px solid #ddd; background:#F5F7F8; color:#555; border-radius:99px; padding:6px 12px; font-size:13px;">想找人一齊溫書</button>
           </div>
           <input type="hidden" id="buddy-post-role" required>
         </div>
@@ -3339,7 +3339,7 @@
 
         <div style="display:flex; gap:8px; margin-top:6px; justify-content:flex-end;">
           <button class="btn btn-outline" type="button" onclick="typeof window.closeModal==='function' && window.closeModal('modal-buddy-post')">取消</button>
-          <button class="btn btn-primary" type="submit">📮 發佈</button>
+          <button class="btn btn-primary" type="submit">發佈</button>
         </div>
       </form>
     </div>
@@ -3363,11 +3363,11 @@
       <p style="font-size:13px; color:#888; margin-bottom:12px;" id="pop-user-verified"></p>
 
       <div style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:12px; text-align:left; font-size:14px; display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-        <div><strong>🏫 就讀學校：</strong><span id="pop-user-school">屯門官立中學</span></div>
-        <div><strong>🎓 現時年級：</strong><span id="pop-user-grade">中六 (S6 DSE)</span></div>
-        <div><strong>❤️ 喜愛學科：</strong><span id="pop-user-fav">數學, 物理, M2</span></div>
-        <div><strong>💔 討厭學科：</strong><span id="pop-user-dislike">中文範文</span></div>
-        <div><strong>⏱️ 累積溫習：</strong><span id="pop-user-hours">42.5 小時</span></div>
+        <div><strong>就讀學校：</strong><span id="pop-user-school">屯門官立中學</span></div>
+        <div><strong>現時年級：</strong><span id="pop-user-grade">中六 (S6 DSE)</span></div>
+        <div><strong>喜愛學科：</strong><span id="pop-user-fav">數學, 物理, M2</span></div>
+        <div><strong>討厭學科：</strong><span id="pop-user-dislike">中文範文</span></div>
+        <div><strong>累積溫習：</strong><span id="pop-user-hours">42.5 小時</span></div>
       </div>
 
       <div id="pop-user-friend-actions" style="margin-bottom:12px; min-height:20px;"></div>
@@ -3389,17 +3389,17 @@
   <!-- 房間空位度撳「邀請朋友」彈出嚟嘅好友清單，揀邊個就即刻送邀請畀佢 -->
   <div class="modal-backdrop" id="modal-invite-friend" style="display:none;">
     <div class="modal-box">
-      <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">🤝 邀請朋友加入溫習室</h3>
+      <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">邀請朋友加入溫習室</h3>
 
       <!-- 分享連結邀請：唔限於已經係 ConcenMate 好友嘅人，隨時可以複製／
            分享去 WhatsApp、Instagram 等社交媒體，等對方一撳就直接入到嚟。
            見 window.shareRoomInviteLink 同 window.copyRoomInviteLink（app-features.js）。 -->
       <div style="background:#F0F6F8; border-radius:12px; padding:10px 12px; margin-bottom:14px;">
-        <p style="font-size:13px; font-weight:bold; color:var(--brand-800); margin-bottom:2px;">🔗 以連結方式邀請（WhatsApp、Instagram 等社交媒體均適用）</p>
+        <p style="font-size:13px; font-weight:bold; color:var(--brand-800); margin-bottom:2px;">以連結方式邀請（WhatsApp、Instagram 等社交媒體均適用）</p>
         <p style="font-size:13px; color:#666; margin-bottom:8px;">對方無須為閣下於本平台之朋友，按一下即可將連結傳送予任何人士</p>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary" type="button" style="flex:1; justify-content:center; font-size:13px; padding:7px;" onclick="shareRoomInviteLink()">📤 分享連結</button>
-          <button class="btn btn-outline" type="button" style="flex:1; justify-content:center; font-size:13px; padding:7px;" onclick="copyRoomInviteLink()">📋 複製連結</button>
+          <button class="btn btn-primary" type="button" style="flex:1; justify-content:center; font-size:13px; padding:7px;" onclick="shareRoomInviteLink()">分享連結</button>
+          <button class="btn btn-outline" type="button" style="flex:1; justify-content:center; font-size:13px; padding:7px;" onclick="copyRoomInviteLink()">複製連結</button>
         </div>
       </div>
 
@@ -3413,11 +3413,11 @@
   <!-- 收到朋友邀請入房嗰陣彈出嘅提示卡，可以即刻加入或者拒絕 -->
   <div class="modal-backdrop" id="modal-room-invite-popup" style="display:none;">
     <div class="modal-box" style="text-align:center;">
-      <div style="font-size:32px; margin-bottom:6px;">📹</div>
+      <div style="font-size:32px; margin-bottom:6px;"></div>
       <p id="invite-popup-text" style="font-size:15px; font-weight:bold; color:var(--brand-800); line-height:1.5; margin-bottom:16px;">朋友邀請你加入溫習房</p>
       <div style="display:flex; gap:8px;">
-        <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="respondRoomInvite(false)">❌ 拒絕</button>
-        <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="respondRoomInvite(true)">✅ 加入</button>
+        <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="respondRoomInvite(false)">拒絕</button>
+        <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="respondRoomInvite(true)">加入</button>
       </div>
       <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; margin-top:8px; font-size:13px;" onclick="dismissRoomInvitePopup()">遲些先想</button>
     </div>
@@ -3440,7 +3440,7 @@
       </div>
 
       <div style="margin-bottom:12px;">
-        <div id="myacc-level-badge" style="font-size:15px; font-weight:bold;">🌱 Lv.1 溫習新手</div>
+        <div id="myacc-level-badge" style="font-size:15px; font-weight:bold;">Lv.1 溫習新手</div>
         <div style="background:#E5EEF0; border-radius:8px; height:8px; margin-top:6px; overflow:hidden;">
           <div id="myacc-exp-bar" style="background:linear-gradient(90deg,#4A8FA0,#7DB8C5); height:100%; width:0%; transition:width .4s ease;"></div>
         </div>
@@ -3448,12 +3448,12 @@
       </div>
 
       <div style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:12px; text-align:left; font-size:14px; display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-        <div><strong>🏫 就讀學校：</strong><span id="myacc-school">未填寫</span></div>
-        <div><strong>🎓 現時年級：</strong><span id="myacc-grade">未填寫</span></div>
-        <div><strong>❤️ 喜愛學科：</strong><span id="myacc-fav">未填寫</span></div>
-        <div><strong>💔 討厭學科：</strong><span id="myacc-dislike">未填寫</span></div>
-        <div><strong>⏱️ 累積時數：</strong><span id="myacc-hours">0.0 小時</span></div>
-        <div><strong>🪙 積分：</strong><span id="myacc-points">0 PTS</span></div>
+        <div><strong>就讀學校：</strong><span id="myacc-school">未填寫</span></div>
+        <div><strong>現時年級：</strong><span id="myacc-grade">未填寫</span></div>
+        <div><strong>喜愛學科：</strong><span id="myacc-fav">未填寫</span></div>
+        <div><strong>討厭學科：</strong><span id="myacc-dislike">未填寫</span></div>
+        <div><strong>累積時數：</strong><span id="myacc-hours">0.0 小時</span></div>
+        <div><strong>積分：</strong><span id="myacc-points">0 PTS</span></div>
       </div>
 
       <!-- 導師身份狀態／申請入口：內容由 updateMyAccountTutorStatus() 動態
@@ -3461,8 +3461,8 @@
       <div id="myacc-tutor-area" style="margin-bottom:10px;"></div>
 
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="goEditProfileFromAccountModal()">✏️ 編輯個人資料</button>
-        <button class="btn btn-red" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account'); logoutWithFirebase();">🚪 登出帳號</button>
+        <button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="goEditProfileFromAccountModal()">編輯個人資料</button>
+        <button class="btn btn-red" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account'); logoutWithFirebase();">登出帳號</button>
         <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account')">關閉</button>
       </div>
     </div>
@@ -3473,7 +3473,7 @@
        就要等管理員喺後台審批，暫時未有任何後續功能（上傳筆記等）。 -->
   <div class="modal-backdrop" id="modal-tutor-apply" style="display:none;">
     <div class="modal-box" style="max-width:420px;">
-      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">🎓 申請成為導師</h3>
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">申請成為導師</h3>
       <p style="font-size:13px; color:#888; margin-bottom:14px;">通過審批之後，您就可以在導師後台管理科目、上傳付費筆記給其他同學購買。請填好以下資料交給管理員審批。</p>
 
       <label style="font-size:13px; font-weight:bold; color:var(--brand-800); display:block; margin-bottom:4px;">顯示名稱</label>
@@ -3501,7 +3501,7 @@
        文字輸入格。清單由 tutor-panel.js 嘅 TUTOR_DSE_SUBJECTS 產生。 -->
   <div class="modal-backdrop" id="modal-tutor-add-subject" style="display:none;">
     <div class="modal-box" style="max-width:380px;">
-      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">📚 新增科目</h3>
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">新增科目</h3>
       <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">科目名稱</label>
       <select id="tutor-add-subject-select" class="input-field" style="width:100%; margin-bottom:10px;" onchange="window.onTutorAddSubjectSelectChange()"></select>
       <div id="tutor-add-subject-custom-wrap" style="display:none;">
@@ -3518,7 +3518,7 @@
   <!-- 🎓 導師「編輯教材」：修改標題／簡介／定價，取代原本逐個 prompt() 彈窗嘅做法 -->
   <div class="modal-backdrop" id="modal-tutor-edit-note" style="display:none;">
     <div class="modal-box" style="max-width:420px;">
-      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">✏️ 編輯教材</h3>
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">編輯教材</h3>
       <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">標題 *</label>
       <input id="tutor-edit-note-title" class="input-field" type="text" maxlength="80" style="width:100%; margin-bottom:10px;">
       <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">簡介</label>
@@ -3541,8 +3541,8 @@
   <div class="modal-backdrop" id="modal-pdf-preview" style="display:none;">
     <div class="modal-box" style="max-width:960px; width:92vw; height:88vh; display:flex; flex-direction:column; padding:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
-        <h3 id="pdf-preview-title" style="font-size:15px; font-weight:bold; color:var(--brand-800); margin:0; flex:1; min-width:120px;">📄 預覽</h3>
-        <button class="btn btn-outline" type="button" style="padding:4px 10px;" onclick="window.closePdfPreviewModal()">✕ 關閉</button>
+        <h3 id="pdf-preview-title" style="font-size:15px; font-weight:bold; color:var(--brand-800); margin:0; flex:1; min-width:120px;">預覽</h3>
+        <button class="btn btn-outline" type="button" style="padding:4px 10px;" onclick="window.closePdfPreviewModal()">關閉</button>
       </div>
       <div id="pdf-preview-canvas-wrap" style="flex:1; width:100%; overflow:auto; border:1px solid #E5EEF0; border-radius:8px; background:#f5f5f5; display:flex; align-items:flex-start; justify-content:center; -webkit-overflow-scrolling:touch;">
         <canvas id="pdf-preview-canvas" style="max-width:100%; height:auto; box-shadow:0 1px 4px rgba(0,0,0,0.15);"></canvas>
@@ -3559,7 +3559,7 @@
        由 Admin後台「🎮 等級系統」入面每個段位嘅「升級詳情文字」欄位控制 -->
   <div class="modal-backdrop" id="modal-level-info" style="display:none;">
     <div class="modal-box" style="max-width:400px;">
-      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">🏅 等級與段位詳情</h3>
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">等級與段位詳情</h3>
       <div id="level-info-current" style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:10px 12px; margin:8px 0 12px;"></div>
       <div id="level-info-tiers" style="display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto;"></div>
       <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; margin-top:14px;" onclick="closeModal('modal-level-info')">關閉</button>
@@ -3569,9 +3569,9 @@
   <!-- PTS／EXP 獲得方式說明視窗：撳置頂狀態列「今日目標」旁邊嘅「!」圖示會彈出 -->
   <div class="modal-backdrop" id="modal-pts-exp-info" style="display:none;">
     <div class="modal-box" style="max-width:400px;">
-      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">💡 PTS 及 EXP 如何獲得？</h3>
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">PTS 及 EXP 如何獲得？</h3>
       <div style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:12px 14px; margin-bottom:12px;">
-        <div style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">🪙 PTS（積分）</div>
+        <div style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">PTS（積分）</div>
         <ul style="font-size:13px; color:#555; line-height:1.7; margin:0; padding-left:18px;">
           <li>視訊溫習室內每專注溫習 1 分鐘：+1 PTS</li>
           <li>視訊溫習室確認「你仍在學習嗎？」：+2 PTS</li>
@@ -3579,7 +3579,7 @@
         <div style="font-size:13px; color:#999; margin-top:6px;">PTS 可用於「時數扭蛋機」抽獎。</div>
       </div>
       <div style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:12px 14px;">
-        <div style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">🌱 EXP（經驗值）</div>
+        <div style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">EXP（經驗值）</div>
         <ul style="font-size:13px; color:#555; line-height:1.7; margin:0; padding-left:18px;">
           <li>每次獲得 PTS，都會同時獲得同等數量的 EXP</li>
           <li>EXP 只升不跌，記錄你的總溫習成就</li>
@@ -3596,7 +3596,7 @@
   <div class="modal-backdrop" id="modal-report-user" style="display:none;">
     <div class="modal-box" style="max-width:420px;">
       <div style="text-align:center; margin-bottom:10px;">
-        <div style="font-size:28px;">🚩</div>
+        <div style="font-size:28px;"></div>
         <h3 style="font-size:17px; font-weight:bold; color:#C0524A;">舉報用家</h3>
         <p style="font-size:13px; color:#666; margin-top:2px;">舉報內容連同截圖只有管理員先看到，會用來審核是否需要停權處理。惡意亂舉報都會被追究。</p>
       </div>
@@ -3606,11 +3606,11 @@
       </div>
 
       <div id="report-screenshot-wrap" style="margin-bottom:10px; display:none;">
-        <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">📸 已自動截取證據截圖（會一齊交給管理員）</label>
+        <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">已自動截取證據截圖（會一齊交給管理員）</label>
         <img id="report-screenshot-preview" style="width:100%; border-radius:10px; border:1px solid #ddd; display:block;">
       </div>
       <div id="report-screenshot-missing" style="margin-bottom:10px; font-size:13px; color:#c99; display:none;">
-        ⚠️ 目前無法取得對方畫面（可能對方鏡頭已關閉），舉報仍然會照常送出，管理員會依其他資料處理。
+        目前無法取得對方畫面（可能對方鏡頭已關閉），舉報仍然會照常送出，管理員會依其他資料處理。
       </div>
 
       <div style="margin-bottom:10px;">
@@ -3630,7 +3630,7 @@
 
       <div style="display:flex; gap:8px; justify-content:flex-end;">
         <button class="btn btn-outline" type="button" onclick="window.closeReportModal()">取消</button>
-        <button class="btn btn-red" type="button" id="report-submit-btn" onclick="window.submitReport()">🚩 確認送出舉報</button>
+        <button class="btn btn-red" type="button" id="report-submit-btn" onclick="window.submitReport()">確認送出舉報</button>
       </div>
     </div>
   </div>
@@ -3650,15 +3650,15 @@
   <!-- 房主退出房間選擇彈窗 -->
   <div class="modal-backdrop" id="modal-host-leave" style="display:none;">
     <div class="modal-box" style="text-align:center;">
-      <div style="font-size:32px; margin-bottom:8px;">🚪</div>
+      <div style="font-size:32px; margin-bottom:8px;"></div>
       <h3 style="font-size:16px; font-weight:bold; margin-bottom:6px;">你是房主，想點處理這個房間？</h3>
       <p style="font-size:13px; color:#666; margin-bottom:20px;">其他成員仍然在，你可以選擇保留房間讓他們繼續使用，或者直接關閉整個房間。</p>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-primary" type="button" onclick="hostLeaveKeepRoom()" style="padding:12px;">
-          ✅ 保留房間，自己退出
+          保留房間，自己退出
         </button>
         <button class="btn btn-red" type="button" onclick="hostLeaveDeleteRoom()" style="padding:12px;">
-          🗑️ 關閉房間，所有人踢走
+          關閉房間，所有人踢走
         </button>
         <button class="btn btn-outline" type="button" onclick="closeModal('modal-host-leave')" style="padding:10px;">
           取消
@@ -3674,7 +3674,7 @@
        返用 zh-Hant），呢個係第一階段預期之內嘅過渡狀態，唔係壞咗。 -->
   <div class="modal-backdrop" id="modal-language-switcher" style="display:none;" onclick="if(event.target===this) closeModal('modal-language-switcher')">
     <div class="modal-box" style="text-align:center; max-width:320px;">
-      <div style="font-size:32px; margin-bottom:8px;">🌐</div>
+      <div style="font-size:32px; margin-bottom:8px;"></div>
       <h3 style="font-size:16px; font-weight:bold; margin-bottom:16px;">選擇語言 · Choose Language</h3>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-outline lang-option-btn" type="button" data-lang="zh-Hant" onclick="window.setAppLanguage('zh-Hant')" style="padding:12px; justify-content:center;">繁體中文</button>
@@ -3688,11 +3688,11 @@
   <!-- 防「開房掛機刷分」：定時彈窗確認用家仍然喺度 -->
   <div class="modal-backdrop" id="modal-presence-check" style="display:none;">
     <div class="modal-box" style="text-align:center;">
-      <div style="font-size:32px; margin-bottom:8px;">🦦</div>
+      <div style="font-size:32px; margin-bottom:8px;"></div>
       <h3 style="font-size:16px; font-weight:bold; margin-bottom:6px;">你仍在學習嗎？</h3>
       <p style="font-size:13px; color:#666; margin-bottom:20px;">為了確保積分／經驗值只會給予真正專注的同學，請在 5 分鐘內按一下確認。逾時未確認會暫停計分，直至你返回為止。</p>
       <button class="btn btn-primary" type="button" onclick="confirmStillHere()" style="width:100%; padding:12px;">
-        ✅ 是，我仍在學習
+        是，我仍在學習
       </button>
     </div>
   </div>
@@ -3708,7 +3708,7 @@
       <input type="text" id="room-password-check-input" class="input-field" maxlength="4" inputmode="numeric" pattern="[0-9]{0,4}" style="text-align:center; font-size:22px; letter-spacing:10px;" placeholder="••••" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.confirmRoomPasswordCheck();}">
       <div style="display:flex; gap:8px; margin-top:14px;">
         <button class="btn btn-outline" type="button" style="flex:1;" onclick="window.cancelRoomPasswordCheck()">取消</button>
-        <button class="btn btn-primary" type="button" style="flex:1;" onclick="window.confirmRoomPasswordCheck()">✅ 確認加入</button>
+        <button class="btn btn-primary" type="button" style="flex:1;" onclick="window.confirmRoomPasswordCheck()">確認加入</button>
       </div>
     </div>
   </div>
@@ -3718,11 +3718,11 @@
        確保提示真正被留意到。 -->
   <div class="modal-backdrop" id="modal-mic-limit-reminder" style="display:none;">
     <div class="modal-box" style="text-align:center;">
-      <div style="font-size:32px; margin-bottom:8px;">🔇</div>
+      <div style="font-size:32px; margin-bottom:8px;"></div>
       <h3 style="font-size:16px; font-weight:bold; margin-bottom:6px;">麥克風已自動關閉</h3>
       <p style="font-size:13px; color:#666; margin-bottom:20px; line-height:1.7;">開咪時間已達上限，系統已自動關閉麥克風。請勿再繼續交談，宜盡快回到溫習狀態，繼續努力，加油！</p>
       <button class="btn btn-primary" type="button" onclick="closeModal('modal-mic-limit-reminder')" style="width:100%; padding:12px;">
-        ✅ 知道了，繼續溫習
+        知道了，繼續溫習
       </button>
     </div>
   </div>
@@ -3733,7 +3733,7 @@
     <div class="modal-box" style="max-width:380px;">
       <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:12px;" id="follow-list-title">粉絲名單</h3>
       <div id="follow-list-container" style="display:flex; flex-direction:column; gap:8px; max-height:400px; overflow-y:auto;">
-        <p style="text-align:center; color:#999; font-size:13px; padding:20px;">🔄 載入中...</p>
+        <p style="text-align:center; color:#999; font-size:13px; padding:20px;">載入中...</p>
       </div>
       <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; margin-top:14px;" onclick="closeModal('modal-follow-list')">關閉</button>
     </div>
@@ -3743,7 +3743,7 @@
        自己調校邊部分放喺圓形頭像入面，避免自動置中裁切裁走想要嘅部分。 -->
   <div class="modal-backdrop" id="modal-avatar-crop" style="display:none;">
     <div class="modal-box" style="max-width:340px; text-align:center;">
-      <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:12px;">📷 調整頭像位置</h3>
+      <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:12px;">調整頭像位置</h3>
       <div id="avatar-crop-viewport" style="position:relative; width:260px; height:260px; margin:0 auto 14px; border-radius:50%; overflow:hidden; background:#eee; cursor:grab; touch-action:none;">
         <img id="avatar-crop-img" src="" alt="" draggable="false" style="position:absolute; left:0; top:0; transform-origin:top left; user-select:none; pointer-events:none;">
       </div>
@@ -3751,7 +3751,7 @@
       <p style="font-size:12px; color:#999; margin-bottom:16px;">拖曳相片調整位置，並使用滑桿調整縮放</p>
       <div style="display:flex; gap:8px;">
         <button class="btn btn-outline" type="button" style="flex:1; justify-content:center;" onclick="cancelAvatarCrop()">取消</button>
-        <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="confirmAvatarCrop()">✅ 確認上傳</button>
+        <button class="btn btn-primary" type="button" style="flex:1; justify-content:center;" onclick="confirmAvatarCrop()">確認上傳</button>
       </div>
     </div>
   </div>
@@ -3788,7 +3788,7 @@
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h1 style="font-size:20px; font-weight:bold; color:var(--brand-800);">⚙️ ConcenMate 管理後台</h1>
+          <h1 style="font-size:20px; font-weight:bold; color:var(--brand-800);">ConcenMate 管理後台</h1>
           <p style="font-size:13px; color:#888; margin-top:2px;" id="admin-panel-user-email"></p>
         </div>
       </div>
@@ -3818,7 +3818,7 @@
 
   <div id="admin-denied-container" style="display:none; min-height:100vh;">
     <div style="max-width:420px; margin:0 auto; padding-top:80px; text-align:center; padding-left:24px; padding-right:24px;">
-      <div style="font-size:40px;">🚫</div>
+      <div style="font-size:40px;"></div>
       <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800); margin-top:8px;">沒有權限進入這個頁面</h2>
       <p style="font-size:13px; color:#666; margin-top:6px;">這個是管理員專用頁面，如有需要請聯絡系統管理員。</p>
       <button class="btn btn-primary" type="button" style="margin-top:16px;" onclick="window.location.hash=''">返回主頁</button>

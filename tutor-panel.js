@@ -183,7 +183,7 @@ window.applyRoleBasedSidebar = function() {
     if (followerCountEl) followerCountEl.innerText = '0';
     if (followWrap) followWrap.innerHTML = '';
     if (notesWrap) notesWrap.innerHTML = '<p style="font-size:13px; color:#999; text-align:center; padding:10px;">載入中…</p>';
-    if (avatarEl) { avatarEl.innerHTML = ''; avatarEl.innerText = '🎓'; }
+    if (avatarEl) { avatarEl.innerHTML = ''; avatarEl.innerText = ''; }
 
     if (!window.db || !window.fs) return;
     try {
@@ -204,7 +204,7 @@ window.applyRoleBasedSidebar = function() {
         if (u.avatarBase64) {
           avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="導師頭像">`;
         } else {
-          avatarEl.innerText = '🎓';
+          avatarEl.innerText = '';
         }
       }
       if (subjectsEl) {
@@ -261,7 +261,7 @@ window.applyRoleBasedSidebar = function() {
       return `
         <div class="card" style="cursor:pointer;" onclick="switchTab('tutor-view', null, '${uid}')">
           <div style="display:flex; align-items:center; gap:10px;">
-            <div style="width:44px; height:44px; border-radius:50%; background:var(--brand-100); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; cursor:pointer;" onclick="event.stopPropagation(); window.viewUserProfile('${uid}')">🎓</div>
+            <div style="width:44px; height:44px; border-radius:50%; background:var(--brand-100); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; cursor:pointer;" onclick="event.stopPropagation(); window.viewUserProfile('${uid}')"></div>
             <div style="min-width:0; flex:1;">
               <p style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:2px; cursor:pointer; width:fit-content;" onclick="event.stopPropagation(); window.viewUserProfile('${uid}')">${escapeHtmlLocal(t.displayName || '導師')}</p>
               <p style="font-size:13px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtmlLocal(t.bio || '')}</p>
@@ -300,7 +300,7 @@ window.applyRoleBasedSidebar = function() {
       if (!snap.exists()) {
         pendingPanel.innerHTML = `
           <div style="text-align:center; padding:20px;">
-            <div style="font-size:40px; margin-bottom:8px;">🎓</div>
+            <div style="font-size:40px; margin-bottom:8px;"></div>
             <p style="font-size:14px; color:#666;">找不到導師申請紀錄，請重新提交申請。</p>
             <button class="btn btn-primary" type="button" style="margin-top:10px;" onclick="window.openTutorApplyModal()">重新申請</button>
           </div>
@@ -311,7 +311,7 @@ window.applyRoleBasedSidebar = function() {
       if (app.status === 'pending') {
         pendingPanel.innerHTML = `
           <div style="text-align:center; padding:30px 16px;">
-            <div style="font-size:44px; margin-bottom:10px;">⏳</div>
+            <div style="font-size:44px; margin-bottom:10px;"></div>
             <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">導師申請審批中</h3>
             <p style="font-size:14px; color:#666; max-width:360px; margin:0 auto;">您的導師申請已經收到，請耐心等候管理員審批。批核之後這裡就會變成完整的教材管理後台。</p>
           </div>
@@ -319,16 +319,16 @@ window.applyRoleBasedSidebar = function() {
       } else if (app.status === 'rejected') {
         pendingPanel.innerHTML = `
           <div style="text-align:center; padding:30px 16px;">
-            <div style="font-size:44px; margin-bottom:10px;">❌</div>
+            <div style="font-size:44px; margin-bottom:10px;"></div>
             <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">導師申請未獲批准</h3>
             ${app.rejectionReason ? `<p style="font-size:14px; color:#8a2f2f; background:#FBEAEA; border-radius:8px; padding:8px 10px; max-width:360px; margin:0 auto 10px;">原因：${escapeHtmlLocal(app.rejectionReason)}</p>` : ''}
-            <button class="btn btn-primary" type="button" onclick="window.openTutorApplyModal()">🔁 重新申請</button>
+            <button class="btn btn-primary" type="button" onclick="window.openTutorApplyModal()">重新申請</button>
           </div>
         `;
       } else {
         pendingPanel.innerHTML = `
           <div style="text-align:center; padding:30px 16px;">
-            <div style="font-size:44px; margin-bottom:10px;">🎓</div>
+            <div style="font-size:44px; margin-bottom:10px;"></div>
             <p style="font-size:14px; color:#666;">您的導師申請已經批核，請重新登入以更新帳戶狀態。</p>
           </div>
         `;
@@ -609,11 +609,11 @@ window.applyRoleBasedSidebar = function() {
   }
 
   const NOTE_STATUS_LABEL = {
-    draft: '⏳ 上傳中',
-    awaiting_preview_selection: '📑 待選擇預覽頁',
-    published: '✅ 已上架',
-    delisted: '🚫 已下架（導師停權）',
-    removed: '🗑️ 已下架',
+    draft: '上傳中',
+    awaiting_preview_selection: '待選擇預覽頁',
+    published: '已上架',
+    delisted: '已下架（導師停權）',
+    removed: '已下架',
   };
 
   function buildTutorNoteCardHtml(docSnap, dragEnabled) {
@@ -638,19 +638,19 @@ window.applyRoleBasedSidebar = function() {
         <div style="font-size:12px; color:#aaa; margin:4px 0;">${n.pageCount ? (n.pageCount + ' 頁') : '頁數計算中…'}${n.previewPages && n.previewPages.length ? '　預覽頁：' + n.previewPages.join(', ') : ''}</div>
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
           ${n.fullStoragePath
-            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.previewTutorNoteFull('${id}')">📄 預覽整份文件</button>`
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.previewTutorNoteFull('${id}')">預覽整份文件</button>`
             : ''}
           ${n.status === 'published' && n.previewStoragePath
-            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.previewTutorNoteStudentView('${id}')">👁️ 預覽（學生視角）</button>`
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.previewTutorNoteStudentView('${id}')">預覽（學生視角）</button>`
             : ''}
           ${n.status === 'awaiting_preview_selection' || n.status === 'published'
-            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.openTutorPreviewPicker('${id}', ${n.pageCount || 0})">📑 選擇預覽頁</button>`
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.openTutorPreviewPicker('${id}', ${n.pageCount || 0})">選擇預覽頁</button>`
             : ''}
           ${n.status === 'draft'
-            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.retryRegisterTutorNote('${id}')">🔁 重試讀取頁數</button>`
+            ? `<button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.retryRegisterTutorNote('${id}')">重試讀取頁數</button>`
             : ''}
-          <button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.promptEditTutorNote('${id}')">✏️ 編輯</button>
-          <button class="btn btn-red" style="font-size:12px; padding:4px 8px;" onclick="window.deleteTutorNoteConfirm('${id}')">🗑️ 刪除</button>
+          <button class="btn btn-outline" style="font-size:12px; padding:4px 8px;" onclick="window.promptEditTutorNote('${id}')">編輯</button>
+          <button class="btn btn-red" style="font-size:12px; padding:4px 8px;" onclick="window.deleteTutorNoteConfirm('${id}')">刪除</button>
         </div>
       </div>
     `;
@@ -779,7 +779,7 @@ window.applyRoleBasedSidebar = function() {
     if (!n || !n.fullStoragePath) { window.showToast('找不到這份教材的檔案', '⚠️'); return; }
     try {
       const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.fullStoragePath));
-      showPdfPreviewModal(url, '📄 預覽整份文件：' + (n.title || ''));
+      showPdfPreviewModal(url, '預覽整份文件：' + (n.title || ''));
     } catch (err) {
       window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
     }
@@ -791,7 +791,7 @@ window.applyRoleBasedSidebar = function() {
     if (!n || !n.previewStoragePath) { window.showToast('這份教材尚未設定預覽頁', '⚠️'); return; }
     try {
       const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.previewStoragePath));
-      showPdfPreviewModal(url, '👁️ 預覽（學生視角）：' + (n.title || ''));
+      showPdfPreviewModal(url, '預覽（學生視角）：' + (n.title || ''));
     } catch (err) {
       window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
     }
@@ -847,9 +847,9 @@ window.applyRoleBasedSidebar = function() {
               </div>
               <div style="display:flex; gap:6px; margin-top:8px;">
                 ${n.previewStoragePath
-                  ? `<button class="btn btn-outline" type="button" style="font-size:12px; padding:4px 10px; flex:1; justify-content:center;" onclick="window.previewPublicTutorNote('${n.id}')">👁️ 預覽</button>`
+                  ? `<button class="btn btn-outline" type="button" style="font-size:12px; padding:4px 10px; flex:1; justify-content:center;" onclick="window.previewPublicTutorNote('${n.id}')">預覽</button>`
                   : ''}
-                <button class="btn btn-outline" type="button" style="font-size:12px; padding:4px 10px; flex:1; justify-content:center; opacity:.6;" onclick="window.showToast('購買功能仍在開發中，敬請期待', '🚧')">🛒 購買</button>
+                <button class="btn btn-outline" type="button" style="font-size:12px; padding:4px 10px; flex:1; justify-content:center; opacity:.6;" onclick="window.showToast('購買功能仍在開發中，敬請期待', '🚧')">購買</button>
               </div>
             </div>
           `).join('')}
@@ -871,7 +871,7 @@ window.applyRoleBasedSidebar = function() {
       const n = snap.data();
       if (!n.previewStoragePath) { window.showToast('這份教材尚未設定預覽頁', '⚠️'); return; }
       const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.previewStoragePath));
-      showPdfPreviewModal(url, '👁️ 預覽：' + (n.title || ''));
+      showPdfPreviewModal(url, '預覽：' + (n.title || ''));
     } catch (err) {
       window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
     }
@@ -918,7 +918,7 @@ window.applyRoleBasedSidebar = function() {
         // 佔位圖示（📄）就算，唔使用「失敗」呢種會嚇親人嘅字眼——一旦
         // CORS 設定好，下次載入呢個分頁就會自動變返縮圖，唔使改碼。
         const elFail = document.getElementById('tutor-note-thumb-' + id);
-        if (elFail) elFail.innerHTML = '<span style="font-size:28px; color:#B7C6C9;">📄</span>';
+        if (elFail) elFail.innerHTML = '';
       }
     }
   }
@@ -927,7 +927,7 @@ window.applyRoleBasedSidebar = function() {
     const container = document.getElementById('tutor-notes-grid');
     if (!container) return;
     if (tutorNotes.length === 0) {
-      container.innerHTML = '<p style="font-size:13px; color:#999; grid-column:1/-1;">這個課題還未有任何教材，點擊「⬆️ 上傳教材」開始。</p>';
+      container.innerHTML = '<p style="font-size:13px; color:#999; grid-column:1/-1;">這個課題還未有任何教材，點擊「上傳教材」開始。</p>';
       return;
     }
     const dragEnabled = tutorNotes.length > 1;
@@ -942,7 +942,7 @@ window.applyRoleBasedSidebar = function() {
     if (!panel) return;
     panel.style.display = 'block';
     panel.innerHTML = `
-      <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">⬆️ 上傳新教材</h4>
+      <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:8px;">上傳新教材</h4>
       <label style="font-size:13px; font-weight:bold; color:#555;">標題 *</label>
       <input id="tutor-note-title" class="input-field" type="text" maxlength="80" style="width:100%; margin-bottom:8px;" placeholder="例如：三角函數重點筆記">
       <label style="font-size:13px; font-weight:bold; color:#555;">簡介</label>
@@ -1043,7 +1043,7 @@ window.applyRoleBasedSidebar = function() {
 
     panel.style.display = 'block';
     panel.innerHTML = `
-      <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">📑 選擇預覽頁（最多 3 頁，共 ${pageCount} 頁）</h4>
+      <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">選擇預覽頁（最多 3 頁，共 ${pageCount} 頁）</h4>
       <p style="font-size:12px; color:#888; margin-bottom:8px;">學生在購買前可以看到這幾頁的內容，請選擇最能夠展示筆記質素的頁數。</p>
       <div id="tutor-preview-page-list" style="max-height:220px; overflow-y:auto; margin-bottom:10px;">${checkboxes}</div>
       <div style="display:flex; gap:8px;">

@@ -89,10 +89,10 @@
       if (!btn) return;
       if (isOnAdminPage) {
         btn.setAttribute('onclick', "window.location.hash=''");
-        btn.innerHTML = `🏠 <span class="header-admin-text">返回主頁</span>`;
+        btn.innerHTML = `<span class="header-admin-text">返回主頁</span>`;
       } else {
         btn.setAttribute('onclick', "window.location.hash='admin'");
-        btn.innerHTML = `⚙️ <span class="header-admin-text">管理後台</span>`;
+        btn.innerHTML = `<span class="header-admin-text">管理後台</span>`;
       }
     }
     window.setHeaderAdminBtnMode = setHeaderAdminBtnMode;
@@ -209,14 +209,14 @@
           : `<img src="gacha-machine.png" style="width:100%; height:100%; object-fit:contain;">`;
         return `
           <div class="admin-card">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">🎰 扭蛋機外觀圖片</h3>
+            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">扭蛋機外觀圖片</h3>
             <p style="font-size:13px; color:#888; margin-bottom:10px;">這張是扭蛋機本身的外殼圖（不是貼紙），顯示在學生點擊扭蛋的頁面。上傳新圖會即時取代畫面上顯示的圖案，不上傳則繼續使用程式碼內建的預設圖。</p>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <div id="admin-gacha-machine-thumb" onclick="document.getElementById('admin-gacha-machine-input').click()" title="點擊這裡上傳圖片" style="width:80px; height:80px; border-radius:10px; background:#F0F6F8; border:1px dashed #B3D6DE; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${previewInner}</div>
               <input type="file" accept="image/*" id="admin-gacha-machine-input" style="display:none;" onchange="adminUploadGachaMachineImage(this)">
               <div style="display:flex; flex-direction:column; gap:6px;">
-                <button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="document.getElementById('admin-gacha-machine-input').click()">📤 上傳新圖片</button>
-                ${url ? `<button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminRemoveGachaMachineImage()">↩️ 還原做預設圖</button>` : ''}
+                <button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="document.getElementById('admin-gacha-machine-input').click()">上傳新圖片</button>
+                ${url ? `<button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminRemoveGachaMachineImage()">還原做預設圖</button>` : ''}
               </div>
             </div>
           </div>
@@ -257,14 +257,14 @@
         return `
           <div class="admin-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">🦦 Ottiee 貼紙圖鑑（共 ${pool.length} 隻）</h3>
+              <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">Ottiee 貼紙圖鑑（共 ${pool.length} 隻）</h3>
               <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminNormalizeGachaWeights()">⚖️ 調整為剛好 100</button>
-                <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminRenumberGachaStickers()">🔢 重新排序編號</button>
-                <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminAddGachaPrize()">➕ 新增貼紙</button>
+                <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminNormalizeGachaWeights()">調整為剛好 100</button>
+                <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminRenumberGachaStickers()">重新排序編號</button>
+                <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminAddGachaPrize()">新增貼紙</button>
               </div>
             </div>
-            <p style="font-size:13px; color:#888; margin-bottom:8px;">貼紙編號（#id）對應用戶收集圖鑑的位置，刪除貼紙之後編號會留下缺口（例如刪除 #13~#17 之後就由 #12 跳到 #18），這不影響扭蛋／收集功能，純粹是畫面上不美觀。如果想整理，點擊「🔢 重新排序編號」會將現存貼紙由上到下重新編為 1、2、3...連續號碼——但要留意：如果已經有真實學生扭過蛋、收藏了某幾張貼紙，重新編號會令他們原有的收藏對應不上新編號（貼紙會「變成另一張」），所以這個按鈕只適合在未有學生正式使用過、或者您願意接受重整所有人收藏記錄的情況下才點擊。</p>
+            <p style="font-size:13px; color:#888; margin-bottom:8px;">貼紙編號（#id）對應用戶收集圖鑑的位置，刪除貼紙之後編號會留下缺口（例如刪除 #13~#17 之後就由 #12 跳到 #18），這不影響扭蛋／收集功能，純粹是畫面上不美觀。如果想整理，點擊「重新排序編號」會將現存貼紙由上到下重新編為 1、2、3...連續號碼——但要留意：如果已經有真實學生扭過蛋、收藏了某幾張貼紙，重新編號會令他們原有的收藏對應不上新編號（貼紙會「變成另一張」），所以這個按鈕只適合在未有學生正式使用過、或者您願意接受重整所有人收藏記錄的情況下才點擊。</p>
             <div style="overflow-x:auto;">
               <table class="admin-table">
                 <thead><tr><th>#</th><th>圖片</th><th>貼紙名稱</th><th>機率權重</th><th></th></tr></thead>
@@ -278,7 +278,7 @@
 
       container.innerHTML = `
         <div class="admin-card">
-          <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">💰 扭蛋收費</h3>
+          <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">扭蛋收費</h3>
           <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">抽一次 (PTS)：<input class="admin-input-sm" type="number" min="0" style="width:80px;" value="${adminGachaDraft.costNormal}" onchange="adminGachaDraft.costNormal = parseInt(this.value)||0"></label>
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">連續抽十次 (PTS，一次過 10 抽的總費用)：<input class="admin-input-sm" type="number" min="0" style="width:80px;" value="${adminGachaDraft.costLucky}" onchange="adminGachaDraft.costLucky = parseInt(this.value)||0"></label>
@@ -290,8 +290,8 @@
         ${renderStickerTable()}
 
         <div style="display:flex; gap:8px; justify-content:flex-end;">
-          <button class="btn btn-outline" type="button" onclick="adminResetGachaDraft()">↩️ 還原未儲存的改動</button>
-          <button class="btn btn-primary" type="button" id="btn-admin-save-gacha" onclick="adminSaveGachaConfig()">💾 儲存全部改動</button>
+          <button class="btn btn-outline" type="button" onclick="adminResetGachaDraft()">還原未儲存的改動</button>
+          <button class="btn btn-primary" type="button" id="btn-admin-save-gacha" onclick="adminSaveGachaConfig()">儲存全部改動</button>
         </div>
       `;
     }
@@ -385,7 +385,7 @@
       }
       const sticker = adminGachaDraft.stickers[idx];
       const oldPhoto = sticker.photo;
-      window.showToast('⏳ 上傳中相片…', '📤');
+      window.showToast('上傳中相片…', '📤');
       try {
         const { blob, mimeType } = await compressImageFileToBlob(file, 300, 0.75);
         const ext = mimeType === 'image/png' ? 'png' : 'jpg';
@@ -395,7 +395,7 @@
         const downloadUrl = await window.storageApi.getDownloadURL(fileRef);
         adminGachaDraft.stickers[idx].photo = downloadUrl;
         renderAdminGachaTab();
-        window.showToast('✅ 相片上傳成功，請點擊「儲存全部改動」才會正式生效', '🎉');
+        window.showToast('相片上傳成功，請點擊「儲存全部改動」才會正式生效', '🎉');
         tryDeleteOldGachaStoragePhoto(oldPhoto); // best-effort，唔使等佢完成
       } catch (err) {
         window.showToast('圖片上傳失敗：' + (err.message || err), '❌');
@@ -426,7 +426,7 @@
         return;
       }
       const oldUrl = adminGachaDraft.machineImageUrl;
-      window.showToast('⏳ 上傳中圖片…', '📤');
+      window.showToast('上傳中圖片…', '📤');
       try {
         const { blob, mimeType } = await compressImageFileToBlob(file, 400, 0.85);
         const ext = mimeType === 'image/png' ? 'png' : 'jpg';
@@ -436,7 +436,7 @@
         const downloadUrl = await window.storageApi.getDownloadURL(fileRef);
         adminGachaDraft.machineImageUrl = downloadUrl;
         renderAdminGachaTab();
-        window.showToast('✅ 圖片上傳成功，請點擊「儲存全部改動」才會正式生效', '🎉');
+        window.showToast('圖片上傳成功，請點擊「儲存全部改動」才會正式生效', '🎉');
         tryDeleteOldGachaStoragePhoto(oldUrl); // best-effort，唔使等佢完成
       } catch (err) {
         window.showToast('圖片上傳失敗：' + (err.message || err), '❌');
@@ -503,7 +503,7 @@
     // 未有學生正式扭過蛋）先撳。
     window.adminRenumberGachaStickers = function() {
       if (!adminGachaDraft || !adminGachaDraft.stickers.length) return;
-      if (!confirm('重新排序編號會將貼紙 id 由 1 開始重新連續編號。\n\n⚠️ 如果已經有真實學生使用這個扭蛋機扭過蛋、收藏了某幾隻貼紙，他們原有的收藏會因為編號改變而對應不上（貼紙會「變成另一隻」）。如果尚未有學生正式使用過，或者你願意接受洗牌整批收藏記錄，才繼續。\n\n確定要重新編號？')) return;
+      if (!confirm('重新排序編號會將貼紙 id 由 1 開始重新連續編號。\n\n如果已經有真實學生使用這個扭蛋機扭過蛋、收藏了某幾隻貼紙，他們原有的收藏會因為編號改變而對應不上（貼紙會「變成另一隻」）。如果尚未有學生正式使用過，或者你願意接受洗牌整批收藏記錄，才繼續。\n\n確定要重新編號？')) return;
       adminGachaDraft.stickers.forEach((p, i) => { p.id = i + 1; });
       renderAdminGachaTab();
       window.showToast('已重新排序編號，請點擊「儲存全部改動」才會正式生效', '🔢');
@@ -544,14 +544,14 @@
       }
 
       const btn = document.getElementById('btn-admin-save-gacha');
-      if (btn) { btn.disabled = true; btn.innerText = '⏳ 儲存中…'; }
+      if (btn) { btn.disabled = true; btn.innerText = '儲存中…'; }
       try {
         await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'gacha'), payload);
-        window.showToast('✅ 扭蛋機設定已儲存，即時對所有用戶生效！', '🎉');
+        window.showToast('扭蛋機設定已儲存，即時對所有用戶生效！', '🎉');
       } catch (err) {
         window.showToast('儲存失敗：' + (err.message || err), '❌');
       } finally {
-        if (btn) { btn.disabled = false; btn.innerText = '💾 儲存全部改動'; }
+        if (btn) { btn.disabled = false; btn.innerText = '儲存全部改動'; }
       }
     };
 
@@ -631,7 +631,7 @@
               ? `<img src="${r.photo}" style="width:64px; height:64px; object-fit:cover; border-radius:50%; border:2px solid #C08B57;">`
               : `<div style="width:64px; height:64px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; font-size:13px; color:#999; text-align:center;">預設插畫</div>`}
             <input type="file" accept="image/*" style="font-size:13px; margin-top:4px; max-width:100px;" onchange="adminUploadRankPhoto(${idx}, this)">
-            ${r.photo ? `<button class="btn btn-outline" style="font-size:13px; padding:2px 6px; margin-top:2px;" onclick="adminRemoveRankPhoto(${idx})">🗑移除</button>` : ''}
+            ${r.photo ? `<button class="btn btn-outline" style="font-size:13px; padding:2px 6px; margin-top:2px;" onclick="adminRemoveRankPhoto(${idx})">移除</button>` : ''}
           </div>
           <div style="flex:1; min-width:240px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:4px;">等級門檻
@@ -653,13 +653,13 @@
               <textarea class="admin-input-sm" rows="2" style="flex:1; min-width:200px; resize:vertical;" oninput="adminLevelDraft.ranks[${idx}].desc = this.value">${escapeHtml(r.desc || '')}</textarea>
             </label>
           </div>
-          <button class="btn btn-red" style="font-size:13px; padding:3px 8px; flex-shrink:0;" onclick="adminRemoveLevelRank(${idx})">🗑 刪除段位</button>
+          <button class="btn btn-red" style="font-size:13px; padding:3px 8px; flex-shrink:0;" onclick="adminRemoveLevelRank(${idx})">刪除段位</button>
         </div>
       `).join('');
 
       container.innerHTML = `
         <div class="admin-card">
-          <h3 style="font-size:14px; font-weight:bold; margin-bottom:8px;">⚙️ 基本設定</h3>
+          <h3 style="font-size:14px; font-weight:bold; margin-bottom:8px;">基本設定</h3>
           <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px;">
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">
               每溫習 1 分鐘可得 EXP：
@@ -675,15 +675,15 @@
         </div>
 
         <div class="admin-card" style="margin-top:12px;">
-          <h3 style="font-size:14px; font-weight:bold; margin-bottom:4px;">🏅 段位稱號 + 水獺造型（由低到高，建議第一行等級門檻＝1）</h3>
+          <h3 style="font-size:14px; font-weight:bold; margin-bottom:4px;">段位稱號 + 水獺造型（由低到高，建議第一行等級門檻＝1）</h3>
           <p style="font-size:13px; color:#888; margin-bottom:10px;">每個段位可以上傳專屬水獺相片，用家升到那個等級，主頁「我的水獺」就會自動換成那張相；不上傳則使用共用的預設插畫（有心情表情變化）。</p>
           <div>${ranksCards}</div>
-          <button class="btn btn-outline" style="margin-top:4px; font-size:13px;" onclick="adminAddLevelRank()">➕ 新增段位</button>
+          <button class="btn btn-outline" style="margin-top:4px; font-size:13px;" onclick="adminAddLevelRank()">新增段位</button>
         </div>
 
         <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="adminSaveLevelConfig()">💾 儲存全部改動</button>
-          <button class="btn btn-outline" onclick="adminResetLevelDraft()">↩️ 還原未儲存的改動</button>
+          <button class="btn btn-primary" onclick="adminSaveLevelConfig()">儲存全部改動</button>
+          <button class="btn btn-outline" onclick="adminResetLevelDraft()">還原未儲存的改動</button>
         </div>
       `;
       adminRefreshLevelPreview();
@@ -760,7 +760,7 @@
       }
       try {
         await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'levelSystem'), payload);
-        window.showToast('✅ 已儲存等級系統設定', '✅');
+        window.showToast('已儲存等級系統設定', '✅');
       } catch (err) {
         window.showToast('儲存失敗：' + (err.message || err), '❌');
       }
@@ -830,7 +830,7 @@
               <td>${r.participantCount || 0}/${(typeof window.resolveRoomCapacity === 'function') ? window.resolveRoomCapacity(r) : (window.ROOM_CAPACITY || 4)}</td>
               <td>${r.duration || 30} 分鐘</td>
               <td>${created}</td>
-              <td><button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="adminDeleteRoom('${docSnap.id}', '${(r.name || '').replace(/'/g, "\\'")}')">🗑️ 強制關閉</button></td>
+              <td><button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="adminDeleteRoom('${docSnap.id}', '${(r.name || '').replace(/'/g, "\\'")}')">強制關閉</button></td>
             </tr>
           `;
         }).join('');
@@ -881,7 +881,7 @@
               <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(p.title || '')}</td>
               <td>${escapeHtml(p.authorName || '匿名')}</td>
               <td>${formatTime(p.createdAt)}</td>
-              <td><button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="adminDeleteQaPost('${docSnap.id}')">🗑️ 刪除</button></td>
+              <td><button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="adminDeleteQaPost('${docSnap.id}')">刪除</button></td>
             </tr>
           `;
         }).join('');
@@ -982,8 +982,8 @@
             <td><input class="admin-input-sm" style="width:60px;" value="${(parseFloat(u.hours) || 0).toFixed(1)}" id="admin-user-hours-${uid}"></td>
             <td><input class="admin-input-sm" type="number" style="width:70px;" value="${u.exp || 0}" id="admin-user-exp-${uid}"></td>
             <td style="display:flex; gap:4px; flex-wrap:wrap;">
-              <button class="btn btn-outline" style="font-size:13px; padding:3px 8px;" onclick="adminSaveUserStats('${uid}')">💾 儲存</button>
-              <button class="btn ${suspended ? 'btn-primary' : 'btn-red'}" style="font-size:13px; padding:3px 8px;" onclick="adminToggleSuspendUser('${uid}', ${!suspended})">${suspended ? '✅ 解除停權' : '🚫 停權'}</button>
+              <button class="btn btn-outline" style="font-size:13px; padding:3px 8px;" onclick="adminSaveUserStats('${uid}')">儲存</button>
+              <button class="btn ${suspended ? 'btn-primary' : 'btn-red'}" style="font-size:13px; padding:3px 8px;" onclick="adminToggleSuspendUser('${uid}', ${!suspended})">${suspended ? '解除停權' : '停權'}</button>
             </td>
           </tr>
         `;
@@ -993,7 +993,7 @@
 
       container.innerHTML = `
         <div class="admin-card">
-          <p style="font-size:13px; color:#888; margin-bottom:10px;">修改積分／時數／EXP 後，請記得逐行點擊「💾 儲存」；EXP 決定用戶的溫習等級與段位，一般毋須人手修改，只有在特殊情況（例如補發）才使用。「停權」會令該用戶下次登入時被強制登出。</p>
+          <p style="font-size:13px; color:#888; margin-bottom:10px;">修改積分／時數／EXP 後，請記得逐行點擊「儲存」；EXP 決定用戶的溫習等級與段位，一般毋須人手修改，只有在特殊情況（例如補發）才使用。「停權」會令該用戶下次登入時被強制登出。</p>
           <div style="display:flex; gap:8px; margin-bottom:12px;">
             <button type="button" class="btn ${adminUsersGradeGroup === 'school' ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="switchAdminUsersGradeGroup('school')">中學／大專／大學</button>
             <button type="button" class="btn ${adminUsersGradeGroup === 'other' ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="switchAdminUsersGradeGroup('other')">其他／自修生</button>
@@ -1100,30 +1100,30 @@
       const r = docSnap.data();
       const reportId = docSnap.id;
       const status = r.status || 'pending';
-      const statusLabel = status === 'pending' ? '⏳ 待處理' : (status === 'dismissed' ? '已駁回' : '已處理');
+      const statusLabel = status === 'pending' ? '待處理' : (status === 'dismissed' ? '已駁回' : '已處理');
       const statusColor = status === 'pending' ? '#C0524A' : '#999';
       const when = r.createdAt ? new Date(r.createdAt).toLocaleString('zh-HK') : '—';
       const screenshotHtml = r.screenshot
         ? `<img src="${r.screenshot}" style="width:100%; max-width:280px; border-radius:8px; border:1px solid #ddd; margin-top:6px; display:block; cursor:pointer;" onclick="window.open(this.src, '_blank')">`
-        : `<p style="font-size:13px; color:#c99; margin-top:6px;">⚠️ 當時無法取得截圖</p>`;
+        : `<p style="font-size:13px; color:#c99; margin-top:6px;">當時無法取得截圖</p>`;
       return `
         <div class="admin-card" style="${status !== 'pending' ? 'opacity:.6;' : ''}">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
             <span style="font-weight:700; color:${statusColor}; font-size:13px;">${statusLabel}</span>
             <span style="font-size:13px; color:#999;">${escapeHtml(when)}</span>
           </div>
-          <p style="font-size:13px; margin-bottom:3px;"><b>被舉報：</b>${escapeHtml(r.reportedName || '—')} ${r.reportedLoginId ? '（🆔 ' + escapeHtml(r.reportedLoginId) + '）' : ''}</p>
+          <p style="font-size:13px; margin-bottom:3px;"><b>被舉報：</b>${escapeHtml(r.reportedName || '—')} ${r.reportedLoginId ? '（' + escapeHtml(r.reportedLoginId) + '）' : ''}</p>
           <p style="font-size:13px; color:#888; margin-bottom:3px;">${r.reportedEmail ? escapeHtml(r.reportedEmail) : ''}</p>
-          <p style="font-size:13px; margin-bottom:3px;"><b>舉報人：</b>${escapeHtml(r.reporterName || '—')} ${r.reporterLoginId ? '（🆔 ' + escapeHtml(r.reporterLoginId) + '）' : ''}</p>
+          <p style="font-size:13px; margin-bottom:3px;"><b>舉報人：</b>${escapeHtml(r.reporterName || '—')} ${r.reporterLoginId ? '（' + escapeHtml(r.reporterLoginId) + '）' : ''}</p>
           <p style="font-size:13px; margin-bottom:3px;"><b>房間：</b>${escapeHtml(r.roomName || r.roomId || '—')}</p>
           <p style="font-size:13px; margin-bottom:3px;"><b>原因：</b>${escapeHtml(r.reason || '—')}</p>
           ${r.notes ? `<p style="font-size:13px; color:#666; background:#F7F5F2; border-radius:6px; padding:6px 8px; margin-bottom:3px;">${escapeHtml(r.notes)}</p>` : ''}
           ${screenshotHtml}
           <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
-            ${status === 'pending' ? `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminMarkReportStatus('${reportId}', 'dismissed')">🗂️ 駁回（沒問題）</button>` : ''}
-            ${status === 'pending' ? `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminMarkReportStatus('${reportId}', 'reviewed')">✅ 標記已處理</button>` : ''}
-            ${r.reportedUid ? `<button class="btn btn-red" style="font-size:13px; padding:4px 9px;" onclick="window.adminSuspendFromReport('${reportId}', '${r.reportedUid}')">🚫 停權此帳戶</button>` : ''}
-            ${status !== 'pending' ? `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px; color:#999; border-color:#ccc;" onclick="window.adminDeleteReport('${reportId}')">🗑️ 刪除紀錄</button>` : ''}
+            ${status === 'pending' ? `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminMarkReportStatus('${reportId}', 'dismissed')">駁回（沒問題）</button>` : ''}
+            ${status === 'pending' ? `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminMarkReportStatus('${reportId}', 'reviewed')">標記已處理</button>` : ''}
+            ${r.reportedUid ? `<button class="btn btn-red" style="font-size:13px; padding:4px 9px;" onclick="window.adminSuspendFromReport('${reportId}', '${r.reportedUid}')">停權此帳戶</button>` : ''}
+            ${status !== 'pending' ? `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px; color:#999; border-color:#ccc;" onclick="window.adminDeleteReport('${reportId}')">刪除紀錄</button>` : ''}
           </div>
         </div>
       `;
@@ -1140,11 +1140,11 @@
       const loadMoreHtml = adminReportsAllLoaded
         ? ''
         : `<div style="text-align:center; margin-top:12px;">
-             <button class="btn btn-outline" id="admin-reports-load-more-btn" type="button" onclick="window.adminLoadMoreReports()">📜 載入更多（已顯示 ${adminReportsLoadedDocs.length} 則）</button>
+             <button class="btn btn-outline" id="admin-reports-load-more-btn" type="button" onclick="window.adminLoadMoreReports()">載入更多（已顯示 ${adminReportsLoadedDocs.length} 則）</button>
            </div>`;
       container.innerHTML = `
         <div style="margin-bottom:10px; background:#FFF7E6; border:1px solid #F0D9A0; border-radius:8px; padding:8px 10px; font-size:13px; color:#8a6d1f;">
-          ⚠️ 技術上的重要提醒：這個網站沒有獨立伺服器，只是使用 Firebase，所以這裡看不到、也無法做到真正的「IP 封鎖」（因為 Firestore 規則看不到用戶的真實 IP）。「停權」這個功能就確實有效——會即刻令該帳戶下次登入被強制登出，亦令他完全無法使用這個平台。
+          技術上的重要提醒：這個網站沒有獨立伺服器，只是使用 Firebase，所以這裡看不到、也無法做到真正的「IP 封鎖」（因為 Firestore 規則看不到用戶的真實 IP）。「停權」這個功能就確實有效——會即刻令該帳戶下次登入被強制登出，亦令他完全無法使用這個平台。
         </div>
         ${cards}
         ${loadMoreHtml}
@@ -1198,7 +1198,7 @@
         renderAdminReportsListUI();
       } catch (e) {
         window.showToast('載入更多舉報失敗：' + (e.message || e), '❌');
-        if (btn) { btn.disabled = false; btn.innerText = '📜 載入更多'; }
+        if (btn) { btn.disabled = false; btn.innerText = '載入更多'; }
       }
     };
 
@@ -1307,8 +1307,8 @@
             <input type="file" accept="image/*" id="${inputId}" style="display:none;" onchange="adminUploadNavIcon('${item.key}',this)">
             <div style="flex:1; font-size:14px; font-weight:600; color:#333;">${escapeHtml(item.label)}</div>
             <div style="display:flex; gap:6px;">
-              <button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="document.getElementById('${inputId}').click()">📤 上傳圖片</button>
-              ${url ? `<button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminRemoveNavIcon('${item.key}')">↩️ 還原做預設圖示</button>` : ''}
+              <button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="document.getElementById('${inputId}').click()">上傳圖片</button>
+              ${url ? `<button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminRemoveNavIcon('${item.key}')">還原做預設圖示</button>` : ''}
             </div>
           </div>
         `;
@@ -1316,12 +1316,12 @@
 
       container.innerHTML = `
         <div class="admin-card">
-          <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">🖼 側邊欄功能圖示</h3>
+          <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">側邊欄功能圖示</h3>
           <p style="font-size:13px; color:#888; margin-bottom:6px;">將側邊欄「主頁、視訊溫習室」等 8 個分頁按鈕原本的 emoji 圖示，換成自訂上傳的圖片。上傳新圖會即時取代畫面上顯示的圖示，未上傳過的項目則繼續使用預設 emoji。</p>
           ${rows}
           <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px;">
-            <button class="btn btn-outline" type="button" onclick="adminResetNavIconsDraft()">↩️ 還原未儲存的改動</button>
-            <button class="btn btn-primary" type="button" onclick="adminSaveNavIconsConfig()">💾 儲存全部改動</button>
+            <button class="btn btn-outline" type="button" onclick="adminResetNavIconsDraft()">還原未儲存的改動</button>
+            <button class="btn btn-primary" type="button" onclick="adminSaveNavIconsConfig()">儲存全部改動</button>
           </div>
         </div>
       `;
@@ -1341,7 +1341,7 @@
         return;
       }
       const oldUrl = adminNavIconsDraft[key];
-      window.showToast('⏳ 上傳中圖片…', '📤');
+      window.showToast('上傳中圖片…', '📤');
       try {
         const { blob, mimeType } = await compressImageFileToBlob(file, 128, 0.85);
         const ext = mimeType === 'image/png' ? 'png' : 'jpg';
@@ -1351,7 +1351,7 @@
         const downloadUrl = await window.storageApi.getDownloadURL(fileRef);
         adminNavIconsDraft[key] = downloadUrl;
         renderAdminNavIconsTab();
-        window.showToast('✅ 圖片上傳成功，請點擊「儲存全部改動」才會正式生效', '🎉');
+        window.showToast('圖片上傳成功，請點擊「儲存全部改動」才會正式生效', '🎉');
         tryDeleteOldGachaStoragePhoto(oldUrl); // best-effort，唔使等佢完成（呢個函式其實通用，唔止扭蛋貼紙先用得）
       } catch (err) {
         window.showToast('圖片上傳失敗：' + (err.message || err), '❌');
@@ -1375,7 +1375,7 @@
       if (!adminNavIconsDraft) return;
       try {
         await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'navIcons'), adminNavIconsDraft);
-        window.showToast('✅ 圖示設定已儲存，全站即時生效', '🎉');
+        window.showToast('圖示設定已儲存，全站即時生效', '🎉');
       } catch (err) {
         window.showToast('儲存失敗：' + (err.message || err), '❌');
       }
@@ -1454,7 +1454,7 @@
       const a = docSnap.data();
       const uid = docSnap.id;
       const status = a.status || 'pending';
-      const statusLabel = status === 'pending' ? '⏳ 待審批' : (status === 'approved' ? '✅ 已批准' : '❌ 已駁回');
+      const statusLabel = status === 'pending' ? '待審批' : (status === 'approved' ? '已批准' : '已駁回');
       const statusColor = status === 'pending' ? '#C0524A' : (status === 'approved' ? '#2F6B3A' : '#999');
       const when = a.submittedAt ? new Date(a.submittedAt).toLocaleString('zh-HK') : '—';
       const subjectsHtml = (a.subjectsIntended || [])
@@ -1470,12 +1470,12 @@
           <p style="font-size:13px; color:#666; margin-bottom:3px;">${escapeHtml(a.bio || '（未填寫自我介紹）')}</p>
           <p style="font-size:13px; margin-bottom:3px;">${subjectsHtml || '（未填寫科目）'}</p>
           <p style="font-size:13px; color:#888; margin-bottom:3px;"><b>聯絡方式：</b>${escapeHtml(a.contactInfo || '—')}</p>
-          <p style="font-size:12px; color:#aaa; margin-bottom:3px;">🆔 ${escapeHtml(uid)}</p>
+          <p style="font-size:12px; color:#aaa; margin-bottom:3px;">${escapeHtml(uid)}</p>
           ${status === 'rejected' && a.rejectionReason ? `<p style="font-size:13px; color:#8a2f2f; background:#FBEAEA; border-radius:6px; padding:6px 8px; margin-bottom:3px;">駁回原因：${escapeHtml(a.rejectionReason)}</p>` : ''}
           ${status === 'pending' ? `
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
-              <button class="btn btn-primary" style="font-size:13px; padding:4px 9px;" onclick="window.adminApproveTutorApp('${uid}')">✅ 批准</button>
-              <button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminRejectTutorApp('${uid}')">❌ 駁回</button>
+              <button class="btn btn-primary" style="font-size:13px; padding:4px 9px;" onclick="window.adminApproveTutorApp('${uid}')">批准</button>
+              <button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminRejectTutorApp('${uid}')">駁回</button>
             </div>
           ` : ''}
         </div>
@@ -1486,7 +1486,7 @@
       const t = docSnap.data();
       const uid = docSnap.id;
       const status = t.status || 'active';
-      const statusLabel = status === 'active' ? '🟢 正常' : '🚫 已停權';
+      const statusLabel = status === 'active' ? '正常' : '已停權';
       const statusColor = status === 'active' ? '#2F6B3A' : '#C0524A';
       const subjectsHtml = (t.subjectsIntended || [])
         .map(s => `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtml(s)}</span>`)
@@ -1495,15 +1495,15 @@
         <div class="admin-card">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
             <span style="font-weight:700; color:${statusColor}; font-size:13px;">${statusLabel}</span>
-            <span style="font-size:12px; color:#aaa;">🆔 ${escapeHtml(uid)}</span>
+            <span style="font-size:12px; color:#aaa;">${escapeHtml(uid)}</span>
           </div>
           <p style="font-size:13px; margin-bottom:3px;"><b>${escapeHtml(t.displayName || '—')}</b></p>
           <p style="font-size:13px; color:#666; margin-bottom:3px;">${escapeHtml(t.bio || '')}</p>
           <p style="font-size:13px; margin-bottom:3px;">${subjectsHtml}</p>
           <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
             ${status === 'active'
-              ? `<button class="btn btn-red" style="font-size:13px; padding:4px 9px;" onclick="window.adminSuspendTutor('${uid}')">🚫 停權</button>`
-              : `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminReinstateTutor('${uid}')">♻️ 解除停權</button>`}
+              ? `<button class="btn btn-red" style="font-size:13px; padding:4px 9px;" onclick="window.adminSuspendTutor('${uid}')">停權</button>`
+              : `<button class="btn btn-outline" style="font-size:13px; padding:4px 9px;" onclick="window.adminReinstateTutor('${uid}')">解除停權</button>`}
           </div>
         </div>
       `;
@@ -1527,11 +1527,11 @@
       const historyHtml = otherApps.length ? otherApps.map(buildAdminTutorAppCardHtml).join('') : '';
 
       container.innerHTML = `
-        <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:4px 0 8px;">⏳ 待審批申請</h4>
+        <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:4px 0 8px;">待審批申請</h4>
         ${pendingHtml}
-        <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:18px 0 8px;">🎓 導師名單</h4>
+        <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:18px 0 8px;">導師名單</h4>
         ${tutorsHtml}
-        ${historyHtml ? `<h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:18px 0 8px;">📜 申請歷史（已批准／已駁回）</h4>${historyHtml}` : ''}
+        ${historyHtml ? `<h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin:18px 0 8px;">申請歷史（已批准／已駁回）</h4>${historyHtml}` : ''}
       `;
     }
 
