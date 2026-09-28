@@ -270,6 +270,31 @@
     'gacha.loadingHistory': { 'zh-Hant': '載入中獎記錄...', 'en': 'Loading draw history...', 'yue': 'Load 緊中獎記錄...' },
     'gacha.loadHistoryFailed': { 'zh-Hant': '載入中獎記錄失敗，請稍後再試', 'en': 'Failed to load draw history, please try again later', 'yue': 'Load 唔到中獎記錄，遲啲再試吓' },
     'gacha.batchTypeShort': { 'zh-Hant': '十連抽', 'en': '10x Draw', 'yue': '十連抽' },
+
+    // ── 溫習排行榜（第七階段：English 由 Claude 翻譯、廣東話口語由
+    //    Claude 起草，交 Alvis 覆核／修正）──
+    'lb.pageTitle': { 'zh-Hant': '溫習排行榜（僅中學適用）', 'en': 'Leaderboard (Secondary School Only)', 'yue': '溫習排行榜（淨係中學生適用）' },
+    'lb.pageDesc': { 'zh-Hant': '可切換「本月」或「累積」時數排名，只顯示首 50 名，你的名次會在清單最底另外顯示；每個月 1 號「本月排行榜」會自動重新計算', 'en': 'Switch between "This Month" and "All-Time" rankings — only the top 50 are shown, with your own rank shown separately at the bottom of the list; the "This Month" ranking resets automatically on the 1st of every month', 'yue': '可以切換睇「本月」定「累積」時數排名，淨係顯示頭 50 名，你自己嘅名次會喺清單最底獨立顯示；每個月 1 號「本月排行榜」會自動重新計過' },
+    'lb.periodMonthBtn': { 'zh-Hant': '本月排行榜', 'en': 'This Month', 'yue': '本月排行榜' },
+    'lb.periodAlltimeBtn': { 'zh-Hant': '累積排行榜', 'en': 'All-Time', 'yue': '累積排行榜' },
+    'lb.modeDistrictBtn': { 'zh-Hant': '分區個人排行榜', 'en': 'By District (Individual)', 'yue': '分區個人排行榜' },
+    'lb.modeSchoolInternalBtn': { 'zh-Hant': '校內排行榜', 'en': 'Within School', 'yue': '校內排行榜' },
+    'lb.modeSchoolBtn': { 'zh-Hant': '學校總排行榜', 'en': 'By School (Total)', 'yue': '學校總排行榜' },
+    'lb.districtLabel': { 'zh-Hant': '地區：', 'en': 'District: ', 'yue': '地區：' },
+    'lb.yourSchoolLabel': { 'zh-Hant': '你的學校：', 'en': 'Your school: ', 'yue': '你間學校：' },
+    'lb.notSet': { 'zh-Hant': '未設定', 'en': 'Not set', 'yue': '未設定' },
+    'lb.loading': { 'zh-Hant': '載入排行榜中…', 'en': 'Loading leaderboard…', 'yue': 'Load 緊排行榜…' },
+    'lb.defaultUsername': { 'zh-Hant': '同學', 'en': 'Student', 'yue': '同學' },
+    'lb.avatarAlt': { 'zh-Hant': '頭像', 'en': 'Avatar', 'yue': '頭像' },
+    'lb.youSuffix': { 'zh-Hant': '（你）', 'en': ' (You)', 'yue': '（你）' },
+    'lb.notApplicable': { 'zh-Hant': '不適用', 'en': 'N/A', 'yue': '不適用' },
+    'lb.emptyDistrict': { 'zh-Hant': '這個地區暫時未有同學上榜，開始溫習就可以成為第一位！', 'en': 'No one from this district has made the leaderboard yet — start studying and be the first!', 'yue': '呢個地區暫時未有同學上榜，開始溫習就可以做第一位！' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'lb.loadFailedTemplate': { 'zh-Hant': '載入排行榜失敗：{msg}', 'en': 'Failed to load leaderboard: {msg}', 'yue': 'Load 唔到排行榜：{msg}' },
+    'lb.schoolNotSetMsg': { 'zh-Hant': '你的帳戶未設定學校名稱，請先到「我的帳戶」填寫學校，先可以睇到校內排行榜', 'en': 'Your account has no school set — please fill in your school under "My Account" first to see the within-school leaderboard', 'yue': '你個帳戶未填學校名，去「我的帳戶」填返先，先睇得到校內排行榜' },
+    'lb.emptySchoolInternal': { 'zh-Hant': '你的學校暫時未有同學上榜，開始溫習就可以成為第一位！', 'en': 'No one from your school has made the leaderboard yet — start studying and be the first!', 'yue': '你間學校暫時未有同學上榜，開始溫習就可以做第一位！' },
+    'lb.emptySchoolTotal': { 'zh-Hant': '暫時未有學校上榜，開始溫習就可以幫你的學校爭取第一！', 'en': 'No schools on the leaderboard yet — start studying and help your school claim first place!', 'yue': '暫時未有學校上榜，開始溫習幫你間學校爭第一啦！' },
+    'lb.unnamedSchool': { 'zh-Hant': '未命名學校', 'en': 'Unnamed School', 'yue': '未命名學校' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置

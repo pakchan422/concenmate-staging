@@ -317,7 +317,7 @@
       const clickAttr = clickable ? ` onclick="viewUserProfile('${uid}')" style="cursor:pointer;"` : '';
       const avatarHtml = clickable ? `
             <div style="width:32px; height:32px; border-radius:50%; background:var(--brand-100); color:var(--brand-800); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; flex-shrink:0; overflow:hidden;">
-              ${avatarBase64 ? `<img src="${avatarBase64}" style="width:100%; height:100%; object-fit:cover;" alt="頭像">` : escapeHtml((primaryText || '同').charAt(0).toUpperCase())}
+              ${avatarBase64 ? `<img src="${avatarBase64}" style="width:100%; height:100%; object-fit:cover;" alt="${window.t('lb.avatarAlt', '頭像')}">` : escapeHtml((primaryText || window.t('lb.defaultUsername', '同學')).charAt(0).toUpperCase())}
             </div>
       ` : '';
       return `
@@ -325,7 +325,7 @@
           <div style="display:flex; align-items:center; gap:10px; min-width:0;">
             <div style="font-size:15px; font-weight:bold; color:var(--brand-800); width:34px; flex-shrink:0; text-align:center;">${medal}</div>
             ${avatarHtml}
-            <div${clickAttr} style="font-size:14px; font-weight:bold; color:var(--brand-800); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(primaryText)}${isMe ? ' <span style="font-size:12px; color:var(--brand-600); font-weight:normal;">（你）</span>' : ''}</div>
+            <div${clickAttr} style="font-size:14px; font-weight:bold; color:var(--brand-800); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(primaryText)}${isMe ? ` <span style="font-size:12px; color:var(--brand-600); font-weight:normal;">${window.t('lb.youSuffix', '（你）')}</span>` : ''}</div>
           </div>
           <div style="font-size:13px; color:#3E7A8A; font-weight:700; white-space:nowrap; flex-shrink:0;">${escapeHtml(secondaryText)}</div>
         </div>
@@ -352,7 +352,7 @@
       const clickAttr = clickable ? ` onclick="viewUserProfile('${uid}')" style="cursor:pointer;"` : '';
       const avatarHtml = clickable ? `
             <div style="width:32px; height:32px; border-radius:50%; background:var(--brand-100); color:var(--brand-800); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; flex-shrink:0; overflow:hidden;">
-              ${avatarBase64 ? `<img src="${avatarBase64}" style="width:100%; height:100%; object-fit:cover;" alt="頭像">` : escapeHtml((primaryText || '同').charAt(0).toUpperCase())}
+              ${avatarBase64 ? `<img src="${avatarBase64}" style="width:100%; height:100%; object-fit:cover;" alt="${window.t('lb.avatarAlt', '頭像')}">` : escapeHtml((primaryText || window.t('lb.defaultUsername', '同學')).charAt(0).toUpperCase())}
             </div>
       ` : '';
       return `
@@ -360,9 +360,9 @@
           <div style="display:flex; align-items:center; gap:10px; min-width:0;">
             <div style="font-size:12px; font-weight:bold; color:#888; width:34px; flex-shrink:0; text-align:center;">—</div>
             ${avatarHtml}
-            <div${clickAttr} style="font-size:14px; font-weight:bold; color:var(--brand-800); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(primaryText)} <span style="font-size:12px; color:var(--brand-600); font-weight:normal;">（你）</span></div>
+            <div${clickAttr} style="font-size:14px; font-weight:bold; color:var(--brand-800); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(primaryText)} <span style="font-size:12px; color:var(--brand-600); font-weight:normal;">${window.t('lb.youSuffix', '（你）')}</span></div>
           </div>
-          <div style="font-size:13px; color:#888; font-weight:700; white-space:nowrap; flex-shrink:0;">不適用</div>
+          <div style="font-size:13px; color:#888; font-weight:700; white-space:nowrap; flex-shrink:0;">${window.t('lb.notApplicable', '不適用')}</div>
         </div>
       `;
     }
@@ -374,7 +374,7 @@
       if (!listEl || !districtSel) return;
       const district = districtSel.value;
       if (!district) return;
-      listEl.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入排行榜中…</p>';
+      listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">${window.t('lb.loading', '載入排行榜中…')}</p>`;
       if (ownRankWrap) ownRankWrap.style.display = 'none';
 
       // 本月榜：query 多加一個 monthlyPeriod == 今個月 嘅條件，並且改用
@@ -400,10 +400,10 @@
         const entries = snap.docs.map((d) => d.data());
 
         if (entries.length === 0) {
-          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">這個地區暫時未有同學上榜，開始溫習就可以成為第一位！</p>`;
+          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">${window.t('lb.emptyDistrict', '這個地區暫時未有同學上榜，開始溫習就可以成為第一位！')}</p>`;
         } else {
           listEl.innerHTML = entries.map((e, i) =>
-            renderLeaderboardRow(i + 1, e.username || '同學', formatHoursMinutes(e[hoursField]), e.uid === window.currentUser.uid, e.avatarBase64, e.uid)
+            renderLeaderboardRow(i + 1, e.username || window.t('lb.defaultUsername', '同學'), formatHoursMinutes(e[hoursField]), e.uid === window.currentUser.uid, e.avatarBase64, e.uid)
           ).join('');
         }
 
@@ -441,7 +441,7 @@
         }
       } catch (err) {
         console.error('載入分區排行榜失敗:', err);
-        listEl.innerHTML = `<p style="text-align:center; color:#c0392b; padding:20px;">載入排行榜失敗：${escapeHtml(err.message || err)}</p>`;
+        listEl.innerHTML = `<p style="text-align:center; color:#c0392b; padding:20px;">${escapeHtml(window.t('lb.loadFailedTemplate', `載入排行榜失敗：${err.message || err}`).replace('{msg}', err.message || err))}</p>`;
       }
     }
 
@@ -456,7 +456,7 @@
       if (!listEl) return;
 
       const mySchool = (window.currentUser.school || '').trim();
-      if (nameEl) nameEl.innerText = mySchool || '未設定';
+      if (nameEl) nameEl.innerText = mySchool || window.t('lb.notSet', '未設定');
       if (ownRankWrap) ownRankWrap.style.display = 'none';
 
       if (!mySchool) {
@@ -471,12 +471,12 @@
             ownRankWrap.innerHTML = renderLeaderboardNotApplicableRow(window.currentUser.username || '你', window.currentUser.avatarBase64, window.currentUser.uid);
           }
         } else {
-          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">你的帳戶未設定學校名稱，請先到「我的帳戶」填寫學校，先可以睇到校內排行榜</p>`;
+          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">${window.t('lb.schoolNotSetMsg', '你的帳戶未設定學校名稱，請先到「我的帳戶」填寫學校，先可以睇到校內排行榜')}</p>`;
         }
         return;
       }
 
-      listEl.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入排行榜中…</p>';
+      listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">${window.t('lb.loading', '載入排行榜中…')}</p>`;
 
       const isMonth = leaderboardPeriod === 'month';
       const hoursField = isMonth ? 'monthlyHours' : 'hours';
@@ -493,10 +493,10 @@
         const entries = snap.docs.map((d) => d.data());
 
         if (entries.length === 0) {
-          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">你的學校暫時未有同學上榜，開始溫習就可以成為第一位！</p>`;
+          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">${window.t('lb.emptySchoolInternal', '你的學校暫時未有同學上榜，開始溫習就可以成為第一位！')}</p>`;
         } else {
           listEl.innerHTML = entries.map((e, i) =>
-            renderLeaderboardRow(i + 1, e.username || '同學', formatHoursMinutes(e[hoursField]), e.uid === window.currentUser.uid, e.avatarBase64, e.uid)
+            renderLeaderboardRow(i + 1, e.username || window.t('lb.defaultUsername', '同學'), formatHoursMinutes(e[hoursField]), e.uid === window.currentUser.uid, e.avatarBase64, e.uid)
           ).join('');
         }
 
@@ -523,7 +523,7 @@
         }
       } catch (err) {
         console.error('載入校內排行榜失敗:', err);
-        listEl.innerHTML = `<p style="text-align:center; color:#c0392b; padding:20px;">載入排行榜失敗：${escapeHtml(err.message || err)}</p>`;
+        listEl.innerHTML = `<p style="text-align:center; color:#c0392b; padding:20px;">${escapeHtml(window.t('lb.loadFailedTemplate', `載入排行榜失敗：${err.message || err}`).replace('{msg}', err.message || err))}</p>`;
       }
     }
 
@@ -531,7 +531,7 @@
       const listEl = document.getElementById('lb-list-container');
       const ownRankWrap = document.getElementById('lb-own-rank-wrap');
       if (!listEl) return;
-      listEl.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入排行榜中…</p>';
+      listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">${window.t('lb.loading', '載入排行榜中…')}</p>`;
       if (ownRankWrap) ownRankWrap.style.display = 'none';
 
       const mySchoolId = sanitizeSchoolIdForDoc(window.currentUser.school);
@@ -558,10 +558,10 @@
         const entries = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
         if (entries.length === 0) {
-          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">暫時未有學校上榜，開始溫習就可以幫你的學校爭取第一！</p>`;
+          listEl.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">${window.t('lb.emptySchoolTotal', '暫時未有學校上榜，開始溫習就可以幫你的學校爭取第一！')}</p>`;
         } else {
           listEl.innerHTML = entries.map((e, i) =>
-            renderLeaderboardRow(i + 1, e.schoolName || '未命名學校', formatHoursMinutes(e[totalField]), e.id === myDocId)
+            renderLeaderboardRow(i + 1, e.schoolName || window.t('lb.unnamedSchool', '未命名學校'), formatHoursMinutes(e[totalField]), e.id === myDocId)
           ).join('');
         }
 
@@ -601,7 +601,7 @@
         }
       } catch (err) {
         console.error('載入學校排行榜失敗:', err);
-        listEl.innerHTML = `<p style="text-align:center; color:#c0392b; padding:20px;">載入排行榜失敗：${escapeHtml(err.message || err)}</p>`;
+        listEl.innerHTML = `<p style="text-align:center; color:#c0392b; padding:20px;">${escapeHtml(window.t('lb.loadFailedTemplate', `載入排行榜失敗：${err.message || err}`).replace('{msg}', err.message || err))}</p>`;
       }
     }
 
