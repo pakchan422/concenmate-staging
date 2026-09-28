@@ -648,8 +648,8 @@
 
     // ── 學生身份驗證（未上線分頁） ──
     'verify.heading': { 'zh-Hant': '學生身份驗證', 'en': 'Student Verification', 'yue': '學生身份驗證' },
-    'verify.comingSoon': { 'zh-Hant': '期待日後更新', 'en': 'Coming in a future update', 'yue': '之後會出，敬請期待' },
-    'verify.inDevelopment': { 'zh-Hant': '功能仍在開發中，敬請期待！', 'en': "This feature is still in development — stay tuned!", 'yue': '功能仲喺度整緊，敬請期待！' },
+    'verify.comingSoon': { 'zh-Hant': '期待日後更新', 'en': 'Coming in a future update', 'yue': '期待日後更新' },
+    'verify.inDevelopment': { 'zh-Hant': '功能仍在開發中，敬請期待！', 'en': "This feature is still in development — stay tuned!", 'yue': '功能開發緊，敬請期待！' },
 
     // ── PTS／EXP 獲得方式說明視窗 ──
     'ptsExp.title': { 'zh-Hant': 'PTS 及 EXP 如何獲得？', 'en': 'How do I earn PTS and EXP?', 'yue': 'PTS 同 EXP 點樣攞？' },
