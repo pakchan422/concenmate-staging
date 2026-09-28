@@ -180,11 +180,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         : latestRoomsData.filter(r => (typeof window.getRoomSubjectCategory === 'function' ? window.getRoomSubjectCategory(r.room.subject) : 'other') === roomSubjectFilter);
 
       if (filtered.length === 0) {
+        const categoryLabel = ROOM_SUBJECT_FILTER_LABELS[roomSubjectFilter]
+          ? window.t(`room.filter${roomSubjectFilter.charAt(0).toUpperCase()}${roomSubjectFilter.slice(1)}`, ROOM_SUBJECT_FILTER_LABELS[roomSubjectFilter])
+          : roomSubjectFilter;
         roomsListEl.innerHTML = `
           <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background: white; border-radius: 16px; border: 1px solid var(--brand-200);">
             <div style="font-size:36px; margin-bottom:8px;"></div>
-            <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">${roomSubjectFilter === '全部' ? '目前大廳沒有公開的溫習房' : `目前「${window.escapeHtml(ROOM_SUBJECT_FILTER_LABELS[roomSubjectFilter] || roomSubjectFilter)}」分類沒有公開的溫習房`}</p>
-            <p style="font-size:13px; color:#666; margin-top:4px;">點擊上方「+ 建立新溫習房」來開立第一個房間吧！</p>
+            <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">${roomSubjectFilter === '全部' ? window.t('room.emptyLobbyAll', '目前大廳沒有公開的溫習房') : window.t('room.emptyLobbyCategoryTemplate', `目前「${window.escapeHtml(categoryLabel)}」分類沒有公開的溫習房`).replace('{category}', window.escapeHtml(categoryLabel))}</p>
+            <p style="font-size:13px; color:#666; margin-top:4px;">${window.t('room.emptyLobbyHint', '點擊上方「+ 建立新溫習房」來開立第一個房間吧！')}</p>
           </div>
         `;
         return;
@@ -194,19 +197,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         <div class="room-item-card">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
-              <span class="tag" style="background:#F0F6F8; color:#1E4550;">${window.escapeHtml(room.subject || '數學')}</span>
-              <span style="font-size:13px; color:#3E7A8A; font-weight:bold;">直播中</span>
+              <span class="tag" style="background:#F0F6F8; color:#1E4550;">${window.escapeHtml(window.translateSubjectName ? window.translateSubjectName(room.subject || '數學') : (room.subject || '數學'))}</span>
+              <span style="font-size:13px; color:#3E7A8A; font-weight:bold;">${window.t('room.liveNow', '直播中')}</span>
             </div>
             <h4 style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:4px;">${room.hasPassword ? '🔒 ' : ''}${window.escapeHtml(room.name)}</h4>
-            <p style="font-size:13px; color:#666;">房主：<strong>${window.escapeHtml(room.hostName || '匿名同學')}</strong></p>
-            <p style="font-size:13px; color:#888; margin-top:2px;">${room.participantCount || 0}/${(typeof window.resolveRoomCapacity === 'function') ? window.resolveRoomCapacity(room) : (window.ROOM_CAPACITY || 4)} 人 · 每輪專注：${room.duration || 30} 分鐘</p>
+            <p style="font-size:13px; color:#666;">${window.t('room.hostPrefix', '房主：')}<strong>${window.escapeHtml(room.hostName || window.t('room.anonymousStudent', '匿名同學'))}</strong></p>
+            <p style="font-size:13px; color:#888; margin-top:2px;">${window.t('room.capacityInfoTemplate', '{count}/{max} 人 · 每輪專注：{duration} 分鐘').replace('{count}', room.participantCount || 0).replace('{max}', (typeof window.resolveRoomCapacity === 'function') ? window.resolveRoomCapacity(room) : (window.ROOM_CAPACITY || 4)).replace('{duration}', room.duration || 30)}</p>
           </div>
 
           <div style="display:flex; gap:6px; margin-top:12px;">
             <button class="btn btn-primary" style="flex:1; justify-content:center; font-size:13px; padding:6px;" onclick="joinPublicRoom('${roomId}', '${room.name.replace(/'/g, "\\'")}', '${room.subject}', ${room.duration}, '${room.hostName}', ${isMyRoom}, ${createdAtMs}, '${room.hostUid || ''}', this)">
-              加入房間
+              ${window.t('room.joinRoom', '加入房間')}
             </button>
-            ${isMyRoom ? `<button class="btn btn-red" style="font-size:13px; padding:6px;" onclick="deleteRoomQuick('${roomId}')">刪除</button>` : ''}
+            ${isMyRoom ? `<button class="btn btn-red" style="font-size:13px; padding:6px;" onclick="deleteRoomQuick('${roomId}')">${window.t('room.deleteRoom', '刪除')}</button>` : ''}
           </div>
         </div>
       `).join('');
@@ -281,8 +284,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (adminToggleBtn) adminToggleBtn.style.display = isAdmin ? 'inline-block' : 'none';
       if (!titleEl) return;
       const isSecondary = getLobbyViewPool() === 'secondary';
-      let title = isSecondary ? '公開溫習大廳（中學溫習室）' : '公開溫習大廳（公開溫習室）';
-      if (isAdmin && adminRoomPoolOverride) title += '（管理員檢視）';
+      let title = isSecondary ? window.t('room.lobbyTitleSecondary', '公開溫習大廳（中學溫習室）') : window.t('room.lobbyTitlePublic', '公開溫習大廳（公開溫習室）');
+      if (isAdmin && adminRoomPoolOverride) title += window.t('room.adminViewSuffix', '（管理員檢視）');
       titleEl.innerText = title;
     };
 
@@ -292,7 +295,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const hintEl = document.getElementById('room-lobby-you-are-in-hint');
       if (hintEl) {
         const isSecondary = getLobbyViewPool() === 'secondary';
-        hintEl.innerText = isSecondary ? '你目前屬於：中學溫習室' : '你目前屬於：公開溫習室';
+        hintEl.innerText = isSecondary ? window.t('room.youAreInSecondary', '你目前屬於：中學溫習室') : window.t('room.youAreInPublic', '你目前屬於：公開溫習室');
       }
       if (typeof window.openModal === 'function') window.openModal('modal-room-pool-info');
     };
@@ -382,9 +385,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           roomsListEl.innerHTML = `
             <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background: white; border-radius: 16px; border: 1px solid var(--brand-200);">
               <div style="font-size:36px; margin-bottom:8px;"></div>
-              <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">暫時未能載入公開溫習房列表</p>
-              <p style="font-size:13px; color:#666; margin-top:4px;">請檢查網絡連線，或稍後再試。</p>
-              <button class="btn btn-primary" type="button" style="margin-top:10px;" onclick="window.retryListenToPublicRooms && window.retryListenToPublicRooms()">重新載入</button>
+              <p style="font-size:13px; font-weight:bold; color:var(--brand-800);">${window.t('room.loadErrorTitle', '暫時未能載入公開溫習房列表')}</p>
+              <p style="font-size:13px; color:#666; margin-top:4px;">${window.t('room.loadErrorHint', '請檢查網絡連線，或稍後再試。')}</p>
+              <button class="btn btn-primary" type="button" style="margin-top:10px;" onclick="window.retryListenToPublicRooms && window.retryListenToPublicRooms()">${window.t('room.reload', '重新載入')}</button>
             </div>
           `;
         }
@@ -1178,7 +1181,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         `).join('');
         picker.innerHTML = `
           <div style="display:flex; flex-wrap:wrap;">${chipsHtml}${customChipsHtml}</div>
-          <input type="text" id="${pickerId}-custom" class="input-field" placeholder="其他科目（自行輸入，按 Enter 新增）" style="width:100%; margin-top:4px;">
+          <input type="text" id="${pickerId}-custom" class="input-field" placeholder="${window.t('subject.customPlaceholderAdd', '其他科目（自行輸入，按 Enter 新增）')}" style="width:100%; margin-top:4px;">
         `;
         picker.querySelectorAll('button[data-subject]').forEach((btn) => {
           btn.onclick = () => {
@@ -1253,8 +1256,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         `).join('');
         picker.innerHTML = `
           <div style="display:flex; flex-wrap:wrap;">${chipsHtml}${customChipsHtml}</div>
-          <input type="text" id="${pickerId}-custom" class="input-field" placeholder="${atMax ? `最多可揀 ${max} 科` : '其他科目（自行輸入，按 Enter 新增）'}" style="width:100%; margin-top:4px;" ${atMax ? 'disabled' : ''}>
-          <p style="font-size:12px; color:#999; margin-top:4px;">已選 ${selected.size} / ${max} 科</p>
+          <input type="text" id="${pickerId}-custom" class="input-field" placeholder="${atMax ? window.t('subject.maxReachedPlaceholderTemplate', `最多可揀 ${max} 科`).replace('{max}', max) : window.t('subject.customPlaceholderAdd', '其他科目（自行輸入，按 Enter 新增）')}" style="width:100%; margin-top:4px;" ${atMax ? 'disabled' : ''}>
+          <p style="font-size:12px; color:#999; margin-top:4px;">${window.t('subject.selectedCountTemplate', `已選 ${selected.size} / ${max} 科`).replace('{n}', selected.size).replace('{max}', max)}</p>
         `;
         picker.querySelectorAll('button[data-subject]').forEach((btn) => {
           btn.onclick = () => {
@@ -1263,7 +1266,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
               selected.delete(subj);
             } else {
               if (selected.size >= max) {
-                window.showToast && window.showToast(`最多只可以揀 ${max} 個喜愛學科`, '⚠️');
+                window.showToast && window.showToast(window.t('subject.maxFavToastTemplate', `最多只可以揀 ${max} 個喜愛學科`).replace('{max}', max), '⚠️');
                 return;
               }
               selected.add(subj);
@@ -1287,7 +1290,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             const v = customInput.value.trim();
             if (!v) return;
             if (selected.size >= max) {
-              window.showToast && window.showToast(`最多只可以揀 ${max} 個喜愛學科`, '⚠️');
+              window.showToast && window.showToast(window.t('subject.maxFavToastTemplate', `最多只可以揀 ${max} 個喜愛學科`).replace('{max}', max), '⚠️');
               return;
             }
             selected.add(v);
@@ -1336,7 +1339,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         ` : '';
         picker.innerHTML = `
           <div style="display:flex; flex-wrap:wrap;">${chipsHtml}${customChipHtml}</div>
-          <input type="text" id="${pickerId}-custom" class="input-field" placeholder="其他科目（自行輸入，按 Enter 選定）" style="width:100%; margin-top:4px;">
+          <input type="text" id="${pickerId}-custom" class="input-field" placeholder="${window.t('subject.customPlaceholderSelect', '其他科目（自行輸入，按 Enter 選定）')}" style="width:100%; margin-top:4px;">
         `;
         picker.querySelectorAll('button[data-subject]').forEach((btn) => {
           btn.onclick = () => {
@@ -1462,11 +1465,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (!districtSelect || !window.HK_DISTRICT_REGION_GROUPS) return;
       if (districtSelect.dataset.populated === '1') return; // 淨係填一次，唔使重複填
       const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      const translateDist = window.translateDistrictName || ((n) => n);
       const groupsHtml = window.HK_DISTRICT_REGION_GROUPS.map((g) => {
-        const optionsHtml = g.districts.map((d) => `<option value="${escAttr(d)}">${d}</option>`).join('');
-        return `<optgroup label="${escAttr(g.region)}">${optionsHtml}</optgroup>`;
+        const optionsHtml = g.districts.map((d) => `<option value="${escAttr(d)}" data-district="${escAttr(d)}">${window.escapeHtml(translateDist(d))}</option>`).join('');
+        return `<optgroup label="${window.escapeHtml(translateDist(g.region))}" data-district-label="${escAttr(g.region)}">${optionsHtml}</optgroup>`;
       }).join('');
-      districtSelect.innerHTML = `<option value="">請先選擇地區</option>${groupsHtml}`;
+      districtSelect.innerHTML = `<option value="" data-i18n="reg.chooseDistrictFirst">請先選擇地區</option>${groupsHtml}`;
       districtSelect.dataset.populated = '1';
     };
 

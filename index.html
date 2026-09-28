@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.184.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.185.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2298,8 +2298,8 @@
         <section id="tab-profile" class="tab-content">
           <div class="profile-edit-card">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:14px;">
-              <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800);">會員個人資料</h2>
-              <button class="btn btn-red" type="button" onclick="logoutWithFirebase()">登出帳號</button>
+              <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800);" data-i18n="profile.heading">會員個人資料</h2>
+              <button class="btn btn-red" type="button" onclick="logoutWithFirebase()" data-i18n="profile.logout">登出帳號</button>
             </div>
 
             <!-- 個人資料 / 更改登入密碼：分成兩個 Tab，等用戶更容易發現
@@ -2307,8 +2307,8 @@
                  好多用戶都無留意到）。兩個 Tab 內容都擺喺同一個
                  .profile-edit-card 入面，闊度自然一致。 -->
             <div style="display:flex; gap:6px; border-bottom:1px solid #eee; margin-bottom:16px;">
-              <button type="button" id="profile-subtab-btn-info" class="btn" onclick="switchProfileSubtab('info')" style="flex:1; justify-content:center; border-radius:10px 10px 0 0; background:var(--brand-100); color:var(--brand-800); font-weight:bold;">個人資料</button>
-              <button type="button" id="profile-subtab-btn-password" class="btn" onclick="switchProfileSubtab('password')" style="flex:1; justify-content:center; border-radius:10px 10px 0 0; background:transparent; color:#999; font-weight:bold;">更改登入密碼</button>
+              <button type="button" id="profile-subtab-btn-info" class="btn" onclick="switchProfileSubtab('info')" style="flex:1; justify-content:center; border-radius:10px 10px 0 0; background:var(--brand-100); color:var(--brand-800); font-weight:bold;" data-i18n="profile.tabInfo">個人資料</button>
+              <button type="button" id="profile-subtab-btn-password" class="btn" onclick="switchProfileSubtab('password')" style="flex:1; justify-content:center; border-radius:10px 10px 0 0; background:transparent; color:#999; font-weight:bold;" data-i18n="profile.tabPassword">更改登入密碼</button>
             </div>
 
             <div id="profile-subtab-info">
@@ -2320,14 +2320,14 @@
               <div style="text-align:center; margin-bottom:6px;">
                 <div id="prof-avatar-preview" class="avatar-circle" style="margin:0 auto 8px; width:84px; height:84px; font-size:32px; background:var(--brand-500); border-color:var(--brand-200); overflow:hidden;">A</div>
                 <input type="file" id="prof-avatar-input" accept="image/*" style="display:none;" onchange="handleAvatarFileSelected(event)">
-                <button type="button" class="btn btn-outline" style="padding:6px 14px; font-size:13px;" onclick="document.getElementById('prof-avatar-input').click()">更換頭像</button>
-                <p style="font-size:12px; color:#999; margin-top:6px; line-height:1.5;">上傳後會經系統自動檢測，如相片含有不當內容將會被拒絕。</p>
+                <button type="button" class="btn btn-outline" style="padding:6px 14px; font-size:13px;" onclick="document.getElementById('prof-avatar-input').click()" data-i18n="profile.changeAvatar">更換頭像</button>
+                <p style="font-size:12px; color:#999; margin-top:6px; line-height:1.5;" data-i18n="profile.avatarHint">上傳後會經系統自動檢測，如相片含有不當內容將會被拒絕。</p>
               </div>
 
               <form id="profile-form" onsubmit="saveUserProfile(event)" style="display:flex; flex-direction:column; gap:12px;">
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">會員帳號名稱 (Username)</label>
-                  <input type="text" id="prof-username" class="input-field" placeholder="例如：Alex Wong">
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.usernameLabel">會員帳號名稱 (Username)</label>
+                  <input type="text" id="prof-username" class="input-field" placeholder="例如：Alex Wong" data-i18n-placeholder="profile.usernamePlaceholder">
                 </div>
 
                 <div style="display:none;">
@@ -2336,38 +2336,38 @@
                 </div>
 
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">聯絡電郵 (用於驗證身份 / 日後接收通知)</label>
-                  <input type="email" id="prof-contact-email" class="input-field" placeholder="例如：abc@gmail.com" disabled style="background:#B3D6DE; cursor:not-allowed;">
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.contactEmailLabel">聯絡電郵 (用於驗證身份 / 日後接收通知)</label>
+                  <input type="email" id="prof-contact-email" class="input-field" placeholder="例如：abc@gmail.com" disabled style="background:#B3D6DE; cursor:not-allowed;" data-i18n-placeholder="profile.contactEmailPlaceholder">
                   <div style="margin-top:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                     <span id="prof-email-verify-badge" style="font-size:13px; font-weight:bold; padding:3px 8px; border-radius:12px;"></span>
-                    <button type="button" id="resend-verify-email-btn" onclick="resendVerificationEmail()" class="btn" style="display:none; font-size:13px; padding:4px 10px; background:#E5EEF0; color:var(--brand-800);">重新發送驗證電郵</button>
+                    <button type="button" id="resend-verify-email-btn" onclick="resendVerificationEmail()" class="btn" style="display:none; font-size:13px; padding:4px 10px; background:#E5EEF0; color:var(--brand-800);" data-i18n="profile.resendVerifyBtn">重新發送驗證電郵</button>
                   </div>
                 </div>
 
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">學校名稱</label>
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.schoolLabel">學校名稱</label>
                   <input type="text" id="prof-school" class="input-field" disabled style="background:#B3D6DE; cursor:not-allowed;">
                 </div>
 
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">現時年級</label>
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.gradeLabel">現時年級</label>
                   <select id="prof-grade" class="input-field" disabled style="background:#B3D6DE; cursor:not-allowed;">
-                    <option value="中一 (S1)">中一 (S1)</option>
-                    <option value="中二 (S2)">中二 (S2)</option>
-                    <option value="中三 (S3)">中三 (S3)</option>
-                    <option value="中四 (S4)">中四 (S4)</option>
-                    <option value="中五 (S5)">中五 (S5)</option>
-                    <option value="中六 (S6 DSE)" selected>中六 (S6 DSE)</option>
-                    <option value="大專/大學">大專 / 大學</option>
-                    <option value="其他自修生">其他 / 自修生</option>
+                    <option value="中一 (S1)" data-i18n="profile.gradeS1">中一 (S1)</option>
+                    <option value="中二 (S2)" data-i18n="profile.gradeS2">中二 (S2)</option>
+                    <option value="中三 (S3)" data-i18n="profile.gradeS3">中三 (S3)</option>
+                    <option value="中四 (S4)" data-i18n="profile.gradeS4">中四 (S4)</option>
+                    <option value="中五 (S5)" data-i18n="profile.gradeS5">中五 (S5)</option>
+                    <option value="中六 (S6 DSE)" selected data-i18n="profile.gradeS6">中六 (S6 DSE)</option>
+                    <option value="大專/大學" data-i18n="profile.gradeTertiary">大專 / 大學</option>
+                    <option value="其他自修生" data-i18n="profile.gradeOther">其他 / 自修生</option>
                   </select>
                 </div>
 
                 <div style="background:#F5F7F8; border-radius:10px; padding:10px 12px;">
                   <p style="font-size:12px; color:#666; line-height:1.6; margin:0;">
-                    ⓘ 為保障帳戶資料之準確性及安全性，聯絡電郵、學校名稱及現時年級三項資料現為唯讀，用戶未能自行修改。如需更改上述資料，敬請透過電郵
+                    <span data-i18n="profile.readonlyNoticeBefore">ⓘ 為保障帳戶資料之準確性及安全性，聯絡電郵、學校名稱及現時年級三項資料現為唯讀，用戶未能自行修改。如需更改上述資料，敬請透過電郵</span>
                     <span style="font-weight:bold; color:var(--brand-800);">support@concenmate.com</span>
-                    與本公司聯絡，本公司將協助處理用戶之更改申請。
+                    <span data-i18n="profile.readonlyNoticeAfter">與本公司聯絡，本公司將協助處理用戶之更改申請。</span>
                   </p>
                 </div>
 
@@ -2378,27 +2378,27 @@
                      溫習大廳」入面睇到邊一邊嘅公開房（中學溫習室／公開
                      溫習室，見 window.getViewerRoomPool()）。 -->
                 <div style="background:#F5F7F8; border-radius:10px; padding:10px 12px;">
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:6px;">本人現時是否中學生？</label>
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:6px;" data-i18n="profile.isSecondaryLabel">本人現時是否中學生？</label>
                   <div style="display:flex; gap:8px;">
-                    <button type="button" id="prof-is-secondary-student-yes-btn" class="btn btn-outline" style="flex:1; justify-content:center; padding:8px; font-size:13px;" onclick="window.setSecondaryStudentToggle('prof', 'yes')">是，我是中學生</button>
-                    <button type="button" id="prof-is-secondary-student-no-btn" class="btn btn-outline" style="flex:1; justify-content:center; padding:8px; font-size:13px;" onclick="window.setSecondaryStudentToggle('prof', 'no')">否</button>
+                    <button type="button" id="prof-is-secondary-student-yes-btn" class="btn btn-outline" style="flex:1; justify-content:center; padding:8px; font-size:13px;" onclick="window.setSecondaryStudentToggle('prof', 'yes')" data-i18n="profile.isSecondaryYes">是，我是中學生</button>
+                    <button type="button" id="prof-is-secondary-student-no-btn" class="btn btn-outline" style="flex:1; justify-content:center; padding:8px; font-size:13px;" onclick="window.setSecondaryStudentToggle('prof', 'no')" data-i18n="profile.isSecondaryNo">否</button>
                   </div>
                   <input type="hidden" id="prof-is-secondary-student" value="">
-                  <p style="font-size:12px; color:#888; margin-top:6px; line-height:1.6;">請如實選擇。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。</p>
-                  <span id="prof-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;">根據帳戶已登記的出生年月，此項現時不可以選擇「是」。</span>
+                  <p style="font-size:12px; color:#888; margin-top:6px; line-height:1.6;" data-i18n="profile.isSecondaryHint">請如實選擇。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。</p>
+                  <span id="prof-is-secondary-student-age-hint" style="display:none; font-size:12px; color:#c0392b; margin-top:4px;" data-i18n="profile.isSecondaryAgeHint">根據帳戶已登記的出生年月，此項現時不可以選擇「是」。</span>
                 </div>
 
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">喜愛學科 (可留白)</label>
-                  <input type="text" id="prof-fav" class="input-field" placeholder="例如：數學, 物理, M2">
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.favSubjectLabel">喜愛學科 (可留白)</label>
+                  <input type="text" id="prof-fav" class="input-field" placeholder="例如：數學, 物理, M2" data-i18n-placeholder="profile.favSubjectPlaceholder">
                 </div>
 
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">討厭學科 (可留白)</label>
-                  <input type="text" id="prof-dislike" class="input-field" placeholder="例如：中文背誦">
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.dislikeSubjectLabel">討厭學科 (可留白)</label>
+                  <input type="text" id="prof-dislike" class="input-field" placeholder="例如：中文背誦" data-i18n-placeholder="profile.dislikeSubjectPlaceholder">
                 </div>
 
-                <button class="btn btn-primary" type="submit" style="padding:10px; font-size:15px; margin-top:8px; justify-content:center;">
+                <button class="btn btn-primary" type="submit" style="padding:10px; font-size:15px; margin-top:8px; justify-content:center;" data-i18n="profile.saveBtn">
                   儲存修改資料
                 </button>
               </form>
@@ -2410,18 +2410,18 @@
             <div id="profile-subtab-password" style="display:none;">
               <form id="change-password-form" onsubmit="changeUserPassword(event)" style="display:flex; flex-direction:column; gap:12px;">
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">目前密碼</label>
-                  <input type="password" id="chpwd-current" class="input-field" autocomplete="current-password" placeholder="輸入目前登入密碼" required>
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.currentPasswordLabel">目前密碼</label>
+                  <input type="password" id="chpwd-current" class="input-field" autocomplete="current-password" placeholder="輸入目前登入密碼" required data-i18n-placeholder="profile.currentPasswordPlaceholder">
                 </div>
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">新密碼（最少 6 個字元）</label>
-                  <input type="password" id="chpwd-new" class="input-field" autocomplete="new-password" minlength="6" placeholder="輸入新密碼" required>
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.newPasswordLabel">新密碼（最少 6 個字元）</label>
+                  <input type="password" id="chpwd-new" class="input-field" autocomplete="new-password" minlength="6" placeholder="輸入新密碼" required data-i18n-placeholder="profile.newPasswordPlaceholder">
                 </div>
                 <div>
-                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;">確認新密碼</label>
-                  <input type="password" id="chpwd-confirm" class="input-field" autocomplete="new-password" minlength="6" placeholder="再打一次新密碼" required>
+                  <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="profile.confirmPasswordLabel">確認新密碼</label>
+                  <input type="password" id="chpwd-confirm" class="input-field" autocomplete="new-password" minlength="6" placeholder="再打一次新密碼" required data-i18n-placeholder="profile.confirmPasswordPlaceholder">
                 </div>
-                <button class="btn btn-primary" type="submit" id="change-password-submit-btn" style="padding:10px; font-size:15px; justify-content:center;">
+                <button class="btn btn-primary" type="submit" id="change-password-submit-btn" style="padding:10px; font-size:15px; justify-content:center;" data-i18n="profile.changePasswordBtn">
                   更改密碼
                 </button>
               </form>
@@ -2429,18 +2429,18 @@
           </div>
 
           <div class="card" style="margin-top:16px; text-align:center;">
-            <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;">溫習等級</h3>
+            <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;" data-i18n="profile.levelCardTitle">溫習等級</h3>
             <div id="profile-level-num" style="font-size:32px; font-weight:900; color:var(--brand-800);">Lv.1</div>
             <div id="profile-rank-title" style="font-size:14px; font-weight:bold; margin-top:2px;">溫習新手 (Novice)</div>
             <div style="background:#E5EEF0; border-radius:8px; height:10px; margin-top:12px; overflow:hidden;">
               <div id="profile-exp-bar" style="background:linear-gradient(90deg,#4A8FA0,#7DB8C5); height:100%; width:0%; transition:width .4s ease;"></div>
             </div>
             <div id="profile-exp-text" style="font-size:13px; color:#999; margin-top:4px;">0 / 20 EXP</div>
-            <p style="font-size:13px; color:#aaa; margin-top:8px;">每溫習 1 分鐘就會獲得 1 點 EXP，EXP 只升不跌，記錄你的總溫習成就；PTS 則用作扭蛋。</p>
+            <p style="font-size:13px; color:#aaa; margin-top:8px;" data-i18n="profile.expHint">每溫習 1 分鐘就會獲得 1 點 EXP，EXP 只升不跌，記錄你的總溫習成就；PTS 則用作扭蛋。</p>
           </div>
 
           <div class="card" style="margin-top:16px;">
-            <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;">我的中獎記錄</h3>
+            <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;" data-i18n="profile.gachaHistoryCardTitle">我的中獎記錄</h3>
             <div id="profile-gacha-history-list" style="display:flex; flex-direction:column; gap:6px; font-size:13px;"></div>
             <p id="profile-gacha-history-empty" style="display:none; text-align:center; color:#999; font-size:13px; padding:10px;" data-i18n="gacha.profileHistoryEmpty">你尚未扭過蛋，請到「時數扭蛋機」試試手氣！</p>
           </div>
@@ -3201,22 +3201,22 @@
     <div class="modal-box">
       <div style="text-align:center; margin-bottom:12px;">
         <div style="font-size:32px;"></div>
-        <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);">公開溫習大廳的分類方式</h3>
+        <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);" data-i18n="room.poolInfoTitle">公開溫習大廳的分類方式</h3>
       </div>
       <div style="font-size:13px; color:#444; line-height:1.7;">
-        <p>為保障未成年使用者的安全，「公開溫習大廳」會根據帳戶類型，分成以下兩個獨立顯示的部分：</p>
+        <p data-i18n="room.poolInfoIntro">為保障未成年使用者的安全，「公開溫習大廳」會根據帳戶類型，分成以下兩個獨立顯示的部分：</p>
         <ul style="margin:10px 0 10px 20px; padding:0;">
-          <li><strong>中學溫習室：</strong>供已於帳戶內確認「本人現時為中學生」的使用者瀏覽及建立房間。</li>
-          <li><strong>公開溫習室：</strong>供其他使用者（包括大專生、自修生、成年人等）瀏覽及建立房間。</li>
+          <li><strong data-i18n="room.poolInfoSecondaryLabel">中學溫習室：</strong><span data-i18n="room.poolInfoSecondaryDesc">供已於帳戶內確認「本人現時為中學生」的使用者瀏覽及建立房間。</span></li>
+          <li><strong data-i18n="room.poolInfoPublicLabel">公開溫習室：</strong><span data-i18n="room.poolInfoPublicDesc">供其他使用者（包括大專生、自修生、成年人等）瀏覽及建立房間。</span></li>
         </ul>
         <p id="room-lobby-you-are-in-hint" style="font-weight:bold; color:var(--brand-800);"></p>
         <ul style="margin:10px 0 10px 20px; padding:0;">
-          <li>兩個部分互相獨立，使用者只能在大廳中瀏覽及加入與自己同一分類的公開房間。</li>
-          <li>設有密碼鎖的房間，或透過好友邀請加入的房間，均不受此分類限制。</li>
-          <li>此分類以帳戶註冊時（或於「我的帳戶」補充）填寫的「本人現時為中學生」聲明為依據，屬使用者自行申報，如發現虛報，帳戶可能會被暫停或終止使用資格。</li>
+          <li data-i18n="room.poolInfoBullet1">兩個部分互相獨立，使用者只能在大廳中瀏覽及加入與自己同一分類的公開房間。</li>
+          <li data-i18n="room.poolInfoBullet2">設有密碼鎖的房間，或透過好友邀請加入的房間，均不受此分類限制。</li>
+          <li data-i18n="room.poolInfoBullet3">此分類以帳戶註冊時（或於「我的帳戶」補充）填寫的「本人現時為中學生」聲明為依據，屬使用者自行申報，如發現虛報，帳戶可能會被暫停或終止使用資格。</li>
         </ul>
       </div>
-      <button class="btn btn-primary" type="button" onclick="closeModal('modal-room-pool-info')" style="width:100%; margin-top:8px;">知道了</button>
+      <button class="btn btn-primary" type="button" onclick="closeModal('modal-room-pool-info')" style="width:100%; margin-top:8px;" data-i18n="room.gotIt">知道了</button>
     </div>
   </div>
 
@@ -3224,83 +3224,85 @@
     <div class="modal-box">
       <div style="text-align:center; margin-bottom:12px;">
         <div style="font-size:32px;"></div>
-        <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);">建立公開溫習房</h3>
-        <p style="font-size:13px; color:#666; margin-top:2px;">讓其他同學在公開大廳看到並加入你的房間</p>
+        <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);" data-i18n="room.createModalTitle">建立公開溫習房</h3>
+        <p style="font-size:13px; color:#666; margin-top:2px;" data-i18n="room.createModalSubtitle">讓其他同學在公開大廳看到並加入你的房間</p>
       </div>
 
       <form onsubmit="handleCreateRoomSubmit(event)" style="display:flex; flex-direction:column; gap:10px;">
         <div>
-          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">溫習房間名稱 *</label>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="room.roomNameLabel">溫習房間名稱 *</label>
           <input type="text" id="modal-room-name" class="input-field" required value="DSE 衝刺專注房">
         </div>
 
         <div>
-          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">溫習學科 *</label>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="room.roomSubjectLabel">溫習學科 *</label>
           <!-- 學科清單改為同「發起提問」「教材管理」一致嘅完整 HKDSE
                科目清單（見 tutor-panel.js 嘅 window.TUTOR_DSE_SUBJECTS），
                揀擇多咗，唔再淨係得返 5 個大類（見用家反映：想同疑難
                解答區嘅科目清單一樣咁多選擇）。呢個 select 淨係一個學科
-               標籤用途，冇「自行輸入」選項，保持簡單。 -->
+               標籤用途，冇「自行輸入」選項，保持簡單。option 嘅顯示文字
+               靠 data-subject 屬性交畀 i18n.js 嘅共用科目翻譯系統處理
+               （English 先會轉做官方科目英文名，value 本身唔改）。 -->
           <select id="modal-room-subject" class="input-field">
-            <option value="中國語文" selected>中國語文</option>
-            <option value="英國語文">英國語文</option>
-            <option value="數學（必修部分）">數學（必修部分）</option>
-            <option value="數學延伸部分單元一（M1）">數學延伸部分單元一（M1）</option>
-            <option value="數學延伸部分單元二（M2）">數學延伸部分單元二（M2）</option>
-            <option value="公民與社會發展">公民與社會發展</option>
-            <option value="中國歷史">中國歷史</option>
-            <option value="歷史">歷史</option>
-            <option value="地理">地理</option>
-            <option value="經濟">經濟</option>
-            <option value="企業、會計與財務概論（BAFS）">企業、會計與財務概論（BAFS）</option>
-            <option value="倫理與宗教">倫理與宗教</option>
-            <option value="中國文學">中國文學</option>
-            <option value="英語文學">英語文學</option>
-            <option value="物理">物理</option>
-            <option value="化學">化學</option>
-            <option value="生物">生物</option>
-            <option value="資訊及通訊科技">資訊及通訊科技</option>
-            <option value="健康管理與社會關懷">健康管理與社會關懷</option>
-            <option value="科技與生活">科技與生活</option>
-            <option value="設計與應用科技">設計與應用科技</option>
-            <option value="旅遊與款待">旅遊與款待</option>
-            <option value="視覺藝術">視覺藝術</option>
-            <option value="音樂">音樂</option>
-            <option value="體育">體育</option>
-            <option value="其他">其他</option>
+            <option value="中國語文" data-subject="中國語文" selected>中國語文</option>
+            <option value="英國語文" data-subject="英國語文">英國語文</option>
+            <option value="數學（必修部分）" data-subject="數學（必修部分）">數學（必修部分）</option>
+            <option value="數學延伸部分單元一（M1）" data-subject="數學延伸部分單元一（M1）">數學延伸部分單元一（M1）</option>
+            <option value="數學延伸部分單元二（M2）" data-subject="數學延伸部分單元二（M2）">數學延伸部分單元二（M2）</option>
+            <option value="公民與社會發展" data-subject="公民與社會發展">公民與社會發展</option>
+            <option value="中國歷史" data-subject="中國歷史">中國歷史</option>
+            <option value="歷史" data-subject="歷史">歷史</option>
+            <option value="地理" data-subject="地理">地理</option>
+            <option value="經濟" data-subject="經濟">經濟</option>
+            <option value="企業、會計與財務概論（BAFS）" data-subject="企業、會計與財務概論（BAFS）">企業、會計與財務概論（BAFS）</option>
+            <option value="倫理與宗教" data-subject="倫理與宗教">倫理與宗教</option>
+            <option value="中國文學" data-subject="中國文學">中國文學</option>
+            <option value="英語文學" data-subject="英語文學">英語文學</option>
+            <option value="物理" data-subject="物理">物理</option>
+            <option value="化學" data-subject="化學">化學</option>
+            <option value="生物" data-subject="生物">生物</option>
+            <option value="資訊及通訊科技" data-subject="資訊及通訊科技">資訊及通訊科技</option>
+            <option value="健康管理與社會關懷" data-subject="健康管理與社會關懷">健康管理與社會關懷</option>
+            <option value="科技與生活" data-subject="科技與生活">科技與生活</option>
+            <option value="設計與應用科技" data-subject="設計與應用科技">設計與應用科技</option>
+            <option value="旅遊與款待" data-subject="旅遊與款待">旅遊與款待</option>
+            <option value="視覺藝術" data-subject="視覺藝術">視覺藝術</option>
+            <option value="音樂" data-subject="音樂">音樂</option>
+            <option value="體育" data-subject="體育">體育</option>
+            <option value="其他" data-i18n="room.subjectOther">其他</option>
           </select>
         </div>
 
         <div>
-          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">房間人數上限</label>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="room.capacityLabel">房間人數上限</label>
           <select id="modal-room-capacity" class="input-field">
-            <option value="2">2 人房</option>
-            <option value="4" selected>4 人房</option>
+            <option value="2" data-i18n="room.capacity2">2 人房</option>
+            <option value="4" selected data-i18n="room.capacity4">4 人房</option>
           </select>
-          <p style="font-size:13px; color:#999; margin-top:4px;">建立之後就不能在房間中更改，適合想同少數朋友獨用一間房嘅情況</p>
+          <p style="font-size:13px; color:#999; margin-top:4px;" data-i18n="room.capacityHint">建立之後就不能在房間中更改，適合想同少數朋友獨用一間房嘅情況</p>
         </div>
 
         <div>
-          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">預計溫習時間 (分鐘)</label>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="room.durationLabel">預計溫習時間 (分鐘)</label>
           <select id="modal-room-duration" class="input-field">
-            <option value="15">15 分鐘</option>
-            <option value="30" selected>30 分鐘</option>
-            <option value="40">40 分鐘</option>
-            <option value="45">45 分鐘</option>
-            <option value="60">60 分鐘</option>
+            <option value="15" data-i18n="room.duration15">15 分鐘</option>
+            <option value="30" selected data-i18n="room.duration30">30 分鐘</option>
+            <option value="40" data-i18n="room.duration40">40 分鐘</option>
+            <option value="45" data-i18n="room.duration45">45 分鐘</option>
+            <option value="60" data-i18n="room.duration60">60 分鐘</option>
           </select>
-          <p style="font-size:13px; color:#999; margin-top:4px;">這個時間只會顯示喺公開大廳嘅房間列表，讓其他同學參考；房間不會因為時間到而自動結束，你可以隨時繼續溫習或退出房間</p>
+          <p style="font-size:13px; color:#999; margin-top:4px;" data-i18n="room.durationHint">這個時間只會顯示喺公開大廳嘅房間列表，讓其他同學參考；房間不會因為時間到而自動結束，你可以隨時繼續溫習或退出房間</p>
         </div>
 
         <div>
-          <label style="font-size:13px; font-weight:bold; color:#555; display:block;">🔒 房間密碼鎖（4 位數字，留空則不設密碼）</label>
-          <input type="text" id="modal-room-password" class="input-field" maxlength="4" inputmode="numeric" pattern="[0-9]{0,4}" placeholder="例如 1234">
-          <p style="font-size:13px; color:#999; margin-top:4px;">設定之後，只有輸入正確密碼的同學才可以加入這個溫習室，適合想與指定朋友私下溫習的情況；房間在公開大廳依然看得到，但會加上 🔒 標示。</p>
+          <label style="font-size:13px; font-weight:bold; color:#555; display:block;" data-i18n="room.passwordLabel">🔒 房間密碼鎖（4 位數字，留空則不設密碼）</label>
+          <input type="text" id="modal-room-password" class="input-field" maxlength="4" inputmode="numeric" pattern="[0-9]{0,4}" placeholder="例如 1234" data-i18n-placeholder="room.passwordPlaceholder">
+          <p style="font-size:13px; color:#999; margin-top:4px;" data-i18n="room.passwordHint">設定之後，只有輸入正確密碼的同學才可以加入這個溫習室，適合想與指定朋友私下溫習的情況；房間在公開大廳依然看得到，但會加上 🔒 標示。</p>
         </div>
 
         <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
-          <button class="btn btn-outline" type="button" onclick="closeModal('modal-create-room')">取消</button>
-          <button class="btn btn-primary" type="submit" id="btn-create-room-submit">立即建立並廣播</button>
+          <button class="btn btn-outline" type="button" onclick="closeModal('modal-create-room')" data-i18n="common.cancel">取消</button>
+          <button class="btn btn-primary" type="submit" id="btn-create-room-submit" data-i18n="room.createSubmit">立即建立並廣播</button>
         </div>
       </form>
     </div>
@@ -3434,9 +3436,9 @@
            「📔 溫習日記」分頁可以直接去到，呢度資料卡淨係顯示簡要數字，
            唔再重複擺多一個入口掣。 -->
       <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; font-size:13px; color:#555;">
-        <div><strong id="myacc-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>相片</div>
-        <div style="cursor:pointer;" onclick="openFollowListModal(window.currentUser && window.currentUser.uid, 'followers')"><strong id="myacc-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>粉絲</div>
-        <div style="cursor:pointer;" onclick="openFollowListModal(window.currentUser && window.currentUser.uid, 'following')"><strong id="myacc-following-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>追蹤中</div>
+        <div><strong id="myacc-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br><span data-i18n="myacc.photoCountLabel">相片</span></div>
+        <div style="cursor:pointer;" onclick="openFollowListModal(window.currentUser && window.currentUser.uid, 'followers')"><strong id="myacc-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br><span data-i18n="tutorview.followers">粉絲</span></div>
+        <div style="cursor:pointer;" onclick="openFollowListModal(window.currentUser && window.currentUser.uid, 'following')"><strong id="myacc-following-count" style="font-size:15px; color:var(--brand-800);">0</strong><br><span data-i18n="myacc.following">追蹤中</span></div>
       </div>
 
       <div style="margin-bottom:12px;">
@@ -3448,12 +3450,12 @@
       </div>
 
       <div style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:12px; text-align:left; font-size:14px; display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-        <div><strong>就讀學校：</strong><span id="myacc-school">未填寫</span></div>
-        <div><strong>現時年級：</strong><span id="myacc-grade">未填寫</span></div>
-        <div><strong>喜愛學科：</strong><span id="myacc-fav">未填寫</span></div>
-        <div><strong>討厭學科：</strong><span id="myacc-dislike">未填寫</span></div>
-        <div><strong>累積時數：</strong><span id="myacc-hours">0.0 小時</span></div>
-        <div><strong>積分：</strong><span id="myacc-points">0 PTS</span></div>
+        <div><strong data-i18n="myacc.schoolLabel">就讀學校：</strong><span id="myacc-school">未填寫</span></div>
+        <div><strong data-i18n="myacc.gradeLabel">現時年級：</strong><span id="myacc-grade">未填寫</span></div>
+        <div><strong data-i18n="myacc.favLabel">喜愛學科：</strong><span id="myacc-fav">未填寫</span></div>
+        <div><strong data-i18n="myacc.dislikeLabel">討厭學科：</strong><span id="myacc-dislike">未填寫</span></div>
+        <div><strong data-i18n="myacc.hoursLabel">累積時數：</strong><span id="myacc-hours">0.0 小時</span></div>
+        <div><strong data-i18n="myacc.pointsLabel">積分：</strong><span id="myacc-points">0 PTS</span></div>
       </div>
 
       <!-- 導師身份狀態／申請入口：內容由 updateMyAccountTutorStatus() 動態
@@ -3461,9 +3463,9 @@
       <div id="myacc-tutor-area" style="margin-bottom:10px;"></div>
 
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="goEditProfileFromAccountModal()">編輯個人資料</button>
-        <button class="btn btn-red" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account'); logoutWithFirebase();">登出帳號</button>
-        <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account')">關閉</button>
+        <button class="btn btn-primary" type="button" style="width:100%; justify-content:center;" onclick="goEditProfileFromAccountModal()" data-i18n="myacc.editProfile">編輯個人資料</button>
+        <button class="btn btn-red" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account'); logoutWithFirebase();" data-i18n="profile.logout">登出帳號</button>
+        <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-my-account')" data-i18n="common.close">關閉</button>
       </div>
     </div>
   </div>

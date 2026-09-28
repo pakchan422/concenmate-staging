@@ -87,6 +87,44 @@
     return name;
   };
 
+  // ── 香港十八區英文名（跟政府憲報／區議會官方英文區名）── 同上面
+  // 學科英文名系統道理一樣：繁體中文／廣東話一律維持原文，篩選用嘅
+  // 資料值（<option value="...">、Firestore 存嘅 district 欄位）繼續係
+  // 中文，唔改；淨係「English」語言先會將顯示文字換做官方英文區名，
+  // 經 window.translateDistrictName() 轉換。
+  window.HK_DISTRICT_EN_NAMES = {
+    '中西區': 'Central and Western',
+    '灣仔區': 'Wan Chai',
+    '東區': 'Eastern',
+    '南區': 'Southern',
+    '油尖旺區': 'Yau Tsim Mong',
+    '深水埗區': 'Sham Shui Po',
+    '九龍城區': 'Kowloon City',
+    '黃大仙區': 'Wong Tai Sin',
+    '觀塘區': 'Kwun Tong',
+    '葵青區': 'Kwai Tsing',
+    '荃灣區': 'Tsuen Wan',
+    '屯門區': 'Tuen Mun',
+    '元朗區': 'Yuen Long',
+    '北區': 'North',
+    '大埔區': 'Tai Po',
+    '沙田區': 'Sha Tin',
+    '西貢區': 'Sai Kung',
+    '離島區': 'Islands',
+    // <optgroup> 分區標籤（香港島／九龍／新界）都用埋呢個函數轉，
+    // 唔開多一份獨立對照表。
+    '香港島': 'Hong Kong Island',
+    '九龍': 'Kowloon',
+    '新界': 'New Territories',
+  };
+
+  window.translateDistrictName = function (name) {
+    if (window.getAppLanguage() === 'en' && window.HK_DISTRICT_EN_NAMES[name]) {
+      return window.HK_DISTRICT_EN_NAMES[name];
+    }
+    return name;
+  };
+
   // ── 翻譯字典（第一階段：淨係示範性咁做咗側邊選單／語言掣本身呢
   //    幾組，其餘留返第二／三階段陸續加）──
   window.I18N_DICT = {
@@ -474,6 +512,130 @@
     'follow.noFollowersYet': { 'zh-Hant': '仲未有粉絲', 'en': 'No followers yet', 'yue': '仲未有粉絲' },
     'follow.noUserDataFound': { 'zh-Hant': '找不到相關用戶資料', 'en': "Couldn't find the related user data", 'yue': '搵唔到相關用戶資料' },
     'follow.loadListFailed': { 'zh-Hant': '讀取名單失敗，請稍後再試', 'en': 'Failed to load the list, please try again later', 'yue': '睇唔到名單，遲啲再試吓' },
+
+    // ── 科目剔選器共用文字（第十階段：English 由 Claude 翻譯、廣東話
+    //    口語由 Claude 起草，等 Alvis 覆核） ──
+    'subject.customPlaceholderAdd': { 'zh-Hant': '其他科目（自行輸入，按 Enter 新增）', 'en': 'Other subject (type your own, press Enter to add)', 'yue': '其他科目（自己打，撳 Enter 加）' },
+    'subject.customPlaceholderSelect': { 'zh-Hant': '其他科目（自行輸入，按 Enter 選定）', 'en': 'Other subject (type your own, press Enter to select)', 'yue': '其他科目（自己打，撳 Enter 揀）' },
+    // {max} 係佔位符，塞入上限數字。
+    'subject.maxReachedPlaceholderTemplate': { 'zh-Hant': '最多可揀 {max} 科', 'en': 'You can choose up to {max} subjects', 'yue': '最多可以揀 {max} 科' },
+    // {n}／{max} 係佔位符，分別塞入已選數量／上限數字。
+    'subject.selectedCountTemplate': { 'zh-Hant': '已選 {n} / {max} 科', 'en': '{n} / {max} selected', 'yue': '揀咗 {n} / {max} 科' },
+    // {max} 係佔位符，塞入上限數字。
+    'subject.maxFavToastTemplate': { 'zh-Hant': '最多只可以揀 {max} 個喜愛學科', 'en': 'You can only choose up to {max} favourite subjects', 'yue': '最多淨係揀得 {max} 個心水學科' },
+
+    // ── 視訊溫習室：大廳空狀態／房卡／載入錯誤／分類彈窗／建房表格 ──
+    'room.emptyLobbyAll': { 'zh-Hant': '目前大廳沒有公開的溫習房', 'en': 'There are currently no public study rooms in the lobby', 'yue': '而家大廳未有公開溫習房' },
+    // {category} 係佔位符，塞入分類名稱（已翻譯）。
+    'room.emptyLobbyCategoryTemplate': { 'zh-Hant': '目前「{category}」分類沒有公開的溫習房', 'en': 'There are currently no public study rooms in the "{category}" category', 'yue': '而家「{category}」呢個分類未有公開溫習房' },
+    'room.emptyLobbyHint': { 'zh-Hant': '點擊上方「+ 建立新溫習房」來開立第一個房間吧！', 'en': 'Tap "+ Create New Room" above to open the first room!', 'yue': '撳上面「+ 建立新溫習房」開第一間房啦！' },
+    'room.liveNow': { 'zh-Hant': '直播中', 'en': 'Live now', 'yue': '直播緊' },
+    'room.hostPrefix': { 'zh-Hant': '房主：', 'en': 'Host: ', 'yue': '房主：' },
+    'room.anonymousStudent': { 'zh-Hant': '匿名同學', 'en': 'Anonymous student', 'yue': '匿名同學仔' },
+    // {count}／{max}／{duration} 係佔位符。
+    'room.capacityInfoTemplate': { 'zh-Hant': '{count}/{max} 人 · 每輪專注：{duration} 分鐘', 'en': '{count}/{max} people · Focus round: {duration} min', 'yue': '{count}/{max} 人 · 每輪專注：{duration} 分鐘' },
+    'room.joinRoom': { 'zh-Hant': '加入房間', 'en': 'Join Room', 'yue': '加入房間' },
+    'room.deleteRoom': { 'zh-Hant': '刪除', 'en': 'Delete', 'yue': '刪除' },
+    'room.loadErrorTitle': { 'zh-Hant': '暫時未能載入公開溫習房列表', 'en': 'Unable to load the public study room list right now', 'yue': '暫時 Load 唔到公開溫習房列表' },
+    'room.loadErrorHint': { 'zh-Hant': '請檢查網絡連線，或稍後再試。', 'en': 'Please check your network connection, or try again later.', 'yue': '睇下網絡得唔得，或者遲啲再試吓' },
+    'room.reload': { 'zh-Hant': '重新載入', 'en': 'Reload', 'yue': '重新 Load 過' },
+    'room.lobbyTitleSecondary': { 'zh-Hant': '公開溫習大廳（中學溫習室）', 'en': 'Public Study Lobby (Secondary School Room)', 'yue': '公開溫習大廳（中學溫習室）' },
+    'room.lobbyTitlePublic': { 'zh-Hant': '公開溫習大廳（公開溫習室）', 'en': 'Public Study Lobby (Public Room)', 'yue': '公開溫習大廳（公開溫習室）' },
+    'room.adminViewSuffix': { 'zh-Hant': '（管理員檢視）', 'en': ' (Admin View)', 'yue': '（管理員檢視）' },
+    'room.youAreInSecondary': { 'zh-Hant': '你目前屬於：中學溫習室', 'en': 'You currently belong to: Secondary School Room', 'yue': '你而家屬於：中學溫習室' },
+    'room.youAreInPublic': { 'zh-Hant': '你目前屬於：公開溫習室', 'en': 'You currently belong to: Public Room', 'yue': '你而家屬於：公開溫習室' },
+    'room.poolInfoTitle': { 'zh-Hant': '公開溫習大廳的分類方式', 'en': 'How the Public Study Lobby is grouped', 'yue': '公開溫習大廳點樣分類' },
+    'room.poolInfoIntro': { 'zh-Hant': '為保障未成年使用者的安全，「公開溫習大廳」會根據帳戶類型，分成以下兩個獨立顯示的部分：', 'en': 'To help protect younger users, the Public Study Lobby is split into two separately-shown sections based on account type:', 'yue': '為咗保障未成年用戶嘅安全，「公開溫習大廳」會跟帳戶類型，分開以下兩個獨立顯示嘅部分：' },
+    'room.poolInfoSecondaryLabel': { 'zh-Hant': '中學溫習室：', 'en': 'Secondary School Room: ', 'yue': '中學溫習室：' },
+    'room.poolInfoSecondaryDesc': { 'zh-Hant': '供已於帳戶內確認「本人現時為中學生」的使用者瀏覽及建立房間。', 'en': 'For users who have confirmed in their account that they are currently a secondary school student.', 'yue': '畀已經喺帳戶入面確認「本人現時為中學生」嘅用戶睇同開房。' },
+    'room.poolInfoPublicLabel': { 'zh-Hant': '公開溫習室：', 'en': 'Public Room: ', 'yue': '公開溫習室：' },
+    'room.poolInfoPublicDesc': { 'zh-Hant': '供其他使用者（包括大專生、自修生、成年人等）瀏覽及建立房間。', 'en': 'For other users (including tertiary students, self-studying learners, adults, etc.) to browse and create rooms.', 'yue': '畀其他用戶（包括大專生、自修生、成年人等等）睇同開房。' },
+    'room.poolInfoBullet1': { 'zh-Hant': '兩個部分互相獨立，使用者只能在大廳中瀏覽及加入與自己同一分類的公開房間。', 'en': 'The two sections are independent — you can only browse and join public rooms in the same category as your own account.', 'yue': '呢兩個部分係獨立嘅，你淨係可以喺大廳睇同加入同自己同一分類嘅公開房間。' },
+    'room.poolInfoBullet2': { 'zh-Hant': '設有密碼鎖的房間，或透過好友邀請加入的房間，均不受此分類限制。', 'en': 'Rooms with a password lock, or rooms joined through a friend invite, are not affected by this grouping.', 'yue': '有密碼鎖嘅房間，或者透過好友邀請加入嘅房間，都唔受呢個分類限制。' },
+    'room.poolInfoBullet3': { 'zh-Hant': '此分類以帳戶註冊時（或於「我的帳戶」補充）填寫的「本人現時為中學生」聲明為依據，屬使用者自行申報，如發現虛報，帳戶可能會被暫停或終止使用資格。', 'en': 'This grouping is based on the self-declared "I am currently a secondary school student" statement made at registration (or added later in "My Account"). If a false declaration is found, the account may be suspended or have its access terminated.', 'yue': '呢個分類係跟返註冊嗰陣（或者喺「我的帳戶」補填）嘅「本人現時為中學生」自我申報，如果發現講大話，帳戶可能會被暫停或者終止使用資格。' },
+    'room.gotIt': { 'zh-Hant': '知道了', 'en': 'Got it', 'yue': '知道喇' },
+    'room.createModalTitle': { 'zh-Hant': '建立公開溫習房', 'en': 'Create a Public Study Room', 'yue': '開間公開溫習房' },
+    'room.createModalSubtitle': { 'zh-Hant': '讓其他同學在公開大廳看到並加入你的房間', 'en': 'Let other students see and join your room in the public lobby', 'yue': '等其他同學喺公開大廳見到同加入你間房' },
+    'room.roomNameLabel': { 'zh-Hant': '溫習房間名稱 *', 'en': 'Room Name *', 'yue': '溫習房間名稱 *' },
+    'room.roomSubjectLabel': { 'zh-Hant': '溫習學科 *', 'en': 'Subject *', 'yue': '溫習學科 *' },
+    'room.subjectOther': { 'zh-Hant': '其他', 'en': 'Other', 'yue': '其他' },
+    'room.capacityLabel': { 'zh-Hant': '房間人數上限', 'en': 'Room Capacity', 'yue': '房間人數上限' },
+    'room.capacity2': { 'zh-Hant': '2 人房', 'en': '2 people', 'yue': '2 人房' },
+    'room.capacity4': { 'zh-Hant': '4 人房', 'en': '4 people', 'yue': '4 人房' },
+    'room.capacityHint': { 'zh-Hant': '建立之後就不能在房間中更改，適合想同少數朋友獨用一間房嘅情況', 'en': 'This cannot be changed after the room is created — good for a small room shared with a few friends', 'yue': '開咗房之後就唔改得，啱想同少數朋友獨用一間房嘅情況' },
+    'room.durationLabel': { 'zh-Hant': '預計溫習時間 (分鐘)', 'en': 'Planned Study Duration (minutes)', 'yue': '預計溫習時間 (分鐘)' },
+    'room.duration15': { 'zh-Hant': '15 分鐘', 'en': '15 minutes', 'yue': '15 分鐘' },
+    'room.duration30': { 'zh-Hant': '30 分鐘', 'en': '30 minutes', 'yue': '30 分鐘' },
+    'room.duration40': { 'zh-Hant': '40 分鐘', 'en': '40 minutes', 'yue': '40 分鐘' },
+    'room.duration45': { 'zh-Hant': '45 分鐘', 'en': '45 minutes', 'yue': '45 分鐘' },
+    'room.duration60': { 'zh-Hant': '60 分鐘', 'en': '60 minutes', 'yue': '60 分鐘' },
+    'room.durationHint': { 'zh-Hant': '這個時間只會顯示喺公開大廳嘅房間列表，讓其他同學參考；房間不會因為時間到而自動結束，你可以隨時繼續溫習或退出房間', 'en': "This is only shown in the public lobby's room list for reference — the room won't automatically end when time is up; you can keep studying or leave anytime", 'yue': '呢個時間淨係擺喺公開大廳嘅房間列表俾其他同學參考；時間到咗房都唔會自動完，你隨時可以繼續溫習或者退房' },
+    'room.passwordLabel': { 'zh-Hant': '🔒 房間密碼鎖（4 位數字，留空則不設密碼）', 'en': '🔒 Room Password (4 digits, leave blank for no password)', 'yue': '🔒 房間密碼鎖（4 位數字，留空即係唔設密碼）' },
+    'room.passwordPlaceholder': { 'zh-Hant': '例如 1234', 'en': 'e.g. 1234', 'yue': '例如 1234' },
+    'room.passwordHint': { 'zh-Hant': '設定之後，只有輸入正確密碼的同學才可以加入這個溫習室，適合想與指定朋友私下溫習的情況；房間在公開大廳依然看得到，但會加上 🔒 標示。', 'en': 'Once set, only students who enter the correct password can join this room — good for studying privately with specific friends; the room is still visible in the public lobby but shown with a 🔒 mark.', 'yue': '設定咗之後，淨係打啱密碼嘅同學先入得嚟，啱想同指定朋友私下溫習嘅情況；間房喺公開大廳都仲係見到，不過會加個 🔒 標示。' },
+    'room.createSubmit': { 'zh-Hant': '立即建立並廣播', 'en': 'Create & Broadcast Now', 'yue': '即刻開房廣播' },
+
+    // ── 會員個人資料／帳戶設定 ──
+    'profile.heading': { 'zh-Hant': '會員個人資料', 'en': 'Member Profile', 'yue': '會員個人資料' },
+    'profile.logout': { 'zh-Hant': '登出帳號', 'en': 'Log Out', 'yue': '登出帳號' },
+    'profile.tabInfo': { 'zh-Hant': '個人資料', 'en': 'Profile', 'yue': '個人資料' },
+    'profile.tabPassword': { 'zh-Hant': '更改登入密碼', 'en': 'Change Password', 'yue': '改登入密碼' },
+    'profile.changeAvatar': { 'zh-Hant': '更換頭像', 'en': 'Change Avatar', 'yue': '換頭像' },
+    'profile.avatarHint': { 'zh-Hant': '上傳後會經系統自動檢測，如相片含有不當內容將會被拒絕。', 'en': 'Uploaded photos are automatically checked by the system — photos with inappropriate content will be rejected.', 'yue': '上傳咗之後系統會自動檢查，如果張相有唔妥當內容會俾拒絕' },
+    'profile.usernameLabel': { 'zh-Hant': '會員帳號名稱 (Username)', 'en': 'Username', 'yue': '會員帳號名稱 (Username)' },
+    'profile.usernamePlaceholder': { 'zh-Hant': '例如：Alex Wong', 'en': 'e.g. Alex Wong', 'yue': '例如：Alex Wong' },
+    'profile.contactEmailLabel': { 'zh-Hant': '聯絡電郵 (用於驗證身份 / 日後接收通知)', 'en': 'Contact Email (used for identity verification / future notifications)', 'yue': '聯絡電郵（用嚟驗證身份／日後收通知）' },
+    'profile.contactEmailPlaceholder': { 'zh-Hant': '例如：abc@gmail.com', 'en': 'e.g. abc@gmail.com', 'yue': '例如：abc@gmail.com' },
+    'profile.resendVerifyBtn': { 'zh-Hant': '重新發送驗證電郵', 'en': 'Resend Verification Email', 'yue': '再 send 多次驗證電郵' },
+    'profile.schoolLabel': { 'zh-Hant': '學校名稱', 'en': 'School Name', 'yue': '學校名稱' },
+    'profile.gradeLabel': { 'zh-Hant': '現時年級', 'en': 'Current Grade', 'yue': '現時年級' },
+    'profile.gradeS1': { 'zh-Hant': '中一 (S1)', 'en': 'Secondary 1 (S1)', 'yue': '中一 (S1)' },
+    'profile.gradeS2': { 'zh-Hant': '中二 (S2)', 'en': 'Secondary 2 (S2)', 'yue': '中二 (S2)' },
+    'profile.gradeS3': { 'zh-Hant': '中三 (S3)', 'en': 'Secondary 3 (S3)', 'yue': '中三 (S3)' },
+    'profile.gradeS4': { 'zh-Hant': '中四 (S4)', 'en': 'Secondary 4 (S4)', 'yue': '中四 (S4)' },
+    'profile.gradeS5': { 'zh-Hant': '中五 (S5)', 'en': 'Secondary 5 (S5)', 'yue': '中五 (S5)' },
+    'profile.gradeS6': { 'zh-Hant': '中六 (S6 DSE)', 'en': 'Secondary 6 (S6 DSE)', 'yue': '中六 (S6 DSE)' },
+    'profile.gradeTertiary': { 'zh-Hant': '大專 / 大學', 'en': 'Post-secondary / University', 'yue': '大專 / 大學' },
+    'profile.gradeOther': { 'zh-Hant': '其他 / 自修生', 'en': 'Other / Self-studying', 'yue': '其他 / 自修生' },
+    'profile.readonlyNoticeBefore': { 'zh-Hant': 'ⓘ 為保障帳戶資料之準確性及安全性，聯絡電郵、學校名稱及現時年級三項資料現為唯讀，用戶未能自行修改。如需更改上述資料，敬請透過電郵', 'en': 'ⓘ To protect the accuracy and security of account data, the contact email, school name and current grade are now read-only and cannot be edited by users. To change any of these, please contact us by email at', 'yue': 'ⓘ 為咗保障帳戶資料嘅準確性同安全性，聯絡電郵、學校名稱同現時年級呢三項而家係唯讀，用戶自己改唔到。如果想改呢啲資料，麻煩電郵去' },
+    'profile.readonlyNoticeAfter': { 'zh-Hant': '與本公司聯絡，本公司將協助處理用戶之更改申請。', 'en': ', and we will help process your change request.', 'yue': '，我哋會幫手處理你嘅更改申請' },
+    'profile.isSecondaryLabel': { 'zh-Hant': '本人現時是否中學生？', 'en': 'Are you currently a secondary school student?', 'yue': '你而家係唔係中學生？' },
+    'profile.isSecondaryYes': { 'zh-Hant': '是，我是中學生', 'en': 'Yes, I am a secondary school student', 'yue': '係，我係中學生' },
+    'profile.isSecondaryNo': { 'zh-Hant': '否', 'en': 'No', 'yue': '唔係' },
+    'profile.isSecondaryHint': { 'zh-Hant': '請如實選擇。本平台部分功能及資源日後可能僅開放予中學生使用，並可能要求核實學生身份；如發現虛報，帳戶可能會被暫停或終止使用資格。', 'en': 'Please answer truthfully. Some features and resources on this platform may in future be limited to secondary school students and may require identity verification. If a false declaration is found, the account may be suspended or have its access terminated.', 'yue': '請老實揀。呢個平台部分功能同資源日後可能淨係開放畀中學生用，仲可能要驗證學生身份；如果發現講大話，帳戶可能會被暫停或者終止使用資格' },
+    'profile.isSecondaryAgeHint': { 'zh-Hant': '根據帳戶已登記的出生年月，此項現時不可以選擇「是」。', 'en': 'Based on the birth date on file for this account, "Yes" cannot currently be selected.', 'yue': '根據帳戶登記咗嘅出生年月，呢項而家揀唔到「係」' },
+    'profile.favSubjectLabel': { 'zh-Hant': '喜愛學科 (可留白)', 'en': 'Favourite Subjects (optional)', 'yue': '心水學科（可以留空）' },
+    'profile.favSubjectPlaceholder': { 'zh-Hant': '例如：數學, 物理, M2', 'en': 'e.g. Maths, Physics, M2', 'yue': '例如：數學, 物理, M2' },
+    'profile.dislikeSubjectLabel': { 'zh-Hant': '討厭學科 (可留白)', 'en': 'Least Favourite Subjects (optional)', 'yue': '唔鍾意嘅學科（可以留空）' },
+    'profile.dislikeSubjectPlaceholder': { 'zh-Hant': '例如：中文背誦', 'en': 'e.g. Chinese recitation', 'yue': '例如：中文背誦' },
+    'profile.saveBtn': { 'zh-Hant': '儲存修改資料', 'en': 'Save Changes', 'yue': '儲存修改資料' },
+    'profile.currentPasswordLabel': { 'zh-Hant': '目前密碼', 'en': 'Current Password', 'yue': '而家嘅密碼' },
+    'profile.currentPasswordPlaceholder': { 'zh-Hant': '輸入目前登入密碼', 'en': 'Enter your current password', 'yue': '打返而家嘅登入密碼' },
+    'profile.newPasswordLabel': { 'zh-Hant': '新密碼（最少 6 個字元）', 'en': 'New Password (at least 6 characters)', 'yue': '新密碼（最少 6 個字）' },
+    'profile.newPasswordPlaceholder': { 'zh-Hant': '輸入新密碼', 'en': 'Enter new password', 'yue': '打新密碼' },
+    'profile.confirmPasswordLabel': { 'zh-Hant': '確認新密碼', 'en': 'Confirm New Password', 'yue': '確認新密碼' },
+    'profile.confirmPasswordPlaceholder': { 'zh-Hant': '再打一次新密碼', 'en': 'Re-enter new password', 'yue': '再打多次新密碼' },
+    'profile.changePasswordBtn': { 'zh-Hant': '更改密碼', 'en': 'Change Password', 'yue': '更改密碼' },
+    'profile.levelCardTitle': { 'zh-Hant': '溫習等級', 'en': 'Study Level', 'yue': '溫習等級' },
+    'profile.expHint': { 'zh-Hant': '每溫習 1 分鐘就會獲得 1 點 EXP，EXP 只升不跌，記錄你的總溫習成就；PTS 則用作扭蛋。', 'en': 'You earn 1 EXP for every minute you study. EXP only goes up and records your total study achievement; PTS is used for the gacha machine.', 'yue': '每溫習 1 分鐘就攞多 1 點 EXP，EXP 淨係升唔跌，記錄晒你總溫習成就；PTS 就用嚟扭蛋' },
+    'profile.gachaHistoryCardTitle': { 'zh-Hant': '我的中獎記錄', 'en': 'My Draw History', 'yue': '我嘅中獎記錄' },
+
+    // ── 「我的帳號」資料卡（撳自己個名彈出嗰個） ──
+    'myacc.following': { 'zh-Hant': '追蹤中', 'en': 'Following', 'yue': '追蹤緊' },
+    'myacc.photoCountLabel': { 'zh-Hant': '相片', 'en': 'Photos', 'yue': '相片' },
+    'myacc.schoolLabel': { 'zh-Hant': '就讀學校：', 'en': 'School: ', 'yue': '就讀學校：' },
+    'myacc.gradeLabel': { 'zh-Hant': '現時年級：', 'en': 'Current Grade: ', 'yue': '現時年級：' },
+    'myacc.favLabel': { 'zh-Hant': '喜愛學科：', 'en': 'Favourite Subjects: ', 'yue': '心水學科：' },
+    'myacc.dislikeLabel': { 'zh-Hant': '討厭學科：', 'en': 'Least Favourite Subjects: ', 'yue': '唔鍾意嘅學科：' },
+    'myacc.hoursLabel': { 'zh-Hant': '累積時數：', 'en': 'Total Hours: ', 'yue': '累積時數：' },
+    'myacc.pointsLabel': { 'zh-Hant': '積分：', 'en': 'Points: ', 'yue': '積分：' },
+    'myacc.editProfile': { 'zh-Hant': '編輯個人資料', 'en': 'Edit Profile', 'yue': '編輯個人資料' },
+
+    // ── 通用：未填寫欄位嘅預設字 ──
+    'common.notFilled': { 'zh-Hant': '未填寫', 'en': 'Not filled in', 'yue': '未填' },
+
+    // ── 註冊表格：分區選單預設提示字 ──
+    'reg.chooseDistrictFirst': { 'zh-Hant': '請先選擇地區', 'en': 'Please choose a district first', 'yue': '請先揀地區' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置
@@ -563,6 +725,18 @@
     document.querySelectorAll('[data-subject]:not([data-i18n])').forEach((el) => {
       const subj = el.getAttribute('data-subject');
       if (subj) el.textContent = window.translateSubjectName(subj);
+    });
+    // 十八區名（分區揀選單嘅 <option>／<optgroup>）：同上面科目名做法
+    // 一致，靠 data-district 屬性揸住原文值做篩選/儲存，顯示文字先按
+    // 語言轉做官方英文區名。
+    document.querySelectorAll('[data-district]:not([data-i18n])').forEach((el) => {
+      const d = el.getAttribute('data-district');
+      if (d) el.textContent = window.translateDistrictName(d);
+    });
+    // <optgroup> 冇 textContent 可以顯示（睇嘅係 label 屬性），分開處理。
+    document.querySelectorAll('optgroup[data-district-label]').forEach((el) => {
+      const d = el.getAttribute('data-district-label');
+      if (d) el.setAttribute('label', window.translateDistrictName(d));
     });
     document.querySelectorAll('.lang-option-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.lang === lang);

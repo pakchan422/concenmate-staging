@@ -262,9 +262,10 @@
       const sel = document.getElementById('lb-district-select');
       if (!sel || !window.HK_DISTRICT_REGION_GROUPS) return;
       if (sel.dataset.populated === '1') return;
+      const translateDist = window.translateDistrictName || ((n) => n);
       const groupsHtml = window.HK_DISTRICT_REGION_GROUPS.map((g) => {
-        const optionsHtml = g.districts.map((d) => `<option value="${d}">${d}</option>`).join('');
-        return `<optgroup label="${g.region}">${optionsHtml}</optgroup>`;
+        const optionsHtml = g.districts.map((d) => `<option value="${d}" data-district="${d}">${translateDist(d)}</option>`).join('');
+        return `<optgroup label="${translateDist(g.region)}" data-district-label="${g.region}">${optionsHtml}</optgroup>`;
       }).join('');
       sel.innerHTML = groupsHtml;
       const myDistrict = window.currentUser && window.currentUser.district;
@@ -968,7 +969,7 @@
       const safeUrl = String(photoUrl || '').replace(/'/g, "%27");
       return `
         <div style="position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:#eee; cursor:zoom-in;" onclick="openLightbox('${safeUrl}')">
-          <img src="${photoUrl}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" alt="溫習相片">
+          <img src="${photoUrl}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" alt="${window.t('diary.photoAlt', '溫習相片')}">
           <span style="position:absolute; right:4px; bottom:4px; background:rgba(0,0,0,.55); color:#fff; font-size:10px; padding:1px 5px; border-radius:4px;">${dateLabel}</span>
         </div>`;
     }
@@ -1049,14 +1050,14 @@
     // postStudyPhoto 呢個 Cloud Function 度（伺服器用香港時區重新驗證）。
     const STUDY_PHOTO_MIN_MINUTES = 15;
     function getStudyPhotoGateState() {
-      if (!window.currentUser) return { ok: false, reason: '請先登入會員' };
+      if (!window.currentUser) return { ok: false, reason: window.t('diary.loginFirstMember', '請先登入會員') };
       const today = getTodayDateStr();
       if (window.currentUser.lastPhotoPostDate === today) {
-        return { ok: false, reason: '今日已經發佈過一張溫習相片，請明天再發佈' };
+        return { ok: false, reason: window.t('diary.alreadyPostedToday', '今日已經發佈過一張溫習相片，請明天再發佈') };
       }
       const todayMinutes = (window.currentUser.todayDate === today) ? (window.currentUser.todayMinutes || 0) : 0;
       if (todayMinutes < STUDY_PHOTO_MIN_MINUTES) {
-        return { ok: false, reason: `需要在視訊溫習室累積溫習滿 ${STUDY_PHOTO_MIN_MINUTES} 分鐘，先可以發佈當日溫習相片（現時：${todayMinutes} 分鐘）` };
+        return { ok: false, reason: window.t('diary.needMoreMinutesTemplate', `需要在視訊溫習室累積溫習滿 ${STUDY_PHOTO_MIN_MINUTES} 分鐘，先可以發佈當日溫習相片（現時：${todayMinutes} 分鐘）`).replace('{min}', STUDY_PHOTO_MIN_MINUTES).replace('{cur}', todayMinutes) };
       }
       return { ok: true };
     }
@@ -1075,11 +1076,11 @@
         if (state.ok) {
           btn.style.opacity = '1';
           btn.style.cursor = 'pointer';
-          btn.innerText = '發佈今日溫習相片';
+          btn.innerText = window.t('diary.postPhotoBtn', '發佈今日溫習相片');
         } else {
           btn.style.opacity = '0.5';
           btn.style.cursor = 'not-allowed';
-          btn.innerText = '🔒 發佈今日溫習相片';
+          btn.innerText = window.t('diary.postPhotoBtnLocked', '🔒 發佈今日溫習相片');
         }
       });
     }
@@ -1109,7 +1110,7 @@
         setText('diary-photo-count', window.currentUser.photoCount || 0);
         setText('diary-follower-count', window.currentUser.followerCount || 0);
         setText('diary-following-count', window.currentUser.followingCount || 0);
-        setText('diary-username', window.currentUser.username || '同學');
+        setText('diary-username', window.currentUser.username || window.t('lb.defaultUsername', '同學'));
         setText('home-stat-followers', window.currentUser.followerCount || 0);
         setText('home-stat-following', window.currentUser.followingCount || 0);
         updatePhotoUploadButtonState();
@@ -1143,10 +1144,10 @@
     window.handleStudyPhotoFileSelected = async function(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
-      if (!window.currentUser) { window.showToast('請先登入會員', '⚠️'); return; }
+      if (!window.currentUser) { window.showToast(window.t('diary.loginFirstMember', '請先登入會員'), '⚠️'); return; }
 
       const btn = document.getElementById('diary-photo-upload-btn');
-      if (btn) { btn.style.opacity = '0.6'; btn.style.cursor = 'wait'; btn.innerText = '⏳ 上傳中…'; }
+      if (btn) { btn.style.opacity = '0.6'; btn.style.cursor = 'wait'; btn.innerText = window.t('diary.uploadingBtn', '⏳ 上傳中…'); }
 
       try {
         const dataUrl = await new Promise((resolve, reject) => {
@@ -1168,7 +1169,7 @@
             URL.revokeObjectURL(objectUrl);
             resolve(canvas.toDataURL('image/jpeg', 0.82));
           };
-          img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('圖片載入失敗，請更換其他相片')); };
+          img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error(window.t('diary.imageLoadFailed', '圖片載入失敗，請更換其他相片'))); };
           img.src = objectUrl;
         });
 
@@ -1186,17 +1187,17 @@
         const emptyEl = document.getElementById('diary-photo-empty');
         if (emptyEl) emptyEl.style.display = 'none';
 
-        window.showToast('溫習相片已成功發佈！', '📸');
+        window.showToast(window.t('diary.photoPostedToast', '溫習相片已成功發佈！'), '📸');
       } catch (err) {
         const code = err && (err.code || '');
         if (typeof code === 'string' && code.indexOf('failed-precondition') !== -1) {
-          window.showToast(err.message || '尚未符合發佈條件', '🔒');
+          window.showToast(err.message || window.t('diary.notEligibleFallback', '尚未符合發佈條件'), '🔒');
         } else if (typeof code === 'string' && code.indexOf('resource-exhausted') !== -1) {
-          window.showToast(err.message || '操作次數過多，請稍後再試', '⏳');
+          window.showToast(err.message || window.t('diary.tooManyRequestsFallback', '操作次數過多，請稍後再試'), '⏳');
         } else if (typeof code === 'string' && code.indexOf('invalid-argument') !== -1) {
-          window.showToast(err.message || '相片不符合要求，請更換其他相片', '🚫');
+          window.showToast(err.message || window.t('diary.photoRejectedFallback', '相片不符合要求，請更換其他相片'), '🚫');
         } else {
-          window.showToast('發佈失敗：' + (err.message || err), '❌');
+          window.showToast(window.t('diary.postFailedTemplate', `發佈失敗：${err.message || err}`).replace('{msg}', err.message || err), '❌');
         }
       } finally {
         event.target.value = '';
@@ -1220,7 +1221,7 @@
     // 學生同學生之間互相追蹤（日記／朋友資料卡）就維持返「追蹤書伴」呢
     // 個原本嘅講法——淨係靠 wrapId 分辨場景，唔使改呢組函數嘅簽名。
     function _followVerbFor(wrapId) {
-      return wrapId === 'tutorview-follow-wrap' ? '導師' : '書伴';
+      return wrapId === 'tutorview-follow-wrap' ? window.t('follow.verbTutor', '導師') : window.t('follow.verbBuddy', '書伴');
     }
 
     async function renderFollowButton(targetUid, targetUserData, wrapId) {
@@ -1233,9 +1234,9 @@
         const followId = `${window.currentUser.uid}_${targetUid}`;
         const snap = await window.fs.getDoc(window.fs.doc(window.db, 'follows', followId));
         if (snap.exists()) {
-          wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">已追蹤（點擊取消）</button>`;
+          wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">${window.t('follow.alreadyFollowingBtn', '已追蹤（點擊取消）')}</button>`;
         } else {
-          wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">追蹤${verb}</button>`;
+          wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">${window.t('follow.followBtnTemplate', `追蹤${verb}`).replace('{verb}', verb)}</button>`;
         }
       } catch (e) {
         console.error('讀取追蹤狀態失敗:', e);
@@ -1245,11 +1246,11 @@
 
     window.followUserAction = async function(targetUid, wrapId) {
       wrapId = wrapId || 'pop-follow-btn-wrap';
-      if (!window.currentUser) { window.showToast('請先登入', '🔒'); return; }
+      if (!window.currentUser) { window.showToast(window.t('common.loginFirst', '請先登入'), '🔒'); return; }
       try {
         await window.callCloudFunction('followUser', { targetUid });
         const wrap = document.getElementById(wrapId);
-        if (wrap) wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">已追蹤（點擊取消）</button>`;
+        if (wrap) wrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="unfollowUserAction('${targetUid}', '${wrapId}')">${window.t('follow.alreadyFollowingBtn', '已追蹤（點擊取消）')}</button>`;
         const countEl = document.getElementById(_followCountIdFor(wrapId));
         if (countEl) countEl.innerText = (parseInt(countEl.innerText, 10) || 0) + 1;
         // 追蹤緊嘅係自己嘅「追蹤中」數，唔係對方嘅「粉絲」數——呢兩個
@@ -1259,9 +1260,9 @@
           const el = document.getElementById(id);
           if (el) el.innerText = window.currentUser.followingCount;
         });
-        window.showToast('已追蹤這位書伴！', '🤝');
+        window.showToast(window.t('follow.followedToast', '已追蹤這位書伴！'), '🤝');
       } catch (e) {
-        window.showToast('追蹤失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('follow.followFailedTemplate', `追蹤失敗：${e.message || e}`).replace('{msg}', e.message || e), '❌');
       }
     };
 
@@ -1271,7 +1272,7 @@
       try {
         await window.callCloudFunction('unfollowUser', { targetUid });
         const wrap = document.getElementById(wrapId);
-        if (wrap) wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">追蹤${_followVerbFor(wrapId)}</button>`;
+        if (wrap) wrap.innerHTML = `<button class="btn btn-primary" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="followUserAction('${targetUid}', '${wrapId}')">${window.t('follow.followBtnTemplate', `追蹤${_followVerbFor(wrapId)}`).replace('{verb}', _followVerbFor(wrapId))}</button>`;
         const countEl = document.getElementById(_followCountIdFor(wrapId));
         if (countEl) countEl.innerText = Math.max(0, (parseInt(countEl.innerText, 10) || 0) - 1);
         window.currentUser.followingCount = Math.max(0, (window.currentUser.followingCount || 0) - 1);
@@ -1279,9 +1280,9 @@
           const el = document.getElementById(id);
           if (el) el.innerText = window.currentUser.followingCount;
         });
-        window.showToast('已取消追蹤', 'ℹ️');
+        window.showToast(window.t('follow.unfollowedToast', '已取消追蹤'), 'ℹ️');
       } catch (e) {
-        window.showToast('取消追蹤失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('follow.unfollowFailedTemplate', `取消追蹤失敗：${e.message || e}`).replace('{msg}', e.message || e), '❌');
       }
     };
 
@@ -1312,7 +1313,7 @@
         if (backWrap) backWrap.style.display = 'none';
         if (uploadSection) uploadSection.style.display = 'block';
         if (followWrap) { followWrap.style.display = 'none'; followWrap.innerHTML = ''; }
-        if (headingEl) headingEl.innerText = '我的溫習相片';
+        if (headingEl) headingEl.innerText = window.t('diary.myPhotosHeading', '我的溫習相片');
         if (!window.currentUser) return;
         if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
         if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
@@ -1324,12 +1325,12 @@
       if (backWrap) backWrap.style.display = 'block';
       if (uploadSection) uploadSection.style.display = 'none';
       if (followWrap) followWrap.style.display = 'block';
-      if (headingEl) headingEl.innerText = '溫習相片';
+      if (headingEl) headingEl.innerText = window.t('diary.photosHeadingGeneric', '溫習相片');
 
       const avatarEl = document.getElementById('diary-avatar');
       const usernameEl = document.getElementById('diary-username');
       if (avatarEl) avatarEl.innerText = '…';
-      if (usernameEl) usernameEl.innerText = '載入中…';
+      if (usernameEl) usernameEl.innerText = window.t('qa.loading', '載入中…');
       const gridEl = document.getElementById('diary-photo-grid');
       if (gridEl) gridEl.innerHTML = '';
       const emptyEl = document.getElementById('diary-photo-empty');
@@ -1345,11 +1346,11 @@
       try {
         const snap = await window.fs.getDoc(window.fs.doc(window.db, 'users', _diaryViewUid));
         if (!snap.exists()) {
-          if (usernameEl) usernameEl.innerText = '找不到這位使用者';
+          if (usernameEl) usernameEl.innerText = window.t('diary.userNotFound', '找不到這位使用者');
           return;
         }
         const u = snap.data();
-        if (usernameEl) usernameEl.innerText = u.username || '同學';
+        if (usernameEl) usernameEl.innerText = u.username || window.t('lb.defaultUsername', '同學');
         if (avatarEl) {
           if (u.avatarBase64) {
             avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; cursor:zoom-in;" alt="會員頭像" onclick="openLightbox('${u.avatarBase64}', true)">`;
@@ -1364,7 +1365,7 @@
         if (typeof window.loadUserPhotos === 'function') window.loadUserPhotos('diary', _diaryViewUid, true);
       } catch (e) {
         console.error('讀取溫習日記失敗:', e);
-        if (usernameEl) usernameEl.innerText = '載入失敗';
+        if (usernameEl) usernameEl.innerText = window.t('tutorview.loadFailed', '載入失敗');
       }
     }
     window.openDiaryView = openDiaryView;
@@ -1378,8 +1379,8 @@
       if (!uid || !window.db || !window.fs) return;
       const titleEl = document.getElementById('follow-list-title');
       const listEl = document.getElementById('follow-list-container');
-      if (titleEl) titleEl.innerText = type === 'following' ? '追蹤中名單' : '粉絲名單';
-      if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">載入中...</p>';
+      if (titleEl) titleEl.innerText = type === 'following' ? window.t('follow.followingListTitle', '追蹤中名單') : window.t('follow.followersListTitle', '粉絲名單');
+      if (listEl) listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:20px;">${window.t('follow.loadingList', '載入中...')}</p>`;
       openModal('modal-follow-list');
 
       try {
@@ -1388,7 +1389,7 @@
         const snap = await getDocs(query(collection(window.db, 'follows'), where(field, '==', uid)));
 
         if (snap.empty) {
-          if (listEl) listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:20px;">${type === 'following' ? '未有追蹤緊任何書伴' : '仲未有粉絲'}</p>`;
+          if (listEl) listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:20px;">${type === 'following' ? window.t('follow.noFollowingYet', '未有追蹤緊任何書伴') : window.t('follow.noFollowersYet', '仲未有粉絲')}</p>`;
           return;
         }
 
@@ -1404,7 +1405,7 @@
           if (!uSnap.exists()) return;
           const u = uSnap.data();
           const cuid = counterpartUids[i];
-          const name = u.username || '同學';
+          const name = u.username || window.t('lb.defaultUsername', '同學');
           const avatarInner = u.avatarBase64
             ? `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; cursor:zoom-in;" alt="會員頭像" onclick="event.stopPropagation(); openLightbox('${u.avatarBase64}', true)">`
             : `${(name || '同').charAt(0).toUpperCase()}`;
@@ -1414,10 +1415,10 @@
               <span style="font-size:14px; font-weight:bold; color:var(--brand-800); cursor:pointer;" onclick="closeModal('modal-follow-list'); viewUserProfile('${cuid}');">${escapeHtml(name)}</span>
             </div>`;
         });
-        if (listEl) listEl.innerHTML = html || `<p style="text-align:center; color:#999; font-size:13px; padding:20px;">找不到相關用戶資料</p>`;
+        if (listEl) listEl.innerHTML = html || `<p style="text-align:center; color:#999; font-size:13px; padding:20px;">${window.t('follow.noUserDataFound', '找不到相關用戶資料')}</p>`;
       } catch (e) {
         console.error('讀取名單失敗:', e);
-        if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#D9764A; font-size:13px; padding:20px;">讀取名單失敗，請稍後再試</p>';
+        if (listEl) listEl.innerHTML = `<p style="text-align:center; color:#D9764A; font-size:13px; padding:20px;">${window.t('follow.loadListFailed', '讀取名單失敗，請稍後再試')}</p>`;
       }
     };
 
@@ -2034,11 +2035,11 @@
       if (typeof window.renderUserAvatar === 'function') window.renderUserAvatar();
       setText('myacc-username', u.username || '同學');
       setText('myacc-loginid', u.loginId ? ('🆔 ' + u.loginId) : '🆔 未設定');
-      setText('myacc-school', u.school || '未填寫');
-      setText('myacc-grade', u.grade || '未填寫');
-      setText('myacc-fav', u.favSubjects || '未填寫');
-      setText('myacc-dislike', u.dislikeSubjects || '未填寫');
-      setText('myacc-hours', (parseFloat(u.hours) || 0).toFixed(1) + ' 小時');
+      setText('myacc-school', u.school || window.t('common.notFilled', '未填寫'));
+      setText('myacc-grade', u.grade || window.t('common.notFilled', '未填寫'));
+      setText('myacc-fav', u.favSubjects || window.t('common.notFilled', '未填寫'));
+      setText('myacc-dislike', u.dislikeSubjects || window.t('common.notFilled', '未填寫'));
+      setText('myacc-hours', (parseFloat(u.hours) || 0).toFixed(1) + ' ' + window.t('unit.hours', '小時'));
       setText('myacc-points', (u.points ?? 0) + ' PTS');
 
       const info = calcLevelInfo(u.exp || 0);
@@ -3409,10 +3410,10 @@
         }
         if (nameEl) nameEl.innerText = u.username || '同學';
         document.getElementById('pop-user-verified').innerText = u.loginId ? ('🆔 ' + u.loginId) : '';
-        document.getElementById('pop-user-school').innerText = u.school || '未填寫';
-        document.getElementById('pop-user-grade').innerText = u.grade || '未填寫';
-        document.getElementById('pop-user-fav').innerText = u.favSubjects || '未填寫';
-        document.getElementById('pop-user-dislike').innerText = u.dislikeSubjects || '未填寫';
+        document.getElementById('pop-user-school').innerText = u.school || window.t('common.notFilled', '未填寫');
+        document.getElementById('pop-user-grade').innerText = u.grade || window.t('common.notFilled', '未填寫');
+        document.getElementById('pop-user-fav').innerText = u.favSubjects || window.t('common.notFilled', '未填寫');
+        document.getElementById('pop-user-dislike').innerText = u.dislikeSubjects || window.t('common.notFilled', '未填寫');
         document.getElementById('pop-user-hours').innerText = (parseFloat(u.hours) || 0).toFixed(1) + " 小時";
         const popPhotoCountEl = document.getElementById('pop-photo-count');
         if (popPhotoCountEl) popPhotoCountEl.innerText = u.photoCount || 0;
@@ -3996,7 +3997,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <div style="text-align:right; font-size:13px; color:#888; line-height:1.5;">
-                <div>${escapeHtml(u.grade || '未填寫')}</div>
+                <div>${escapeHtml(u.grade || window.t('common.notFilled', '未填寫'))}</div>
                 <div style="color:${rank.color};">Lv.${levelInfo.level} ${escapeHtml(rank.title)}</div>
                 <div>累積溫習 ${(parseFloat(u.hours) || 0).toFixed(1)} 小時</div>
               </div>
