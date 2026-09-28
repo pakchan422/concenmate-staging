@@ -185,11 +185,11 @@
       expPerMinute: 1,
       levelCurveFactor: 10, // 公式：升到 Level L 總共需要嘅 EXP = 難度係數 × L × (L−1)
       ranks: [
-        { minLevel: 1,  emoji: '🌱', title: '溫習新手', titleEn: 'Novice',     color: '#6FA96F', desc: '剛剛起步，每一分鐘的溫習都算數，慢慢累積 EXP！' },
-        { minLevel: 10, emoji: '📚', title: '專注學徒', titleEn: 'Apprentice', color: '#4A8FA0', desc: '已經養成溫習習慣，繼續保持專注，向下一個段位進發。' },
-        { minLevel: 20, emoji: '🔥', title: '自律達人', titleEn: 'Expert',     color: '#D9764A', desc: '自律力爆錶，是身邊同學的榜樣！' },
-        { minLevel: 40, emoji: '👑', title: '專注大師', titleEn: 'Master',     color: '#D9A441', desc: '長期堅持先可以去到這個段位，值得驕傲！' },
-        { minLevel: 60, emoji: '🌌', title: '傳說學霸', titleEn: 'Legend',     color: '#8B5FBF', desc: '傳說級別的溫習量，少數人先去到的頂尖段位。' }
+        { minLevel: 1,  title: '溫習新手', titleEn: 'Novice',     color: '#6FA96F', desc: '剛剛起步，每一分鐘的溫習都算數，慢慢累積 EXP！' },
+        { minLevel: 10, title: '專注學徒', titleEn: 'Apprentice', color: '#4A8FA0', desc: '已經養成溫習習慣，繼續保持專注，向下一個段位進發。' },
+        { minLevel: 20, title: '自律達人', titleEn: 'Expert',     color: '#D9764A', desc: '自律力爆錶，是身邊同學的榜樣！' },
+        { minLevel: 40, title: '專注大師', titleEn: 'Master',     color: '#D9A441', desc: '長期堅持先可以去到這個段位，值得驕傲！' },
+        { minLevel: 60, title: '傳說學霸', titleEn: 'Legend',     color: '#8B5FBF', desc: '傳說級別的溫習量，少數人先去到的頂尖段位。' }
       ]
     };
     let LEVEL_CONFIG = JSON.parse(JSON.stringify(DEFAULT_LEVEL_CONFIG));
@@ -624,12 +624,12 @@
 
       const headerBadge = document.getElementById('header-level-badge');
       if (headerBadge) {
-        headerBadge.innerText = `${rank.emoji} Lv.${info.level}`;
+        headerBadge.innerText = `Lv.${info.level}`;
         headerBadge.title = `${rank.title}（${rank.titleEn}）｜仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}`;
       }
 
       const globalLevelBadge = document.getElementById('global-level-badge');
-      if (globalLevelBadge) globalLevelBadge.innerText = `${rank.emoji} Lv.${info.level} ${rank.title} · ${info.expIntoLevel}/${info.expNeededForNext} EXP`;
+      if (globalLevelBadge) globalLevelBadge.innerText = `Lv.${info.level} ${rank.title} · ${info.expIntoLevel}/${info.expNeededForNext} EXP`;
       const globalExpBar = document.getElementById('global-exp-bar');
       if (globalExpBar) globalExpBar.style.width = info.pctToNext + '%';
 
@@ -639,7 +639,7 @@
       const profExpBar = document.getElementById('profile-exp-bar');
       if (profLevelNum) profLevelNum.innerText = `Lv.${info.level}`;
       if (profRankTitle) {
-        profRankTitle.innerText = `${rank.emoji} ${rank.title} (${rank.titleEn})`;
+        profRankTitle.innerText = `${rank.title} (${rank.titleEn})`;
         profRankTitle.style.color = rank.color;
       }
       if (profExpText) profExpText.innerText = `${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}（總計 ${info.exp} EXP）`;
@@ -662,7 +662,7 @@
       const currentEl = document.getElementById('level-info-current');
       if (currentEl) {
         currentEl.innerHTML = `
-          <div style="font-size:15px; font-weight:bold; color:${rank.color || 'var(--brand-800)'};">${rank.emoji} Lv.${info.level} ${escapeHtml(rank.title || '')}（${escapeHtml(rank.titleEn || '')}）</div>
+          <div style="font-size:15px; font-weight:bold; color:${rank.color || 'var(--brand-800)'};">Lv.${info.level} ${escapeHtml(rank.title || '')}（${escapeHtml(rank.titleEn || '')}）</div>
           <div style="font-size:13px; color:#888; margin-top:4px;">${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}</div>
           ${rank.desc ? `<div style="font-size:13px; color:#555; margin-top:6px; line-height:1.5;">${escapeHtml(rank.desc)}</div>` : ''}
         `;
@@ -678,7 +678,6 @@
           const isCurrent = r === rank || (r.minLevel === rank.minLevel && r.title === rank.title);
           return `
             <div style="display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border-radius:10px; border:1px solid ${isCurrent ? 'var(--brand-500)' : '#eee'}; background:${isCurrent ? 'var(--brand-50)' : (reached ? '#fff' : '#fafafa')}; opacity:${reached ? '1' : '.6'};">
-              <div style="font-size:20px; flex-shrink:0;">${r.emoji || '🌟'}</div>
               <div style="flex:1; min-width:0;">
                 <div style="font-size:13px; font-weight:bold; color:${reached ? (r.color || 'var(--brand-800)') : '#999'};">
                   Lv.${r.minLevel || 1}+ ${escapeHtml(r.title || '')}${isCurrent ? ' <span style="font-size:13px; color:var(--brand-500);">（目前）</span>' : ''}
@@ -1489,7 +1488,7 @@
       const rank = getRankTitle(info.level);
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 
-      setText('otter-stat-level', `${rank.emoji || '🌱'} Lv.${info.level}`);
+      setText('otter-stat-level', `Lv.${info.level}`);
       setText('otter-stat-exp-remaining', `${info.expIntoLevel}/${info.expNeededForNext}`);
       setText('otter-stat-hours', `${(parseFloat(window.currentUser.hours) || 0).toFixed(1)}h`);
 
@@ -1774,7 +1773,7 @@
       if (!wrapEl) return;
       const tmpl = (typeof window.t === 'function') ? window.t(i18nKey, fallbackTemplate) : fallbackTemplate;
       const numberHtml = `<b style="color:var(--brand-800);">${n}</b>`;
-      wrapEl.innerHTML = `${emoji} ${tmpl.replace('{n}', numberHtml)}`;
+      wrapEl.innerHTML = tmpl.replace('{n}', numberHtml);
     }
 
     function renderStudyCalendar() {
@@ -2046,7 +2045,7 @@
       const rank = getRankTitle(info.level);
       const levelBadge = document.getElementById('myacc-level-badge');
       if (levelBadge) {
-        levelBadge.innerText = `${rank.emoji} Lv.${info.level} ${rank.title}`;
+        levelBadge.innerText = `Lv.${info.level} ${rank.title}`;
         levelBadge.style.color = rank.color;
       }
       const expBar = document.getElementById('myacc-exp-bar');
@@ -3994,7 +3993,7 @@
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <div style="text-align:right; font-size:13px; color:#888; line-height:1.5;">
                 <div>${escapeHtml(u.grade || '未填寫')}</div>
-                <div style="color:${rank.color};">${rank.emoji} Lv.${levelInfo.level} ${escapeHtml(rank.title)}</div>
+                <div style="color:${rank.color};">Lv.${levelInfo.level} ${escapeHtml(rank.title)}</div>
                 <div>累積溫習 ${(parseFloat(u.hours) || 0).toFixed(1)} 小時</div>
               </div>
               <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="viewUserProfile('${targetUid}')">看資料 / 加好友</button>

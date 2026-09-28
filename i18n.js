@@ -57,7 +57,7 @@
     // ── 通用字眼（好多分頁都會用到，一次搬好，之後其他分頁轉換嗰陣
     //    可以直接重用返呢批 key，唔使逐頁重複做） ──
     'common.cancel': { 'zh-Hant': '取消', 'en': 'Cancel', 'yue': '取消' },
-    'common.save': { 'zh-Hant': '💾 儲存', 'en': '💾 Save', 'yue': '💾 儲存' },
+    'common.save': { 'zh-Hant': '儲存', 'en': 'Save', 'yue': '儲存' },
     'unit.minutes': { 'zh-Hant': '分鐘', 'en': ' min', 'yue': '分鐘' },
     'unit.hours': { 'zh-Hant': '小時', 'en': 'h ', 'yue': '小時' },
     'unit.goalDone': { 'zh-Hant': '（已完成）', 'en': ' (Done)', 'yue': '（已完成）' },
@@ -73,18 +73,18 @@
     'home.statStreak': { 'zh-Hant': '連續天', 'en': 'Day Streak', 'yue': '連續天數' },
     'home.statFollowers': { 'zh-Hant': '粉絲', 'en': 'Followers', 'yue': '粉絲' },
     'home.statFollowing': { 'zh-Hant': '追蹤中', 'en': 'Following', 'yue': '追蹤中' },
-    'home.otterRenameTitle': { 'zh-Hant': '✏️ 自訂我的水獺', 'en': '✏️ Customize My Otter', 'yue': '✏️ 自己整靚隻水獺' },
+    'home.otterRenameTitle': { 'zh-Hant': '自訂我的水獺', 'en': 'Customize My Otter', 'yue': '自己整靚隻水獺' },
     'home.otterRenamePlaceholder': { 'zh-Hant': '輸入新名稱（最多 12 個字）', 'en': 'Enter a new name (up to 12 characters)', 'yue': '打個新名（最多12個字）' },
-    'home.otterAvatarLabel': { 'zh-Hant': '🖼️ 頭像（可選擇已收集的貼紙）', 'en': '🖼️ Avatar (choose from collected stickers)', 'yue': '🖼️ 頭像（可以揀已經儲到嘅貼紙）' },
+    'home.otterAvatarLabel': { 'zh-Hant': '頭像（可選擇已收集的貼紙）', 'en': 'Avatar (choose from collected stickers)', 'yue': '頭像（可以揀已經儲到嘅貼紙）' },
     'otter.stat.level': { 'zh-Hant': '等級', 'en': 'Level', 'yue': '等級' },
     'otter.stat.expRemaining': { 'zh-Hant': '升級所需 EXP', 'en': 'EXP to Level Up', 'yue': '升級所需 EXP' },
     'otter.stat.hours': { 'zh-Hant': '已累計時數', 'en': 'Total Hours', 'yue': '已累計時數' },
     'otter.stat.streak': { 'zh-Hant': '連續天數', 'en': 'Day Streak', 'yue': '連續天數' },
     'otter.stat.stickers': { 'zh-Hant': '圖鑑完成度', 'en': 'Sticker Collection', 'yue': '貼紙完成度' },
-    'home.primaryDesc': { 'zh-Hant': '📹 與同學一起開鏡頭專注溫習賺積分', 'en': '📹 Study together on camera with classmates and earn points', 'yue': '📹 同同學一齊開鏡頭專心溫書賺積分' },
+    'home.primaryDesc': { 'zh-Hant': '與同學一起開鏡頭專注溫習賺積分', 'en': 'Study together on camera with classmates and earn points', 'yue': '同同學一齊開鏡頭專心溫書賺積分' },
     'home.joinNow': { 'zh-Hant': '立即加入', 'en': 'Join Now', 'yue': '即刻加入' },
-    'home.todayGoal': { 'zh-Hant': '🎯 今日目標', 'en': "🎯 Today's Goal", 'yue': '🎯 今日目標' },
-    'home.studyCalendar': { 'zh-Hant': '📅 溫習日曆', 'en': '📅 Study Calendar', 'yue': '📅 溫書日曆' },
+    'home.todayGoal': { 'zh-Hant': '今日目標', 'en': "Today's Goal", 'yue': '今日目標' },
+    'home.studyCalendar': { 'zh-Hant': '溫習日曆', 'en': 'Study Calendar', 'yue': '溫書日曆' },
     // {n} 係佔位符，實際數字由 renderStudyCalendar()（app-features.js）
     // 用 String.replace('{n}', ...) 塞入去；廣東話「總共」要擺喺數字
     // 前面（同繁體中文／English 慣常擺後面唔同），所以呢兩句改用完整

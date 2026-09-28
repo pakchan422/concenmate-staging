@@ -1656,7 +1656,7 @@
       const newLevel = calcLevelInfo(window.currentUser.exp).level;
       if (newLevel > prevLevel) {
         const rank = getRankTitle(newLevel);
-        window.showToast(`升級了！現在是 Lv.${newLevel} ${rank.emoji} ${rank.title}！`, '⬆️');
+        window.showToast(`升級了！現在是 Lv.${newLevel} ${rank.title}！`, '⬆️');
       }
       if (hoursIncrement > 0) {
         const newHours = (parseFloat(window.currentUser.hours) || 0) + hoursIncrement;

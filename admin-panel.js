@@ -637,9 +637,6 @@
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:4px;">等級門檻
               <input class="admin-input-sm" type="number" min="1" style="width:55px;" value="${r.minLevel}" onchange="adminLevelDraft.ranks[${idx}].minLevel = parseInt(this.value)||1">
             </label>
-            <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:4px;">Emoji
-              <input class="admin-input-sm" style="width:44px; text-align:center;" value="${escapeHtml(r.emoji || '')}" onchange="adminLevelDraft.ranks[${idx}].emoji = this.value">
-            </label>
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:4px;">稱號(中)
               <input class="admin-input-sm" style="width:90px;" value="${escapeHtml(r.title || '')}" onchange="adminLevelDraft.ranks[${idx}].title = this.value">
             </label>
