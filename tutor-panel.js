@@ -119,7 +119,7 @@ window.applyRoleBasedSidebar = function() {
       return;
     }
 
-    listContainer.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入導師名錄中…</p>';
+    listContainer.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">${window.t('vip.loadingDirectory', '載入導師名錄中…')}</p>`;
     const q = window.fs.query(
       window.fs.collection(window.db, 'tutors'),
       window.fs.orderBy('createdAt', 'desc'),
@@ -133,7 +133,7 @@ window.applyRoleBasedSidebar = function() {
       renderTutorDirectoryListUI();
     }, (err) => {
       if (tabsContainer) tabsContainer.innerHTML = '';
-      listContainer.innerHTML = `<div class="card" style="color:#C0524A;">載入導師名錄失敗：${escapeHtmlLocal(err.message || err)}</div>`;
+      listContainer.innerHTML = `<div class="card" style="color:#C0524A;">${window.t('vip.loadDirectoryFailedTemplate', '載入導師名錄失敗：{msg}').replace('{msg}', escapeHtmlLocal(err.message || err))}</div>`;
     });
   };
 
@@ -160,7 +160,7 @@ window.applyRoleBasedSidebar = function() {
       return `<button type="button" class="btn ${active ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="window.selectTutorDirectorySubject(${value === null ? 'null' : `'${escapeHtmlLocal(value).replace(/'/g, "\\'")}'`})">${escapeHtmlLocal(label)}</button>`;
     };
 
-    tabsContainer.innerHTML = [makeTabBtn('全部', null), ...orderedSubjects.map((s) => makeTabBtn(s, s))].join('');
+    tabsContainer.innerHTML = [makeTabBtn(window.t('room.filterAll', '全部'), null), ...orderedSubjects.map((s) => makeTabBtn(s, s))].join('');
   }
 
   // 導師專頁：學生撳導師卡片（頭像除外）入嚟嘅完整版面，顯示呢位導師
@@ -177,12 +177,12 @@ window.applyRoleBasedSidebar = function() {
     const followerCountEl = document.getElementById('tutorview-follower-count');
     const followWrap = document.getElementById('tutorview-follow-wrap');
     const notesWrap = document.getElementById('tutorview-notes-wrap');
-    if (nameEl) nameEl.innerText = '載入中…';
+    if (nameEl) nameEl.innerText = window.t('qa.loading', '載入中…');
     if (bioEl) bioEl.innerText = '';
     if (subjectsEl) subjectsEl.innerHTML = '';
     if (followerCountEl) followerCountEl.innerText = '0';
     if (followWrap) followWrap.innerHTML = '';
-    if (notesWrap) notesWrap.innerHTML = '<p style="font-size:13px; color:#999; text-align:center; padding:10px;">載入中…</p>';
+    if (notesWrap) notesWrap.innerHTML = `<p style="font-size:13px; color:#999; text-align:center; padding:10px;">${window.t('qa.loading', '載入中…')}</p>`;
     if (avatarEl) { avatarEl.innerHTML = ''; avatarEl.innerText = ''; }
 
     if (!window.db || !window.fs) return;
@@ -192,17 +192,17 @@ window.applyRoleBasedSidebar = function() {
         window.fs.getDoc(window.fs.doc(window.db, 'users', uid)),
       ]);
       if (!tutorSnap.exists()) {
-        if (nameEl) nameEl.innerText = '找不到這位導師';
+        if (nameEl) nameEl.innerText = window.t('tutorview.notFound', '找不到這位導師');
         return;
       }
       const t = tutorSnap.data();
       const u = userSnap.exists() ? userSnap.data() : {};
 
-      if (nameEl) nameEl.innerText = t.displayName || '導師';
+      if (nameEl) nameEl.innerText = t.displayName || window.t('tutorview.defaultName', '導師');
       if (bioEl) bioEl.innerText = t.bio || '';
       if (avatarEl) {
         if (u.avatarBase64) {
-          avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="導師頭像">`;
+          avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="${window.t('tutorview.avatarAlt', '導師頭像')}">`;
         } else {
           avatarEl.innerText = '';
         }
@@ -218,7 +218,7 @@ window.applyRoleBasedSidebar = function() {
       }
       window.renderTutorNotesInProfileCard(uid, 'tutorview-notes-wrap');
     } catch (err) {
-      if (nameEl) nameEl.innerText = '載入失敗';
+      if (nameEl) nameEl.innerText = window.t('tutorview.loadFailed', '載入失敗');
       if (notesWrap) notesWrap.innerHTML = `<p style="font-size:13px; color:#c0392b; text-align:center;">${escapeHtmlLocal(err.message || err)}</p>`;
     }
   };
@@ -239,8 +239,8 @@ window.applyRoleBasedSidebar = function() {
 
     if (!filtered.length) {
       listContainer.innerHTML = tutorDirectorySelectedSubject
-        ? `<div class="card" style="text-align:center; color:#999;">暫時未有教授「${escapeHtmlLocal(tutorDirectorySelectedSubject)}」的已上架導師</div>`
-        : '<div class="card" style="text-align:center; color:#999;">目前尚未有已上架的導師</div>';
+        ? `<div class="card" style="text-align:center; color:#999;">${window.t('vip.noTutorsForSubjectTemplate', '暫時未有教授「{subject}」的已上架導師').replace('{subject}', escapeHtmlLocal(tutorDirectorySelectedSubject))}</div>`
+        : `<div class="card" style="text-align:center; color:#999;">${window.t('vip.noTutorsYet', '目前尚未有已上架的導師')}</div>`;
       return;
     }
 
@@ -263,10 +263,10 @@ window.applyRoleBasedSidebar = function() {
           <div style="display:flex; align-items:center; gap:10px;">
             <div style="width:44px; height:44px; border-radius:50%; background:var(--brand-100); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; cursor:pointer;" onclick="event.stopPropagation(); window.viewUserProfile('${uid}')"></div>
             <div style="min-width:0; flex:1;">
-              <p style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:2px; cursor:pointer; width:fit-content;" onclick="event.stopPropagation(); window.viewUserProfile('${uid}')">${escapeHtmlLocal(t.displayName || '導師')}</p>
+              <p style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:2px; cursor:pointer; width:fit-content;" onclick="event.stopPropagation(); window.viewUserProfile('${uid}')">${escapeHtmlLocal(t.displayName || window.t('tutorview.defaultName', '導師'))}</p>
               <p style="font-size:13px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtmlLocal(t.bio || '')}</p>
             </div>
-            <span style="font-size:13px; color:var(--brand-600); flex-shrink:0;">查看 ›</span>
+            <span style="font-size:13px; color:var(--brand-600); flex-shrink:0;">${window.t('vip.viewLabel', '查看 ›')}</span>
           </div>
           ${subjectsHtml ? `<div style="margin-top:8px;">${subjectsHtml}</div>` : ''}
         </div>
@@ -814,7 +814,7 @@ window.applyRoleBasedSidebar = function() {
         window.fs.where('status', '==', 'published')
       ));
       if (notesSnap.empty) {
-        wrap.innerHTML = '<p style="font-size:13px; color:#999; text-align:center; padding:10px;">這位導師暫時未有已上架的教材</p>';
+        wrap.innerHTML = `<p style="font-size:13px; color:#999; text-align:center; padding:10px;">${window.t('tutorview.noMaterialsYet', '這位導師暫時未有已上架的教材')}</p>`;
         return;
       }
 
@@ -847,16 +847,16 @@ window.applyRoleBasedSidebar = function() {
               </div>
               <div style="display:flex; gap:6px; margin-top:8px;">
                 ${n.previewStoragePath
-                  ? `<button class="btn btn-outline" type="button" style="font-size:12px; padding:4px 10px; flex:1; justify-content:center;" onclick="window.previewPublicTutorNote('${n.id}')">預覽</button>`
+                  ? `<button class="btn btn-outline" type="button" style="font-size:12px; padding:4px 10px; flex:1; justify-content:center;" onclick="window.previewPublicTutorNote('${n.id}')">${window.t('tutorview.preview', '預覽')}</button>`
                   : ''}
-                <button class="btn btn-outline" type="button" style="font-size:12px; padding:4px 10px; flex:1; justify-content:center; opacity:.6;" onclick="window.showToast('購買功能仍在開發中，敬請期待', '🚧')">購買</button>
+                <button class="btn btn-outline" type="button" style="font-size:12px; padding:4px 10px; flex:1; justify-content:center; opacity:.6;" onclick="window.showToast(window.t('tutorview.buyComingSoon', '購買功能仍在開發中，敬請期待'), '🚧')">${window.t('tutorview.buy', '購買')}</button>
               </div>
             </div>
           `).join('')}
         </div>
       `;
     } catch (err) {
-      wrap.innerHTML = `<p style="font-size:13px; color:#c0392b;">載入教材失敗：${escapeHtmlLocal(err.message || err)}</p>`;
+      wrap.innerHTML = `<p style="font-size:13px; color:#c0392b;">${window.t('tutorview.loadMaterialsFailedTemplate', '載入教材失敗：{msg}').replace('{msg}', escapeHtmlLocal(err.message || err))}</p>`;
     }
   };
 
@@ -867,13 +867,13 @@ window.applyRoleBasedSidebar = function() {
     if (!noteId || !window.db || !window.fs) return;
     try {
       const snap = await window.fs.getDoc(window.fs.doc(window.db, 'tutorNotes', noteId));
-      if (!snap.exists() || snap.data().status !== 'published') { window.showToast('找不到這份教材', '⚠️'); return; }
+      if (!snap.exists() || snap.data().status !== 'published') { window.showToast(window.t('tutorview.noteNotFound', '找不到這份教材'), '⚠️'); return; }
       const n = snap.data();
-      if (!n.previewStoragePath) { window.showToast('這份教材尚未設定預覽頁', '⚠️'); return; }
+      if (!n.previewStoragePath) { window.showToast(window.t('tutorview.noPreviewSet', '這份教材尚未設定預覽頁'), '⚠️'); return; }
       const url = await window.storageApi.getDownloadURL(window.storageApi.ref(window.storage, n.previewStoragePath));
-      showPdfPreviewModal(url, '預覽：' + (n.title || ''));
+      showPdfPreviewModal(url, window.t('tutorview.previewTitlePrefix', '預覽：') + (n.title || ''));
     } catch (err) {
-      window.showToast('開啟檔案失敗：' + (err.message || err), '❌');
+      window.showToast(window.t('tutorview.openFileFailedTemplate', '開啟檔案失敗：{msg}').replace('{msg}', err.message || err), '❌');
     }
   };
 

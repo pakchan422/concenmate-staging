@@ -199,6 +199,38 @@
     'qa.commentUpdated': { 'zh-Hant': '留言已更新', 'en': 'Comment updated', 'yue': '留言改好喇' },
     // {cat} 係佔位符，塞入已經譯好嘅分類名（必修科目／選修科目）。
     'qa.allOfCategoryTemplate': { 'zh-Hant': '全部{cat}', 'en': 'All {cat}', 'yue': '全部{cat}' },
+
+    // ── 溫習資源（第五階段：English 由 Claude 翻譯、廣東話口語由
+    //    Claude 起草，兩者都仲要 Alvis 過目先算數，未過目之前先當
+    //    草稿睇待）。包括導師名錄（tab-vip）同導師專頁（tab-tutor-view）
+    //    呢兩個分頁——淨係學生瀏覽導師嘅呢一邊，導師自己嘅「管理教材」
+    //    後台（tab-tutor-materials）未轉，留返下一階段。 ──
+    'vip.heading': { 'zh-Hant': '溫習資源', 'en': 'Study Resources', 'yue': '溫習資源' },
+    'vip.subheading': { 'zh-Hant': '瀏覽已上架的導師，點擊卡片可以查看資料並追蹤，接收最新消息', 'en': 'Browse listed tutors — tap a card to view their profile, follow them, and get updates', 'yue': '睇吓有邊啲導師，撳張卡可以睇資料同追蹤，第一時間收到最新消息' },
+    'vip.loadingDirectory': { 'zh-Hant': '載入導師名錄中…', 'en': 'Loading tutor directory…', 'yue': 'Load緊導師名單…' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'vip.loadDirectoryFailedTemplate': { 'zh-Hant': '載入導師名錄失敗：{msg}', 'en': 'Failed to load tutor directory: {msg}', 'yue': 'Load唔到導師名單：{msg}' },
+    'vip.noTutorsForSubjectTemplate': { 'zh-Hant': '暫時未有教授「{subject}」的已上架導師', 'en': 'No listed tutors teaching "{subject}" yet', 'yue': '暫時未有導師教緊「{subject}」' },
+    'vip.noTutorsYet': { 'zh-Hant': '目前尚未有已上架的導師', 'en': 'No listed tutors yet', 'yue': '而家仲未有已上架嘅導師' },
+    'vip.viewLabel': { 'zh-Hant': '查看 ›', 'en': 'View ›', 'yue': '睇吓 ›' },
+    'tutorview.backButton': { 'zh-Hant': '← 返回溫習資源', 'en': '← Back to Study Resources', 'yue': '← 返去溫習資源' },
+    'tutorview.followers': { 'zh-Hant': '粉絲', 'en': 'Followers', 'yue': '粉絲' },
+    'tutorview.materialsHeading': { 'zh-Hant': '已上架教材', 'en': 'Published Materials', 'yue': '已上架教材' },
+    'tutorview.defaultName': { 'zh-Hant': '導師', 'en': 'Tutor', 'yue': '導師' },
+    'tutorview.notFound': { 'zh-Hant': '找不到這位導師', 'en': 'Tutor not found', 'yue': '搵唔到呢位導師' },
+    'tutorview.loadFailed': { 'zh-Hant': '載入失敗', 'en': 'Failed to load', 'yue': 'Load 唔到' },
+    'tutorview.avatarAlt': { 'zh-Hant': '導師頭像', 'en': "Tutor's avatar", 'yue': '導師頭像' },
+    'tutorview.noMaterialsYet': { 'zh-Hant': '這位導師暫時未有已上架的教材', 'en': 'This tutor has no published materials yet', 'yue': '呢位導師暫時未上架教材' },
+    'tutorview.preview': { 'zh-Hant': '預覽', 'en': 'Preview', 'yue': '預覽' },
+    'tutorview.buy': { 'zh-Hant': '購買', 'en': 'Buy', 'yue': '購買' },
+    'tutorview.buyComingSoon': { 'zh-Hant': '購買功能仍在開發中，敬請期待', 'en': 'Purchasing is still in development, stay tuned', 'yue': '購買功能仲開發緊，敬請期待' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'tutorview.loadMaterialsFailedTemplate': { 'zh-Hant': '載入教材失敗：{msg}', 'en': 'Failed to load materials: {msg}', 'yue': 'Load唔到教材：{msg}' },
+    'tutorview.noteNotFound': { 'zh-Hant': '找不到這份教材', 'en': 'Material not found', 'yue': '搵唔到呢份教材' },
+    'tutorview.noPreviewSet': { 'zh-Hant': '這份教材尚未設定預覽頁', 'en': 'No preview page set for this material yet', 'yue': '呢份教材未設定預覽頁' },
+    'tutorview.previewTitlePrefix': { 'zh-Hant': '預覽：', 'en': 'Preview: ', 'yue': '預覽：' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'tutorview.openFileFailedTemplate': { 'zh-Hant': '開啟檔案失敗：{msg}', 'en': 'Failed to open file: {msg}', 'yue': '開唔到個檔案：{msg}' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置

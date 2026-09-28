@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.179.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.180.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2452,8 +2452,8 @@
              tutor-panel.js 嘅 renderTutorDirectoryTab() 產生。 -->
         <section id="tab-vip" class="tab-content">
           <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550;">
-            <h2 style="font-size:18px; font-weight:bold;">溫習資源</h2>
-            <p style="font-size:13px; color:#3E5A63; margin-top:4px;">瀏覽已上架的導師，點擊卡片可以查看資料並追蹤，接收最新消息</p>
+            <h2 style="font-size:18px; font-weight:bold;" data-i18n="vip.heading">溫習資源</h2>
+            <p style="font-size:13px; color:#3E5A63; margin-top:4px;" data-i18n="vip.subheading">瀏覽已上架的導師，點擊卡片可以查看資料並追蹤，接收最新消息</p>
           </div>
           <div id="tutor-directory-tabs" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;"></div>
           <div id="tutor-directory-list" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;"></div>
@@ -2796,24 +2796,24 @@
         <section id="tab-tutor-view" class="tab-content">
 
           <div style="margin-bottom:10px;">
-            <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="switchTab('vip')">← 返回溫習資源</button>
+            <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="switchTab('vip')" data-i18n="tutorview.backButton">← 返回溫習資源</button>
           </div>
 
           <div class="card" style="text-align:center;">
             <div class="avatar-circle" style="margin:0 auto 10px; width:64px; height:64px; font-size:26px; background:var(--brand-500); border-color:var(--brand-200);" id="tutorview-avatar"></div>
-            <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);" id="tutorview-name">導師</h3>
+            <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);" id="tutorview-name" data-i18n="tutorview.defaultName">導師</h3>
             <p style="font-size:13px; color:#888; margin-top:4px; white-space:pre-line;" id="tutorview-bio"></p>
             <div id="tutorview-subjects" style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-top:8px;"></div>
             <div style="margin-top:10px; font-size:13px; color:#555; cursor:pointer;" onclick="openFollowListModal(window.getCurrentTutorViewUid && window.getCurrentTutorViewUid(), 'followers')">
-              <strong id="tutorview-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong> 粉絲
+              <strong id="tutorview-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong> <span data-i18n="tutorview.followers">粉絲</span>
             </div>
             <div id="tutorview-follow-wrap" style="margin-top:12px;"></div>
           </div>
 
           <div class="card" style="margin-top:12px; text-align:left;">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">已上架教材</h3>
+            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;" data-i18n="tutorview.materialsHeading">已上架教材</h3>
             <div id="tutorview-notes-wrap">
-              <p style="font-size:13px; color:#999; text-align:center; padding:10px;">載入中…</p>
+              <p style="font-size:13px; color:#999; text-align:center; padding:10px;" data-i18n="qa.loading">載入中…</p>
             </div>
           </div>
 
