@@ -2707,6 +2707,10 @@
       const id = i + 1;
       return {
         id,
+        // 呢個名淨係做「管理員未自訂之前」嘅預設值——管理員喺後台「扭蛋機
+        // 貼紙管理」改咗名之後，Firestore 讀返嚟嘅名會直接覆蓋呢度，所以
+        // 呢個預設名故意唔跟語言切換即時改字（唔想覆蓋管理員自訂嘅名），
+        // 保持原本嘅繁體中文預設格式。
         name: `Ottiee 貼紙 #${String(id).padStart(2, '0')}`,
         emoji: '🦦',
         photo: null,
@@ -2780,7 +2784,7 @@
             ? `<img src="${st.photo}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px;">`
             : `<div style="font-size:28px;">${escapeHtml(st.emoji || '🦦')}</div>`;
           return `
-            <div onclick="showStickerCollectionDetail(${st.id})" title="點擊放大查看：${escapeHtml(st.name || '')}" style="cursor:pointer; text-align:center; background:#F0F6F8; border:2px solid #7DB8C5; border-radius:10px; padding:6px 4px;">
+            <div onclick="showStickerCollectionDetail(${st.id})" title="${escapeHtml(window.t('gacha.clickToEnlargeTemplate', `點擊放大查看：${st.name || ''}`).replace('{name}', st.name || ''))}" style="cursor:pointer; text-align:center; background:#F0F6F8; border:2px solid #7DB8C5; border-radius:10px; padding:6px 4px;">
               ${thumb}
               <div style="font-size:12px; font-weight:bold; color:#2F6070; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(st.name || '')}</div>
               <div style="font-size:11px; color:#7DB8C5;">×${count}</div>
@@ -2789,7 +2793,7 @@
         return `
           <div style="text-align:center; background:#EEE; border:2px dashed #CCC; border-radius:10px; padding:6px 4px;">
             <div style="font-size:28px; color:#BBB;">❔</div>
-            <div style="font-size:12px; color:#AAA; margin-top:4px;">未收集</div>
+            <div style="font-size:12px; color:#AAA; margin-top:4px;">${window.t('gacha.notCollected', '未收集')}</div>
           </div>`;
       }).join('');
     }
@@ -2833,10 +2837,10 @@
         emojiEl.innerText = st.emoji || '🦦';
       }
       const tierEl = document.getElementById('gacha-lightbox-tier');
-      tierEl.innerText = `已收集 ×${count}`;
+      tierEl.innerText = window.t('gacha.collectedCountTemplate', `已收集 ×${count}`).replace('{n}', count);
       tierEl.style.color = '#2F6070';
       document.getElementById('gacha-lightbox-name').innerText = st.name || '';
-      document.getElementById('gacha-lightbox-desc').innerText = `貼紙圖鑑收集進度：${getOwnedStickerTypeCount()}/${GACHA_STICKERS.length}`;
+      document.getElementById('gacha-lightbox-desc').innerText = window.t('gacha.collectionProgressTemplate', `貼紙圖鑑收集進度：${getOwnedStickerTypeCount()}/${GACHA_STICKERS.length}`).replace('{a}', getOwnedStickerTypeCount()).replace('{b}', GACHA_STICKERS.length);
       document.getElementById('gacha-prize-lightbox').style.display = 'flex';
     };
 
@@ -2864,7 +2868,7 @@
         btn.disabled = disabled;
         if (disabled) {
           if (btn.dataset.origHtml === undefined) btn.dataset.origHtml = btn.innerHTML;
-          btn.innerHTML = '⏳ 扭蛋中…';
+          btn.innerHTML = window.t('gacha.drawingInProgress', '⏳ 扭蛋中…');
         } else if (btn.dataset.origHtml !== undefined) {
           btn.innerHTML = btn.dataset.origHtml;
           delete btn.dataset.origHtml;
@@ -2905,7 +2909,7 @@
         if (error.code === 'functions/failed-precondition' || error.code === 'failed-precondition') {
           window.showToast(error.message, '❌');
         } else {
-          window.showToast('扣分失敗：' + (error.message || error), '❌');
+          window.showToast(window.t('gacha.deductFailedTemplate', '扣分失敗：' + (error.message || error)).replace('{msg}', error.message || error), '❌');
         }
         return;
       }
@@ -2950,17 +2954,17 @@
         resultEmojiEl.innerText = sticker.emoji || '🦦';
       }
       const tierEl = document.getElementById('gacha-result-tier');
-      tierEl.innerText = isNew ? '新貼紙！' : `已擁有 ×${wasOwnedCount + 1}`;
+      tierEl.innerText = isNew ? window.t('gacha.newStickerLabel', '新貼紙！') : window.t('gacha.alreadyOwnedTemplate', `已擁有 ×${wasOwnedCount + 1}`).replace('{n}', wasOwnedCount + 1);
       tierEl.style.color = isNew ? '#C0524A' : '#2F6070';
       document.getElementById('gacha-result-name').innerText = sticker.name;
-      document.getElementById('gacha-result-desc').innerText = `貼紙圖鑑收集進度：${getOwnedStickerTypeCount()}/${GACHA_STICKERS.length}`;
+      document.getElementById('gacha-result-desc').innerText = window.t('gacha.collectionProgressTemplate', `貼紙圖鑑收集進度：${getOwnedStickerTypeCount()}/${GACHA_STICKERS.length}`).replace('{a}', getOwnedStickerTypeCount()).replace('{b}', GACHA_STICKERS.length);
 
       // 顯示彈出視窗：置中／背景遮罩／5 秒後自動關閉都喺 showGachaSingleResult
       // 呢個共用 helper 入面處理（同「連續抽十次」嗰個彈窗行為完全一致）
       showGachaSingleResult();
 
       if (isNew) {
-        window.showToast(`恭喜！抽到新貼紙「${sticker.name}」！`, '🆕');
+        window.showToast(window.t('gacha.newStickerToastTemplate', `恭喜！抽到新貼紙「${sticker.name}」！`).replace('{name}', sticker.name), '🆕');
       }
 
       // 加入歷史記錄（本頁顯示 + 儲存去 Firestore 給個人資料頁查閱）
@@ -3048,7 +3052,7 @@
         if (error.code === 'functions/failed-precondition' || error.code === 'failed-precondition') {
           window.showToast(error.message, '❌');
         } else {
-          window.showToast('扣分失敗：' + (error.message || error), '❌');
+          window.showToast(window.t('gacha.deductFailedTemplate', '扣分失敗：' + (error.message || error)).replace('{msg}', error.message || error), '❌');
         }
         return;
       }
@@ -3098,9 +3102,9 @@
           ? `<img src="${sticker.photo}" alt="${escapeHtml(sticker.name || '')}" style="width:38px; height:38px; object-fit:cover; border-radius:8px;">`
           : `<span style="font-size:30px;">${escapeHtml(sticker.emoji || '🦦')}</span>`;
         const badgeColor = isNew ? '#C0524A' : '#2F6070';
-        const badgeText = isNew ? '新貼紙' : `×${ownedCountAfter}`;
+        const badgeText = isNew ? window.t('gacha.newStickerShort', '新貼紙') : `×${ownedCountAfter}`;
         return `
-          <div onclick="showGachaPrizeDetail(${idx})" style="cursor:pointer; background:${isNew ? '#FBEAE8' : '#F0F6F8'}; border:2px solid ${badgeColor}; border-radius:12px; padding:8px 4px; text-align:center;" title="點擊放大查看：${escapeHtml(sticker.name || '')}">
+          <div onclick="showGachaPrizeDetail(${idx})" style="cursor:pointer; background:${isNew ? '#FBEAE8' : '#F0F6F8'}; border:2px solid ${badgeColor}; border-radius:12px; padding:8px 4px; text-align:center;" title="${escapeHtml(window.t('gacha.clickToEnlargeTemplate', `點擊放大查看：${sticker.name || ''}`).replace('{name}', sticker.name || ''))}">
             <div>${thumb}</div>
             <div style="font-size:13px; font-weight:bold; color:${badgeColor}; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${badgeText}</div>
           </div>`;
@@ -3111,9 +3115,9 @@
 
       const newCount = rolls.filter(r => r.isNew).length;
       if (newCount > 0) {
-        window.showToast(`十連抽入面攞到 ${newCount} 張新貼紙！`, '🆕');
+        window.showToast(window.t('gacha.batchNewStickersToastTemplate', `十連抽入面攞到 ${newCount} 張新貼紙！`).replace('{n}', newCount), '🆕');
       } else {
-        window.showToast('十連抽完成，這次全部都是已擁有的貼紙～', '🔁');
+        window.showToast(window.t('gacha.batchAllDuplicateToast', '十連抽完成，這次全部都是已擁有的貼紙～'), '🔁');
       }
 
       // 10 條歷史記錄一齊寫入；總費用只記喺第一條（避免個人資料頁「總支出」
@@ -3143,10 +3147,10 @@
         emojiEl.innerText = sticker.emoji || '🦦';
       }
       const tierEl = document.getElementById('gacha-lightbox-tier');
-      tierEl.innerText = isNew ? '新貼紙！' : `已擁有 ×${ownedCountAfter}`;
+      tierEl.innerText = isNew ? window.t('gacha.newStickerLabel', '新貼紙！') : window.t('gacha.alreadyOwnedTemplate', `已擁有 ×${ownedCountAfter}`).replace('{n}', ownedCountAfter);
       tierEl.style.color = isNew ? '#C0524A' : '#2F6070';
       document.getElementById('gacha-lightbox-name').innerText = sticker.name || '';
-      document.getElementById('gacha-lightbox-desc').innerText = `貼紙圖鑑收集進度：${getOwnedStickerTypeCount()}/${GACHA_STICKERS.length}`;
+      document.getElementById('gacha-lightbox-desc').innerText = window.t('gacha.collectionProgressTemplate', `貼紙圖鑑收集進度：${getOwnedStickerTypeCount()}/${GACHA_STICKERS.length}`).replace('{a}', getOwnedStickerTypeCount()).replace('{b}', GACHA_STICKERS.length);
       document.getElementById('gacha-prize-lightbox').style.display = 'flex';
     };
 
@@ -3196,7 +3200,7 @@
         return;
       }
       if (!gachaHistoryHasLoadedOnce) {
-        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:10px;">載入中獎記錄...</p>';
+        listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:10px;">${window.t('gacha.loadingHistory', '載入中獎記錄...')}</p>`;
         if (emptyEl) emptyEl.style.display = 'none';
       }
       try {
@@ -3219,8 +3223,8 @@
             <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:#F0F6F8; border:1px solid #B3D6DE55;">
               ${thumb}
               <div style="flex:1;">
-                <strong style="color:${e.isNew ? '#C0524A' : '#2F6070'};">${e.isNew ? '新貼紙' : '重複'}</strong> · ${escapeHtml(e.name || '')}
-                <div style="color:#7DB8C5; font-size:13px;">${e.type === 'lucky' ? '十連抽' : '抽一次'} · ${time} · -${e.cost || 0} PTS</div>
+                <strong style="color:${e.isNew ? '#C0524A' : '#2F6070'};">${e.isNew ? window.t('gacha.newStickerShort', '新貼紙') : window.t('gacha.duplicateShort', '重複')}</strong> · ${escapeHtml(e.name || '')}
+                <div style="color:#7DB8C5; font-size:13px;">${e.type === 'lucky' ? window.t('gacha.batchTypeShort', '十連抽') : window.t('gacha.drawNormalBtn', '抽一次')} · ${time} · -${e.cost || 0} PTS</div>
               </div>
             </div>`;
         }).join('');
@@ -3229,7 +3233,7 @@
         // 淨係第一次載入就失敗先顯示錯誤訊息；如果背景靜靜雞 refresh 嗰次
         // 先失敗，舊資料已經喺畫面度，唔好用錯誤訊息蓋走佢
         if (!gachaHistoryHasLoadedOnce) {
-          listEl.innerHTML = '<p style="text-align:center; color:#e55; font-size:13px; padding:10px;">載入中獎記錄失敗，請稍後再試</p>';
+          listEl.innerHTML = `<p style="text-align:center; color:#e55; font-size:13px; padding:10px;">${window.t('gacha.loadHistoryFailed', '載入中獎記錄失敗，請稍後再試')}</p>`;
         }
       }
     };
@@ -3275,8 +3279,8 @@
         <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:${isNew ? '#FBEAE8' : '#F0F6F8'}; border:1px solid ${color}33;">
           ${thumb}
           <div style="flex:1;">
-            <strong style="color:${color};">${isNew ? '新貼紙' : '重複'}</strong> · ${escapeHtml(sticker.name || '')}
-            <div style="color:#7DB8C5; font-size:13px;">${type === 'lucky' ? '十連抽' : '抽一次'} · ${time} · -${cost} PTS</div>
+            <strong style="color:${color};">${isNew ? window.t('gacha.newStickerShort', '新貼紙') : window.t('gacha.duplicateShort', '重複')}</strong> · ${escapeHtml(sticker.name || '')}
+            <div style="color:#7DB8C5; font-size:13px;">${type === 'lucky' ? window.t('gacha.batchTypeShort', '十連抽') : window.t('gacha.drawNormalBtn', '抽一次')} · ${time} · -${cost} PTS</div>
           </div>
         </div>`;
       }).join('');

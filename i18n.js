@@ -231,6 +231,45 @@
     'tutorview.previewTitlePrefix': { 'zh-Hant': '預覽：', 'en': 'Preview: ', 'yue': '預覽：' },
     // {msg} 係佔位符，塞入錯誤訊息本身。
     'tutorview.openFileFailedTemplate': { 'zh-Hant': '開啟檔案失敗：{msg}', 'en': 'Failed to open file: {msg}', 'yue': '開唔到個檔案：{msg}' },
+
+    // ── 時數扭蛋機（第六階段：English 由 Claude 翻譯、廣東話口語由
+    //    Claude 起草，交 Alvis 覆核／修正）──
+    'gacha.pageTitle': { 'zh-Hant': 'Ottiee 時數幸運扭蛋機', 'en': "Ottiee's Lucky Gacha Machine", 'yue': 'Ottiee 幸運扭蛋機' },
+    'gacha.yourPoints': { 'zh-Hant': '你的積分：', 'en': 'Your points: ', 'yue': '你嘅積分：' },
+    'gacha.batchResultTitle': { 'zh-Hant': '連續抽十次結果', 'en': '10x Draw Results', 'yue': '十連抽結果' },
+    'gacha.drawNormalBtn': { 'zh-Hant': '抽一次', 'en': 'Draw Once', 'yue': '抽一次' },
+    'gacha.drawLuckyBtn': { 'zh-Hant': '連續抽十次', 'en': 'Draw 10x', 'yue': '十連抽' },
+    'gacha.stickerBookTitle': { 'zh-Hant': 'Ottiee 貼紙圖鑑', 'en': "Ottiee's Sticker Album", 'yue': 'Ottiee 貼紙圖鑑' },
+    'gacha.stickerBookDesc': { 'zh-Hant': '扭蛋抽到的都是 Ottiee 貼紙，集齊一套為目標！', 'en': 'Every capsule contains an Ottiee sticker — try to collect the full set!', 'yue': '扭蛋抽到嘅全部都係 Ottiee 貼紙，儲齊一套為目標！' },
+    'gacha.collectedLabel': { 'zh-Hant': '已收集', 'en': 'Collected', 'yue': '已儲齊' },
+    'gacha.openStickerBookBtn': { 'zh-Hant': '開啟我的貼紙圖鑑', 'en': 'Open My Sticker Album', 'yue': '打開我嘅貼紙圖鑑' },
+    'gacha.historyTitle': { 'zh-Hant': '最近抽獎記錄', 'en': 'Recent Draw History', 'yue': '最近扭蛋記錄' },
+    'gacha.showMoreBtn': { 'zh-Hant': '顯示更多', 'en': 'Show More', 'yue': '顯示多啲' },
+    'gacha.myStickerBookTitle': { 'zh-Hant': '我的貼紙圖鑑', 'en': 'My Sticker Album', 'yue': '我嘅貼紙圖鑑' },
+    'gacha.notCollected': { 'zh-Hant': '未收集', 'en': 'Not Collected', 'yue': '未儲到' },
+    'gacha.profileHistoryEmpty': { 'zh-Hant': '你尚未扭過蛋，請到「時數扭蛋機」試試手氣！', 'en': 'You haven’t drawn yet — try your luck at the Gacha Machine!', 'yue': '你仲未扭過蛋，去「時數扭蛋機」度試吓手氣啦！' },
+    // {name} 係佔位符，塞入貼紙名稱。
+    'gacha.clickToEnlargeTemplate': { 'zh-Hant': '點擊放大查看：{name}', 'en': 'Click to enlarge: {name}', 'yue': '撳大啲睇：{name}' },
+    // {n} 係佔位符，塞入擁有數量。
+    'gacha.collectedCountTemplate': { 'zh-Hant': '已收集 ×{n}', 'en': 'Collected ×{n}', 'yue': '已儲 ×{n}' },
+    // {a}/{b} 係佔位符，分別塞入已收集款數／總款數。
+    'gacha.collectionProgressTemplate': { 'zh-Hant': '貼紙圖鑑收集進度：{a}/{b}', 'en': 'Sticker album progress: {a}/{b}', 'yue': '貼紙圖鑑儲齊進度：{a}/{b}' },
+    'gacha.drawingInProgress': { 'zh-Hant': '⏳ 扭蛋中…', 'en': '⏳ Drawing…', 'yue': '⏳ 扭蛋中…' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'gacha.deductFailedTemplate': { 'zh-Hant': '扣分失敗：{msg}', 'en': 'Failed to deduct points: {msg}', 'yue': '扣分失敗：{msg}' },
+    'gacha.newStickerLabel': { 'zh-Hant': '新貼紙！', 'en': 'New Sticker!', 'yue': '新貼紙呀！' },
+    // {n} 係佔位符，塞入擁有數量。
+    'gacha.alreadyOwnedTemplate': { 'zh-Hant': '已擁有 ×{n}', 'en': 'Already owned ×{n}', 'yue': '已經有 ×{n}' },
+    // {name} 係佔位符，塞入貼紙名稱。
+    'gacha.newStickerToastTemplate': { 'zh-Hant': '恭喜！抽到新貼紙「{name}」！', 'en': 'Congrats! You got a new sticker: "{name}"!', 'yue': '恭喜！抽到新貼紙「{name}」！' },
+    'gacha.newStickerShort': { 'zh-Hant': '新貼紙', 'en': 'New', 'yue': '新貼紙' },
+    'gacha.duplicateShort': { 'zh-Hant': '重複', 'en': 'Duplicate', 'yue': '重複' },
+    // {n} 係佔位符，塞入呢次十連抽入面攞到嘅新貼紙張數。
+    'gacha.batchNewStickersToastTemplate': { 'zh-Hant': '十連抽入面攞到 {n} 張新貼紙！', 'en': 'You got {n} new stickers from this 10x draw!', 'yue': '十連抽攞到 {n} 張新貼紙！' },
+    'gacha.batchAllDuplicateToast': { 'zh-Hant': '十連抽完成，這次全部都是已擁有的貼紙～', 'en': 'Draw complete — all stickers this time were ones you already have.', 'yue': '十連抽完成，今次全部都係儲咗嘅貼紙～' },
+    'gacha.loadingHistory': { 'zh-Hant': '載入中獎記錄...', 'en': 'Loading draw history...', 'yue': 'Load 緊中獎記錄...' },
+    'gacha.loadHistoryFailed': { 'zh-Hant': '載入中獎記錄失敗，請稍後再試', 'en': 'Failed to load draw history, please try again later', 'yue': 'Load 唔到中獎記錄，遲啲再試吓' },
+    'gacha.batchTypeShort': { 'zh-Hant': '十連抽', 'en': '10x Draw', 'yue': '十連抽' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置

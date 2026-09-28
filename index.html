@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.180.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.181.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2442,7 +2442,7 @@
           <div class="card" style="margin-top:16px;">
             <h3 style="font-size:15px; font-weight:bold; margin-bottom:10px;">我的中獎記錄</h3>
             <div id="profile-gacha-history-list" style="display:flex; flex-direction:column; gap:6px; font-size:13px;"></div>
-            <p id="profile-gacha-history-empty" style="display:none; text-align:center; color:#999; font-size:13px; padding:10px;">你尚未扭過蛋，請到「時數扭蛋機」試試手氣！</p>
+            <p id="profile-gacha-history-empty" style="display:none; text-align:center; color:#999; font-size:13px; padding:10px;" data-i18n="gacha.profileHistoryEmpty">你尚未扭過蛋，請到「時數扭蛋機」試試手氣！</p>
           </div>
         </section>
 
@@ -2557,9 +2557,9 @@
           <!-- 頁首卡片 -->
           <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550; text-align:center;">
             <div style="font-size:28px; margin-bottom:4px;"></div>
-            <h2 style="font-size:18px; font-weight:bold;">Ottiee 時數幸運扭蛋機</h2>
+            <h2 style="font-size:18px; font-weight:bold;" data-i18n="gacha.pageTitle">Ottiee 時數幸運扭蛋機</h2>
             <div style="margin-top:10px; background:rgba(255,255,255,0.2); border-radius:10px; padding:8px; display:inline-block;">
-              <span style="font-size:15px; font-weight:bold;">你的積分：<span id="gacha-pts-display">180</span> PTS</span>
+              <span style="font-size:15px; font-weight:bold;"><span data-i18n="gacha.yourPoints">你的積分：</span><span id="gacha-pts-display">180</span> PTS</span>
             </div>
           </div>
 
@@ -2597,7 +2597,7 @@
                    計算，先至係「扭蛋頁面部分」視覺上嘅正中央，唔係成個
                    瀏覽器視窗（連側邊欄）嘅正中央。 -->
               <div id="gacha-result-box-batch" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:2000; width:400px; max-width:94vw; padding:18px; border-radius:16px; background:rgba(240,246,248,.98); border:2px solid #B3D6DE; box-shadow:0 8px 32px rgba(0,0,0,.35); animation: gacha-pop-center .4s ease; text-align:center;">
-                <div style="font-size:17px; font-weight:bold; color:#1E4550; margin-bottom:12px;">連續抽十次結果</div>
+                <div style="font-size:17px; font-weight:bold; color:#1E4550; margin-bottom:12px;" data-i18n="gacha.batchResultTitle">連續抽十次結果</div>
                 <div id="gacha-result-batch-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;"></div>
               </div>
               <!-- 扭蛋機外殼 SVG -->
@@ -2622,13 +2622,13 @@
                  卡已經刪走，唔使同一個資訊喺畫面度出現兩次） -->
             <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
               <button id="gacha-draw-normal-btn" class="btn btn-primary" type="button" onclick="doGacha('normal')" style="padding:10px 20px; font-size:15px;">
-                抽一次 (<span id="gacha-cost-normal-btn">30</span> PTS)
+                <span data-i18n="gacha.drawNormalBtn">抽一次</span> (<span id="gacha-cost-normal-btn">30</span> PTS)
               </button>
               <!-- 呢兩粒扭蛋掣統一用返 btn-primary（跟 Brand Theme 主色
                    var(--brand-500)），唔再用啡色系嘅 btn-amber，等成個
                    畫面色調一致，hover 轉色亦都跟 .btn-primary:hover。 -->
               <button id="gacha-draw-lucky-btn" class="btn btn-primary" type="button" onclick="doGacha('lucky')" style="padding:10px 20px; font-size:15px;">
-                連續抽十次 (<span id="gacha-cost-lucky-btn">270</span> PTS)
+                <span data-i18n="gacha.drawLuckyBtn">連續抽十次</span> (<span id="gacha-cost-lucky-btn">270</span> PTS)
               </button>
             </div>
 
@@ -2637,23 +2637,23 @@
           <!-- 貼紙圖鑑入口：扭蛋抽到嘅而家全部都係 Ottiee 貼紙，儲齊一套
                做目標，撳「開啟我的貼紙圖鑑」睇返自己收集咗幾多款。 -->
           <div class="card" style="text-align:center;">
-            <h3 style="font-size:15px; font-weight:bold; margin-bottom:8px;">Ottiee 貼紙圖鑑</h3>
-            <p style="font-size:13px; color:#666; margin-bottom:10px;">扭蛋抽到的都是 Ottiee 貼紙，集齊一套為目標！</p>
+            <h3 style="font-size:15px; font-weight:bold; margin-bottom:8px;" data-i18n="gacha.stickerBookTitle">Ottiee 貼紙圖鑑</h3>
+            <p style="font-size:13px; color:#666; margin-bottom:10px;" data-i18n="gacha.stickerBookDesc">扭蛋抽到的都是 Ottiee 貼紙，集齊一套為目標！</p>
             <div style="margin-bottom:12px;">
               <div style="background:#EEE; border-radius:99px; height:10px; overflow:hidden;">
                 <div id="sticker-progress-bar" style="background:linear-gradient(90deg,#7DB8C5,#2F6070); height:100%; width:0%; transition:width .3s;"></div>
               </div>
-              <p style="font-size:13px; color:#2F6070; margin-top:6px; font-weight:bold;">已收集 <span id="sticker-progress-text">0/0</span></p>
+              <p style="font-size:13px; color:#2F6070; margin-top:6px; font-weight:bold;"><span data-i18n="gacha.collectedLabel">已收集</span> <span id="sticker-progress-text">0/0</span></p>
             </div>
-            <button type="button" class="btn btn-outline" style="display:inline-block; padding:8px 24px;" onclick="openStickerCollection()">開啟我的貼紙圖鑑</button>
+            <button type="button" class="btn btn-outline" style="display:inline-block; padding:8px 24px;" onclick="openStickerCollection()" data-i18n="gacha.openStickerBookBtn">開啟我的貼紙圖鑑</button>
           </div>
 
           <!-- 抽獎歷史：只顯示頭 10 筆，撳「顯示更多」先再攞多 10 筆出嚟，
                如此類推，唔會一次過成頁都係記錄。 -->
           <div class="card" id="gacha-history-card" style="display:none;">
-            <h3 style="font-size:15px; font-weight:bold; margin-bottom:8px;">最近抽獎記錄</h3>
+            <h3 style="font-size:15px; font-weight:bold; margin-bottom:8px;" data-i18n="gacha.historyTitle">最近抽獎記錄</h3>
             <div id="gacha-history-list" style="display:flex; flex-direction:column; gap:6px; font-size:13px;"></div>
-            <button type="button" id="gacha-history-more-btn" onclick="showMoreGachaHistory()" class="btn btn-outline" style="display:none; width:100%; margin-top:10px; font-size:13px;">顯示更多</button>
+            <button type="button" id="gacha-history-more-btn" onclick="showMoreGachaHistory()" class="btn btn-outline" style="display:none; width:100%; margin-top:10px; font-size:13px;" data-i18n="gacha.showMoreBtn">顯示更多</button>
           </div>
 
         </section>
@@ -2664,10 +2664,10 @@
         <div id="sticker-collection-modal" style="display:none; position:fixed; inset:0; z-index:2500; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:16px;" onclick="if(event.target===this) closeStickerCollection();">
           <div style="background:#fff; border-radius:16px; padding:18px; max-width:520px; width:100%; max-height:82vh; overflow-y:auto;" onclick="event.stopPropagation();">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="font-size:16px; font-weight:bold; color:#1E4550;">我的貼紙圖鑑</h3>
+              <h3 style="font-size:16px; font-weight:bold; color:#1E4550;" data-i18n="gacha.myStickerBookTitle">我的貼紙圖鑑</h3>
               <button type="button" onclick="closeStickerCollection()" class="btn btn-outline" style="padding:2px 10px; font-size:13px;">✕</button>
             </div>
-            <p style="font-size:13px; color:#2F6070; margin-bottom:10px; font-weight:bold;">已收集 <span id="sticker-modal-progress-text">0/0</span></p>
+            <p style="font-size:13px; color:#2F6070; margin-bottom:10px; font-weight:bold;"><span data-i18n="gacha.collectedLabel">已收集</span> <span id="sticker-modal-progress-text">0/0</span></p>
             <div id="sticker-collection-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(64px, 1fr)); gap:8px;"></div>
           </div>
         </div>
@@ -2681,7 +2681,7 @@
             <div id="gacha-lightbox-tier" style="font-size:14px; font-weight:bold; margin-top:10px;"></div>
             <div id="gacha-lightbox-name" style="font-size:18px; font-weight:bold; margin-top:4px; color:#1E4550;"></div>
             <div id="gacha-lightbox-desc" style="font-size:13px; color:#2F6070; margin-top:8px;"></div>
-            <button type="button" onclick="closeGachaPrizeLightbox()" class="btn btn-outline" style="margin-top:16px; width:100%;">關閉</button>
+            <button type="button" onclick="closeGachaPrizeLightbox()" class="btn btn-outline" style="margin-top:16px; width:100%;" data-i18n="common.close">關閉</button>
           </div>
         </div>
 
