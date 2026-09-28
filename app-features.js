@@ -3384,7 +3384,7 @@
       ['pop-user-avatar','pop-user-school','pop-user-grade','pop-user-fav','pop-user-dislike','pop-user-hours','pop-user-verified'].forEach(id => {
         const el = document.getElementById(id); if (el) el.innerText = '';
       });
-      if (nameEl) nameEl.innerText = '載入中…';
+      if (nameEl) nameEl.innerText = window.t('qa.loading', '載入中…');
       if (actionsEl) actionsEl.innerHTML = '';
       const popFollowWrap = document.getElementById('pop-follow-btn-wrap');
       if (popFollowWrap) popFollowWrap.innerHTML = '';
@@ -3396,25 +3396,25 @@
       try {
         const snap = await window.fs.getDoc(window.fs.doc(window.db, 'users', uid));
         if (!snap.exists()) {
-          if (nameEl) nameEl.innerText = '找不到這位使用者';
+          if (nameEl) nameEl.innerText = window.t('viewprofile.userNotFound', '找不到這位使用者');
           return;
         }
         const u = snap.data();
         const avatarEl = document.getElementById('pop-user-avatar');
         if (avatarEl) {
           if (u.avatarBase64) {
-            avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; cursor:zoom-in;" alt="會員頭像" onclick="openLightbox('${u.avatarBase64}', true)">`;
+            avatarEl.innerHTML = `<img src="${u.avatarBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; cursor:zoom-in;" alt="${window.t('common.avatarAlt', '會員頭像')}" onclick="openLightbox('${u.avatarBase64}', true)">`;
           } else {
-            avatarEl.innerText = (u.username || '同').charAt(0).toUpperCase();
+            avatarEl.innerText = (u.username || window.t('lb.defaultUsername', '同學')).charAt(0).toUpperCase();
           }
         }
-        if (nameEl) nameEl.innerText = u.username || '同學';
+        if (nameEl) nameEl.innerText = u.username || window.t('lb.defaultUsername', '同學');
         document.getElementById('pop-user-verified').innerText = u.loginId ? ('🆔 ' + u.loginId) : '';
         document.getElementById('pop-user-school').innerText = u.school || window.t('common.notFilled', '未填寫');
         document.getElementById('pop-user-grade').innerText = u.grade || window.t('common.notFilled', '未填寫');
         document.getElementById('pop-user-fav').innerText = u.favSubjects || window.t('common.notFilled', '未填寫');
         document.getElementById('pop-user-dislike').innerText = u.dislikeSubjects || window.t('common.notFilled', '未填寫');
-        document.getElementById('pop-user-hours').innerText = (parseFloat(u.hours) || 0).toFixed(1) + " 小時";
+        document.getElementById('pop-user-hours').innerText = (parseFloat(u.hours) || 0).toFixed(1) + " " + window.t('unit.hours', '小時');
         const popPhotoCountEl = document.getElementById('pop-photo-count');
         if (popPhotoCountEl) popPhotoCountEl.innerText = u.photoCount || 0;
         const popFollowerCountEl = document.getElementById('pop-follower-count');
@@ -3422,7 +3422,7 @@
         if (typeof window.renderFollowButton === 'function') await renderFollowButton(uid, u);
         // 完整嘅相片牆搬咗去獨立嘅「溫習日記」分頁顯示，呢度淨係擺一粒
         // 掣，撳落去就去嗰個分頁睇呢位同學嘅溫習日記（見 openDiaryView()）
-        if (popDiaryWrap) popDiaryWrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile'); switchTab('diary', null, '${uid}');">查看溫習日記</button>`;
+        if (popDiaryWrap) popDiaryWrap.innerHTML = `<button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile'); switchTab('diary', null, '${uid}');">${window.t('viewprofile.viewDiaryBtn', '查看溫習日記')}</button>`;
         await renderFriendActionButtons(uid, u);
       } catch (e) {
         console.error('讀取用戶資料失敗:', e);

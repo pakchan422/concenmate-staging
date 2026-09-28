@@ -636,6 +636,31 @@
 
     // ── 註冊表格：分區選單預設提示字 ──
     'reg.chooseDistrictFirst': { 'zh-Hant': '請先選擇地區', 'en': 'Please choose a district first', 'yue': '請先揀地區' },
+
+    // ── 通用：頭像 alt 文字 ──
+    'common.avatarAlt': { 'zh-Hant': '會員頭像', 'en': 'Member avatar', 'yue': '會員頭像' },
+
+    // ── 「查看朋友資料卡」彈窗（modal-view-profile） ──
+    'viewprofile.hoursLabel': { 'zh-Hant': '累積溫習：', 'en': 'Total Study Time: ', 'yue': '累積溫習：' },
+    'viewprofile.closeCard': { 'zh-Hant': '關閉資料卡', 'en': 'Close Profile Card', 'yue': '閂返資料卡' },
+    'viewprofile.userNotFound': { 'zh-Hant': '找不到這位使用者', 'en': "Couldn't find this user", 'yue': '搵唔到呢位用戶' },
+    'viewprofile.viewDiaryBtn': { 'zh-Hant': '查看溫習日記', 'en': 'View Study Diary', 'yue': '睇下溫習日記' },
+
+    // ── 學生身份驗證（未上線分頁） ──
+    'verify.heading': { 'zh-Hant': '學生身份驗證', 'en': 'Student Verification', 'yue': '學生身份驗證' },
+    'verify.comingSoon': { 'zh-Hant': '期待日後更新', 'en': 'Coming in a future update', 'yue': '之後會出，敬請期待' },
+    'verify.inDevelopment': { 'zh-Hant': '功能仍在開發中，敬請期待！', 'en': "This feature is still in development — stay tuned!", 'yue': '功能仲喺度整緊，敬請期待！' },
+
+    // ── PTS／EXP 獲得方式說明視窗 ──
+    'ptsExp.title': { 'zh-Hant': 'PTS 及 EXP 如何獲得？', 'en': 'How do I earn PTS and EXP?', 'yue': 'PTS 同 EXP 點樣攞？' },
+    'ptsExp.ptsHeading': { 'zh-Hant': 'PTS（積分）', 'en': 'PTS (Points)', 'yue': 'PTS（積分）' },
+    'ptsExp.ptsBullet1': { 'zh-Hant': '視訊溫習室內每專注溫習 1 分鐘：+1 PTS', 'en': 'Every 1 minute of focused study in the Video Study Room: +1 PTS', 'yue': '喺視訊溫習室度每專注溫習 1 分鐘：+1 PTS' },
+    'ptsExp.ptsBullet2': { 'zh-Hant': '視訊溫習室確認「你仍在學習嗎？」：+2 PTS', 'en': 'Confirming "Are you still studying?" in the Video Study Room: +2 PTS', 'yue': '喺視訊溫習室度確認「你仍在學習嗎？」：+2 PTS' },
+    'ptsExp.ptsUsage': { 'zh-Hant': 'PTS 可用於「時數扭蛋機」抽獎。', 'en': 'PTS can be used to draw at the Gacha Machine.', 'yue': 'PTS 可以用嚟玩「時數扭蛋機」' },
+    'ptsExp.expHeading': { 'zh-Hant': 'EXP（經驗值）', 'en': 'EXP (Experience)', 'yue': 'EXP（經驗值）' },
+    'ptsExp.expBullet1': { 'zh-Hant': '每次獲得 PTS，都會同時獲得同等數量的 EXP', 'en': 'Every time you earn PTS, you earn the same amount of EXP too', 'yue': '每次攞到 PTS，都會同時攞埋同等數量嘅 EXP' },
+    'ptsExp.expBullet2': { 'zh-Hant': 'EXP 只升不跌，記錄你的總溫習成就', 'en': 'EXP only goes up, and records your total study achievement', 'yue': 'EXP 淨係升唔跌，記錄晒你總溫習成就' },
+    'ptsExp.expBullet3': { 'zh-Hant': '累積足夠即可升級', 'en': 'Level up once you have enough', 'yue': '儲夠就會升級' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置

@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.185.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.186.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1682,7 +1682,7 @@
       <div style="flex:1; min-width:0; cursor:pointer;" onclick="openLevelInfoModal()" title="看升級詳情">
         <div style="display:flex; align-items:baseline; gap:4px; overflow:hidden;">
           <span id="global-level-badge" style="color:#fff; font-size:13px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Lv.1 溫習新手 · 仍欠 20 EXP 升級</span>
-          <span onclick="event.stopPropagation(); openPtsExpInfoModal();" title="PTS 及 EXP 如何獲得？" style="display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:50%; background:rgba(255,255,255,.35); font-size:11px; font-weight:900; font-style:normal; flex-shrink:0; cursor:pointer;">!</span>
+          <span onclick="event.stopPropagation(); openPtsExpInfoModal();" title="PTS 及 EXP 如何獲得？" data-i18n-title="ptsExp.title" style="display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:50%; background:rgba(255,255,255,.35); font-size:11px; font-weight:900; font-style:normal; flex-shrink:0; cursor:pointer;">!</span>
         </div>
         <div style="background:rgba(255,255,255,.3); border-radius:6px; height:5px; margin-top:3px; overflow:hidden;">
           <div id="global-exp-bar" style="background:#fff; height:100%; width:0%; transition:width .4s ease;"></div>
@@ -2822,9 +2822,9 @@
         <section id="tab-verification" class="tab-content">
           <div style="text-align:center; padding:60px 20px;">
             <div style="font-size:64px; margin-bottom:16px;"></div>
-            <h2 style="font-size:20px; font-weight:800; color:var(--brand-800); margin-bottom:10px;">學生身份驗證</h2>
-            <p style="font-size:15px; color:#7DB8C5; font-weight:600; margin-bottom:8px;">期待日後更新</p>
-            <p style="font-size:13px; color:#aaa; line-height:1.7; max-width:320px; margin:0 auto;">
+            <h2 style="font-size:20px; font-weight:800; color:var(--brand-800); margin-bottom:10px;" data-i18n="verify.heading">學生身份驗證</h2>
+            <p style="font-size:15px; color:#7DB8C5; font-weight:600; margin-bottom:8px;" data-i18n="verify.comingSoon">期待日後更新</p>
+            <p style="font-size:13px; color:#aaa; line-height:1.7; max-width:320px; margin:0 auto;" data-i18n="verify.inDevelopment">
               功能仍在開發中，敬請期待！
             </p>
           </div>
@@ -3365,11 +3365,11 @@
       <p style="font-size:13px; color:#888; margin-bottom:12px;" id="pop-user-verified"></p>
 
       <div style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:12px; text-align:left; font-size:14px; display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-        <div><strong>就讀學校：</strong><span id="pop-user-school">屯門官立中學</span></div>
-        <div><strong>現時年級：</strong><span id="pop-user-grade">中六 (S6 DSE)</span></div>
-        <div><strong>喜愛學科：</strong><span id="pop-user-fav">數學, 物理, M2</span></div>
-        <div><strong>討厭學科：</strong><span id="pop-user-dislike">中文範文</span></div>
-        <div><strong>累積溫習：</strong><span id="pop-user-hours">42.5 小時</span></div>
+        <div><strong data-i18n="myacc.schoolLabel">就讀學校：</strong><span id="pop-user-school">屯門官立中學</span></div>
+        <div><strong data-i18n="myacc.gradeLabel">現時年級：</strong><span id="pop-user-grade">中六 (S6 DSE)</span></div>
+        <div><strong data-i18n="myacc.favLabel">喜愛學科：</strong><span id="pop-user-fav">數學, 物理, M2</span></div>
+        <div><strong data-i18n="myacc.dislikeLabel">討厭學科：</strong><span id="pop-user-dislike">中文範文</span></div>
+        <div><strong data-i18n="viewprofile.hoursLabel">累積溫習：</strong><span id="pop-user-hours">42.5 小時</span></div>
       </div>
 
       <div id="pop-user-friend-actions" style="margin-bottom:12px; min-height:20px;"></div>
@@ -3378,13 +3378,13 @@
            溫習日記」先去獨立嘅「溫習日記」分頁睇呢位同學嘅完整相片牆
            （見 tab-diary 同 openDiaryView()）。 -->
       <div style="display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:10px; font-size:13px; color:#555;">
-        <div><strong id="pop-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>相片</div>
-        <div style="cursor:pointer;" onclick="window.getCurrentPopUid && window.getCurrentPopUid() && openFollowListModal(getCurrentPopUid(), 'followers')"><strong id="pop-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br>粉絲</div>
+        <div><strong id="pop-photo-count" style="font-size:15px; color:var(--brand-800);">0</strong><br><span data-i18n="myacc.photoCountLabel">相片</span></div>
+        <div style="cursor:pointer;" onclick="window.getCurrentPopUid && window.getCurrentPopUid() && openFollowListModal(getCurrentPopUid(), 'followers')"><strong id="pop-follower-count" style="font-size:15px; color:var(--brand-800);">0</strong><br><span data-i18n="tutorview.followers">粉絲</span></div>
       </div>
       <div id="pop-follow-btn-wrap" style="margin-bottom:8px;"></div>
       <div id="pop-diary-btn-wrap" style="margin-bottom:12px;"></div>
 
-      <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile')">關閉資料卡</button>
+      <button class="btn btn-outline" type="button" style="width:100%; justify-content:center;" onclick="closeModal('modal-view-profile')" data-i18n="viewprofile.closeCard">關閉資料卡</button>
     </div>
   </div>
 
@@ -3571,24 +3571,24 @@
   <!-- PTS／EXP 獲得方式說明視窗：撳置頂狀態列「今日目標」旁邊嘅「!」圖示會彈出 -->
   <div class="modal-backdrop" id="modal-pts-exp-info" style="display:none;">
     <div class="modal-box" style="max-width:400px;">
-      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">PTS 及 EXP 如何獲得？</h3>
+      <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;" data-i18n="ptsExp.title">PTS 及 EXP 如何獲得？</h3>
       <div style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:12px 14px; margin-bottom:12px;">
-        <div style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">PTS（積分）</div>
+        <div style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;" data-i18n="ptsExp.ptsHeading">PTS（積分）</div>
         <ul style="font-size:13px; color:#555; line-height:1.7; margin:0; padding-left:18px;">
-          <li>視訊溫習室內每專注溫習 1 分鐘：+1 PTS</li>
-          <li>視訊溫習室確認「你仍在學習嗎？」：+2 PTS</li>
+          <li data-i18n="ptsExp.ptsBullet1">視訊溫習室內每專注溫習 1 分鐘：+1 PTS</li>
+          <li data-i18n="ptsExp.ptsBullet2">視訊溫習室確認「你仍在學習嗎？」：+2 PTS</li>
         </ul>
-        <div style="font-size:13px; color:#999; margin-top:6px;">PTS 可用於「時數扭蛋機」抽獎。</div>
+        <div style="font-size:13px; color:#999; margin-top:6px;" data-i18n="ptsExp.ptsUsage">PTS 可用於「時數扭蛋機」抽獎。</div>
       </div>
       <div style="background:var(--brand-50); border:1px solid var(--brand-200); border-radius:12px; padding:12px 14px;">
-        <div style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">EXP（經驗值）</div>
+        <div style="font-size:14px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;" data-i18n="ptsExp.expHeading">EXP（經驗值）</div>
         <ul style="font-size:13px; color:#555; line-height:1.7; margin:0; padding-left:18px;">
-          <li>每次獲得 PTS，都會同時獲得同等數量的 EXP</li>
-          <li>EXP 只升不跌，記錄你的總溫習成就</li>
-          <li>累積足夠即可升級</li>
+          <li data-i18n="ptsExp.expBullet1">每次獲得 PTS，都會同時獲得同等數量的 EXP</li>
+          <li data-i18n="ptsExp.expBullet2">EXP 只升不跌，記錄你的總溫習成就</li>
+          <li data-i18n="ptsExp.expBullet3">累積足夠即可升級</li>
         </ul>
       </div>
-      <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; margin-top:14px;" onclick="closeModal('modal-pts-exp-info')">關閉</button>
+      <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; margin-top:14px;" onclick="closeModal('modal-pts-exp-info')" data-i18n="common.close">關閉</button>
     </div>
   </div>
 
