@@ -2290,10 +2290,10 @@
         return;
       }
       const subjects = qaCurrentSubject === 'core' ? QA_CORE_SUBJECTS : getQAElectiveSubjects();
-      const categoryLabel = qaCurrentSubject === 'core' ? '必修科目' : '選修科目';
+      const categoryLabel = qaCurrentSubject === 'core' ? window.t('room.filterCore', '必修科目') : window.t('room.filterElective', '選修科目');
       const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
       const optionsHtml = subjects.map((s) => `<option value="${escAttr(s)}">${s}</option>`).join('');
-      select.innerHTML = `<option value="">全部${categoryLabel}</option>${optionsHtml}`;
+      select.innerHTML = `<option value="">${window.t('qa.allOfCategoryTemplate', '全部{cat}').replace('{cat}', categoryLabel)}</option>${optionsHtml}`;
       select.value = qaCurrentSubjectDetail || '';
       wrap.style.display = 'block';
     }
@@ -2317,7 +2317,7 @@
       posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
       if (posts.length === 0) {
-        list.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa; font-size:13px;">這個學科暫時未有提問，你先來發起第一題！</div>';
+        list.innerHTML = `<div style="text-align:center; padding:40px; color:#aaa; font-size:13px;">${window.t('qa.noPosts', '這個學科暫時未有提問，你先來發起第一題！')}</div>`;
         return;
       }
 
@@ -2330,14 +2330,14 @@
           <div class="qa-post-card" onclick="openQADetail('${p.id}')">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
               <span class="qa-subject-label">${QA_SUBJECTS[p.subject] || p.subject}</span>
-              ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}')">刪除</button>` : ''}
+              ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}')">${window.t('qa.delete', '刪除')}</button>` : ''}
             </div>
             <h4 style="font-size:13px; font-weight:700; margin:4px 0; color:var(--brand-800);">${escapeHtml(p.title)}</h4>
             <p style="font-size:13px; color:#666; line-height:1.5; margin-bottom:6px;">${escapeHtml(p.body || '').substring(0,100)}${(p.body||'').length > 100 ? '…' : ''}</p>
             ${photos ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">${photos}</div>` : ''}
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#aaa;">
-              <span>${escapeHtml(p.authorName || '匿名')} · ${formatTime(p.createdAt)}</span>
-              <span>${p.commentCount || 0} 個回答</span>
+              <span>${escapeHtml(p.authorName || window.t('qa.anonymous', '匿名'))} · ${formatTime(p.createdAt)}</span>
+              <span>${window.t('qa.answersCountTemplate', '{n} 個回答').replace('{n}', p.commentCount || 0)}</span>
             </div>
           </div>
         `;
@@ -2354,7 +2354,7 @@
       if (qaUnsubscribe) { renderQAPostsList(); return; }
 
       const list = document.getElementById('qa-post-list');
-      if (list) list.innerHTML = '<div style="text-align:center; padding:30px; color:#7DB8C5; font-size:13px;">載入中…</div>';
+      if (list) list.innerHTML = `<div style="text-align:center; padding:30px; color:#7DB8C5; font-size:13px;">${window.t('qa.loading', '載入中…')}</div>`;
 
       let ref = window.fs.collection(window.db, 'qa_posts');
       qaUnsubscribe = window.fs.onSnapshot(ref, (snapshot) => {
@@ -2364,7 +2364,7 @@
     }
 
     window.openQAModal = function() {
-      if (!window.currentUser) { window.showToast('請先登入', '⚠️'); return; }
+      if (!window.currentUser) { window.showToast(window.t('common.loginFirst', '請先登入'), '⚠️'); return; }
       document.getElementById('qa-title').value = '';
       document.getElementById('qa-body').value = '';
       document.getElementById('qa-photos').value = '';
@@ -2411,12 +2411,12 @@
       const title = document.getElementById('qa-title').value.trim();
       const body = document.getElementById('qa-body').value.trim();
       const subject = document.getElementById('qa-subject-select').value.trim();
-      if (!subject) { window.showToast('請選擇學科', '⚠️'); return; }
-      if (!title) { window.showToast('請填寫問題標題', '⚠️'); return; }
+      if (!subject) { window.showToast(window.t('qa.selectSubject', '請選擇學科'), '⚠️'); return; }
+      if (!title) { window.showToast(window.t('qa.fillTitle', '請填寫問題標題'), '⚠️'); return; }
 
       const submitBtn = document.querySelector('#modal-qa-post .btn-primary');
       const origText = submitBtn.innerText;
-      submitBtn.innerText = '⏳ 發布中…';
+      submitBtn.innerText = window.t('qa.publishing', '⏳ 發布中…');
       submitBtn.disabled = true;
 
       try {
@@ -2441,7 +2441,7 @@
 
         const newPostData = {
           uid: window.currentUser.uid,
-          authorName: window.currentUser.username || '匿名同學',
+          authorName: window.currentUser.username || window.t('qa.anonymousStudent', '匿名同學'),
           subject, title, body, photos,
           commentCount: 0,
           createdAt: Date.now()
@@ -2460,7 +2460,7 @@
         qaPostsCache = [{ id: newPostRef.id, ...newPostData }, ...qaPostsCache];
 
         closeModal('modal-qa-post');
-        window.showToast('提問已發布！', '✅');
+        window.showToast(window.t('qa.postPublished', '提問已發布！'), '✅');
         // Tab 列而家係跟「必修／選修／其他」分類嚟揀，唔再係跟實際
         // 學科（subject）本身，所以要用 getQACategory() 轉一轉，先至
         // 揾到啱嘅分類 Tab 撳落去、跳去顯示啱嘅分類；跟住再揀埋個
@@ -2473,7 +2473,7 @@
         renderQAPostsList();
       } catch(e) {
         console.error('發布提問失敗:', e);
-        window.showToast('發布失敗：' + (e.message || '請稍後再試'), '❌');
+        window.showToast(window.t('qa.publishFailedTemplate', '發布失敗：{msg}').replace('{msg}', e.message || window.t('qa.tryAgainLater', '請稍後再試')), '❌');
       } finally {
         submitBtn.innerText = origText;
         submitBtn.disabled = false;
@@ -2482,11 +2482,11 @@
 
     window.deleteQAPost = async function(event, postId) {
       event.stopPropagation();
-      if (!confirm('確定刪除這個提問嗎？')) return;
+      if (!confirm(window.t('qa.confirmDeletePost', '確定刪除這個提問嗎？'))) return;
       try {
         await window.fs.deleteDoc(window.fs.doc(window.db, 'qa_posts', postId));
-        window.showToast('提問已刪除', '🗑️');
-      } catch(e) { window.showToast('刪除失敗', '❌'); }
+        window.showToast(window.t('qa.postDeleted', '提問已刪除'), '🗑️');
+      } catch(e) { window.showToast(window.t('common.deleteFailed', '刪除失敗'), '❌'); }
     };
 
     window.openQADetail = async function(postId) {
@@ -2510,14 +2510,14 @@
       document.getElementById('qa-detail-content').innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
           <span class="qa-subject-label">${QA_SUBJECTS[p.subject] || p.subject}</span>
-          ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}'); closeModal('modal-qa-detail');">刪除</button>` : ''}
+          ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}'); closeModal('modal-qa-detail');">${window.t('qa.delete', '刪除')}</button>` : ''}
         </div>
         <h3 style="font-size:15px; font-weight:700; color:var(--brand-800); margin-bottom:8px;">${escapeHtml(p.title)}</h3>
         ${p.body ? `<p style="font-size:13px; color:#555; line-height:1.6; margin-bottom:10px;">${escapeHtml(p.body)}</p>` : ''}
         ${photos ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${photos}</div>` : ''}
-        <div style="font-size:13px; color:#aaa; margin-bottom:14px;">${escapeHtml(p.authorName || '匿名')} · ${formatTime(p.createdAt)}</div>
+        <div style="font-size:13px; color:#aaa; margin-bottom:14px;">${escapeHtml(p.authorName || window.t('qa.anonymous', '匿名'))} · ${formatTime(p.createdAt)}</div>
         <div id="qa-comment-list" style="display:flex; flex-direction:column; gap:8px;">
-          <div style="font-size:13px; color:#aaa; text-align:center;">載入留言中…</div>
+          <div style="font-size:13px; color:#aaa; text-align:center;">${window.t('qa.loadingComments', '載入留言中…')}</div>
         </div>
       `;
 
@@ -2530,7 +2530,7 @@
         const commentList = document.getElementById('qa-comment-list');
         if (!commentList) return;
         if (comments.length === 0) {
-          commentList.innerHTML = '<div style="font-size:13px; color:#aaa; text-align:center; padding:10px;">未有回答，你是第一個！</div>';
+          commentList.innerHTML = `<div style="font-size:13px; color:#aaa; text-align:center; padding:10px;">${window.t('qa.noAnswersYet', '未有回答，你是第一個！')}</div>`;
           return;
         }
         const myUid = window.currentUser ? window.currentUser.uid : null;
@@ -2540,18 +2540,18 @@
           ).join('');
           const isOwn = myUid && c.uid === myUid;
           const editedNote = c.editedAt
-            ? `<span style="font-size:13px; color:#7DB8C5; margin-left:6px;">已編輯 ${formatTime(c.editedAt)}</span>`
+            ? `<span style="font-size:13px; color:#7DB8C5; margin-left:6px;">${window.t('qa.editedAtTemplate', '已編輯 {time}').replace('{time}', formatTime(c.editedAt))}</span>`
             : '';
           const actions = isOwn ? `
             <div style="display:flex; gap:6px; margin-top:8px;">
               <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;"
-                onclick="startEditComment('${c.id}', \`${escapeHtml(c.body).replace(/`/g,'\\`')}\`)">編輯</button>
+                onclick="startEditComment('${c.id}', \`${escapeHtml(c.body).replace(/`/g,'\\`')}\`)">${window.t('qa.edit', '編輯')}</button>
               <button class="btn btn-red" style="font-size:13px; padding:4px 10px;"
-                onclick="deleteComment('${c.id}')">刪除</button>
+                onclick="deleteComment('${c.id}')">${window.t('qa.delete', '刪除')}</button>
             </div>` : '';
           return `
           <div id="comment-${c.id}" style="background:var(--brand-50); border-radius:12px; padding:12px; border:1px solid var(--brand-200);">
-            <div style="font-size:13px; font-weight:bold; color:var(--brand-700);">${escapeHtml(c.authorName || '匿名')}</div>
+            <div style="font-size:13px; font-weight:bold; color:var(--brand-700);">${escapeHtml(c.authorName || window.t('qa.anonymous', '匿名'))}</div>
             <p id="comment-body-${c.id}" style="font-size:13px; color:#333; margin-top:5px; line-height:1.6;">${escapeHtml(c.body)}</p>
             ${cPhotos ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">${cPhotos}</div>` : ''}
             <div style="font-size:13px; color:#aaa; margin-top:5px;">
@@ -2564,14 +2564,14 @@
     };
 
     window.submitQAComment = async function() {
-      if (!window.currentUser) { window.showToast('請先登入', '⚠️'); return; }
+      if (!window.currentUser) { window.showToast(window.t('common.loginFirst', '請先登入'), '⚠️'); return; }
       const body = document.getElementById('qa-comment-input').value.trim();
-      if (!body) { window.showToast('請填寫回答內容', '⚠️'); return; }
+      if (!body) { window.showToast(window.t('qa.fillAnswer', '請填寫回答內容'), '⚠️'); return; }
       if (!qaCurrentPostId) return;
 
       const submitBtn = document.getElementById('qa-comment-submit-btn');
       const origText = submitBtn ? submitBtn.innerText : '';
-      if (submitBtn) { submitBtn.innerText = '⏳ 送出中…'; submitBtn.disabled = true; }
+      if (submitBtn) { submitBtn.innerText = window.t('qa.sending', '⏳ 送出中…'); submitBtn.disabled = true; }
 
       try {
         const files = Array.from((document.getElementById('qa-comment-photos') || {}).files || []).slice(0, 3);
@@ -2593,7 +2593,7 @@
 
         await window.fs.addDoc(window.fs.collection(window.db, 'qa_posts', qaCurrentPostId, 'comments'), {
           uid: window.currentUser.uid,
-          authorName: window.currentUser.username || '匿名同學',
+          authorName: window.currentUser.username || window.t('qa.anonymousStudent', '匿名同學'),
           body, photos, createdAt: Date.now()
         });
         await window.fs.updateDoc(window.fs.doc(window.db, 'qa_posts', qaCurrentPostId), {
@@ -2604,17 +2604,17 @@
         if (commentPhotos) commentPhotos.value = '';
         const commentPreview = document.getElementById('qa-comment-photo-preview');
         if (commentPreview) commentPreview.innerHTML = '';
-        window.showToast('回答已送出！', '💬');
+        window.showToast(window.t('qa.answerSent', '回答已送出！'), '💬');
       } catch(e) {
         console.error(e);
-        window.showToast('送出失敗，請稍後再試', '❌');
+        window.showToast(window.t('qa.sendFailed', '送出失敗，請稍後再試'), '❌');
       } finally {
         if (submitBtn) { submitBtn.innerText = origText; submitBtn.disabled = false; }
       }
     };
 
     window.deleteComment = async function(commentId) {
-      if (!confirm('確定刪除這個留言？')) return;
+      if (!confirm(window.t('qa.confirmDeleteComment', '確定刪除這個留言？'))) return;
       try {
         await window.fs.deleteDoc(
           window.fs.doc(window.db, 'qa_posts', qaCurrentPostId, 'comments', commentId)
@@ -2622,8 +2622,8 @@
         await window.fs.updateDoc(window.fs.doc(window.db, 'qa_posts', qaCurrentPostId), {
           commentCount: window.fs.increment(-1)
         });
-        window.showToast('留言已刪除', '🗑️');
-      } catch(e) { window.showToast('刪除失敗', '❌'); }
+        window.showToast(window.t('qa.commentDeleted', '留言已刪除'), '🗑️');
+      } catch(e) { window.showToast(window.t('common.deleteFailed', '刪除失敗'), '❌'); }
     };
 
     window.startEditComment = function(commentId, currentBody) {
@@ -2644,9 +2644,9 @@
           style="margin-top:6px; resize:vertical; font-size:13px;">${currentBody.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"')}</textarea>
         <div style="display:flex; gap:6px; margin-top:6px;">
           <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;"
-            onclick="cancelEditComment('${commentId}')">取消</button>
+            onclick="cancelEditComment('${commentId}')">${window.t('common.cancel', '取消')}</button>
           <button class="btn btn-primary" style="font-size:13px; padding:4px 10px;"
-            onclick="saveEditComment('${commentId}')">儲存</button>
+            onclick="saveEditComment('${commentId}')">${window.t('common.save', '儲存')}</button>
         </div>
       `;
       parent.insertBefore(editArea, bodyEl.nextSibling);
@@ -2662,14 +2662,14 @@
 
     window.saveEditComment = async function(commentId) {
       const newBody = document.getElementById('edit-input-' + commentId)?.value.trim();
-      if (!newBody) { window.showToast('內容不可以是空白', '⚠️'); return; }
+      if (!newBody) { window.showToast(window.t('qa.emptyContent', '內容不可以是空白'), '⚠️'); return; }
       try {
         await window.fs.updateDoc(
           window.fs.doc(window.db, 'qa_posts', qaCurrentPostId, 'comments', commentId),
           { body: newBody, editedAt: Date.now() }
         );
-        window.showToast('留言已更新', '✅');
-      } catch(e) { window.showToast('儲存失敗', '❌'); }
+        window.showToast(window.t('qa.commentUpdated', '留言已更新'), '✅');
+      } catch(e) { window.showToast(window.t('common.saveFailed', '儲存失敗'), '❌'); }
     };
 
     // circular=true 專門畀頭像用：燈箱入面個相片會用圓形裁切顯示，配合

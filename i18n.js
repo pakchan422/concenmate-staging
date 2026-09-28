@@ -58,6 +58,10 @@
     //    可以直接重用返呢批 key，唔使逐頁重複做） ──
     'common.cancel': { 'zh-Hant': '取消', 'en': 'Cancel', 'yue': '取消' },
     'common.save': { 'zh-Hant': '儲存', 'en': 'Save', 'yue': '儲存' },
+    'common.close': { 'zh-Hant': '關閉', 'en': 'Close', 'yue': '閂返' },
+    'common.loginFirst': { 'zh-Hant': '請先登入', 'en': 'Please log in first', 'yue': '要登入先得㗎' },
+    'common.deleteFailed': { 'zh-Hant': '刪除失敗', 'en': 'Delete failed', 'yue': '刪除唔到' },
+    'common.saveFailed': { 'zh-Hant': '儲存失敗', 'en': 'Save failed', 'yue': '儲存唔到' },
     'unit.minutes': { 'zh-Hant': '分鐘', 'en': ' min', 'yue': '分鐘' },
     'unit.hours': { 'zh-Hant': '小時', 'en': 'h ', 'yue': '小時' },
     'unit.goalDone': { 'zh-Hant': '（已完成）', 'en': ' (Done)', 'yue': '（已完成）' },
@@ -146,6 +150,55 @@
     'room.micCooldownTag': { 'zh-Hant': '咪冷卻中 {n}', 'en': 'Mic Cooling Down {n}', 'yue': 'Mic 冷卻緊 {n}' },
     'room.micOnBtn': { 'zh-Hant': '已開咪{n}', 'en': 'Mic On{n}', 'yue': '開咗Mic{n}' },
     'room.micOnTag': { 'zh-Hant': '已開啟麥克風{n}', 'en': 'Microphone On{n}', 'yue': '開咗Mic{n}' },
+
+    // ── 疑難解答區（第四階段：English 由 Claude 翻譯、廣東話口語由
+    //    Claude 起草，兩者都仲要 Alvis 過目先算數，未過目之前先當
+    //    草稿睇待）。分類 Tab（全部／必修科目／選修科目／其他）重用
+    //    咗上面視訊溫習室嗰批 room.filter* key，因為兩邊文字一樣。 ──
+    'qa.askQuestion': { 'zh-Hant': '發起提問', 'en': 'Ask a Question', 'yue': '問問題' },
+    'qa.loading': { 'zh-Hant': '載入中…', 'en': 'Loading…', 'yue': 'Load緊…' },
+    'qa.loadingComments': { 'zh-Hant': '載入留言中…', 'en': 'Loading comments…', 'yue': 'Load緊啲留言…' },
+    'qa.subjectLabel': { 'zh-Hant': '學科 *', 'en': 'Subject *', 'yue': '科目 *' },
+    'qa.titleLabel': { 'zh-Hant': '問題標題', 'en': 'Question Title', 'yue': '問題標題' },
+    'qa.titlePlaceholder': { 'zh-Hant': '例：DSE 數學 2024 Paper 1 Q18 為什麼？', 'en': 'e.g. DSE Maths 2024 Paper 1 Q18, why?', 'yue': '例：DSE 數學 2024 Paper 1 Q18 唔識？' },
+    'qa.descLabel': { 'zh-Hant': '詳細描述', 'en': 'Details', 'yue': '詳細講吓' },
+    'qa.descPlaceholder': { 'zh-Hant': '描述你的問題，或補充更多資料…', 'en': 'Describe your question, or add more details…', 'yue': '講吓你嘅問題，或者補充多啲資料…' },
+    'qa.uploadPhotoLabel': { 'zh-Hant': '上傳圖片（最多 3 張）', 'en': 'Upload Photos (up to 3)', 'yue': '上傳相片（最多3張）' },
+    'qa.submitPost': { 'zh-Hant': '發布提問', 'en': 'Post Question', 'yue': '發布問題' },
+    'qa.commentLabel': { 'zh-Hant': '留言回答', 'en': 'Your Answer', 'yue': '留言答佢' },
+    'qa.commentPlaceholder': { 'zh-Hant': '分享你的解題方法…', 'en': 'Share how you would solve it…', 'yue': 'Share吓你點樣解…' },
+    'qa.commentPhotoLabel': { 'zh-Hant': '附上圖片（最多 3 張）', 'en': 'Attach Photos (up to 3)', 'yue': '上傳啲相（最多3張）' },
+    'qa.submitComment': { 'zh-Hant': '送出回答', 'en': 'Submit Answer', 'yue': '交低個答案' },
+    'qa.noPosts': { 'zh-Hant': '這個學科暫時未有提問，你先來發起第一題！', 'en': 'No questions in this subject yet — be the first to ask!', 'yue': '呢科暫時未有人問，你嚟開頭一條啦！' },
+    'qa.delete': { 'zh-Hant': '刪除', 'en': 'Delete', 'yue': '刪除' },
+    'qa.edit': { 'zh-Hant': '編輯', 'en': 'Edit', 'yue': '編輯' },
+    'qa.anonymous': { 'zh-Hant': '匿名', 'en': 'Anonymous', 'yue': '匿名' },
+    'qa.anonymousStudent': { 'zh-Hant': '匿名同學', 'en': 'Anonymous Student', 'yue': '匿名同學' },
+    // {n} 係佔位符，實際數字由 renderQAPostsList()（app-features.js）
+    // 用 String.replace('{n}', ...) 塞入去。
+    'qa.answersCountTemplate': { 'zh-Hant': '{n} 個回答', 'en': '{n} answers', 'yue': '{n} 個回答' },
+    // {time} 係佔位符，實際時間字串由 formatTime() 塞入去。
+    'qa.editedAtTemplate': { 'zh-Hant': '已編輯 {time}', 'en': 'Edited {time}', 'yue': '改過 {time}' },
+    'qa.publishing': { 'zh-Hant': '⏳ 發布中…', 'en': '⏳ Posting…', 'yue': '⏳ 發布緊…' },
+    'qa.sending': { 'zh-Hant': '⏳ 送出中…', 'en': '⏳ Sending…', 'yue': '⏳ 送緊出去…' },
+    'qa.selectSubject': { 'zh-Hant': '請選擇學科', 'en': 'Please select a subject', 'yue': '要揀返學科先得㗎' },
+    'qa.fillTitle': { 'zh-Hant': '請填寫問題標題', 'en': 'Please fill in the question title', 'yue': '要填返問題標題先得㗎' },
+    'qa.postPublished': { 'zh-Hant': '提問已發布！', 'en': 'Question posted!', 'yue': '條問題發布左喇！' },
+    // {msg} 係佔位符，塞入 e.message（攞唔到就用 qa.tryAgainLater 頂住）。
+    'qa.publishFailedTemplate': { 'zh-Hant': '發布失敗：{msg}', 'en': 'Failed to post: {msg}', 'yue': '發布唔到：{msg}' },
+    'qa.tryAgainLater': { 'zh-Hant': '請稍後再試', 'en': 'Please try again later', 'yue': '遲啲再試多次' },
+    'qa.confirmDeletePost': { 'zh-Hant': '確定刪除這個提問嗎？', 'en': 'Delete this question?', 'yue': '真係要刪除呢條問題？' },
+    'qa.postDeleted': { 'zh-Hant': '提問已刪除', 'en': 'Question deleted', 'yue': '條問題刪咗喇' },
+    'qa.noAnswersYet': { 'zh-Hant': '未有回答，你是第一個！', 'en': 'No answers yet — be the first!', 'yue': '未有人答，你係第一個！' },
+    'qa.fillAnswer': { 'zh-Hant': '請填寫回答內容', 'en': 'Please write your answer', 'yue': '要打返啲內容先得㗎' },
+    'qa.answerSent': { 'zh-Hant': '回答已送出！', 'en': 'Answer submitted!', 'yue': '個答案送咗出去喇！' },
+    'qa.sendFailed': { 'zh-Hant': '送出失敗，請稍後再試', 'en': 'Failed to send, please try again later', 'yue': '送唔到，遲啲再試多次' },
+    'qa.confirmDeleteComment': { 'zh-Hant': '確定刪除這個留言？', 'en': 'Delete this comment?', 'yue': '真係要刪除呢個留言？' },
+    'qa.commentDeleted': { 'zh-Hant': '留言已刪除', 'en': 'Comment deleted', 'yue': '留言刪咗喇' },
+    'qa.emptyContent': { 'zh-Hant': '內容不可以是空白', 'en': 'Content cannot be empty', 'yue': '唔可以留空㗎' },
+    'qa.commentUpdated': { 'zh-Hant': '留言已更新', 'en': 'Comment updated', 'yue': '留言改好喇' },
+    // {cat} 係佔位符，塞入已經譯好嘅分類名（必修科目／選修科目）。
+    'qa.allOfCategoryTemplate': { 'zh-Hant': '全部{cat}', 'en': 'All {cat}', 'yue': '全部{cat}' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置

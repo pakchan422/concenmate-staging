@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.178.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.179.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2215,10 +2215,10 @@
                唔揀就繼續顯示成個分類嘅全部提問。「其他」分類科目冇
                固定清單（學生自行輸入），所以冇呢個下拉選單。 -->
           <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
-            <button class="qa-subject-btn active" onclick="switchQASubject('all', this)">全部</button>
-            <button class="qa-subject-btn" onclick="switchQASubject('core', this)">必修科目</button>
-            <button class="qa-subject-btn" onclick="switchQASubject('elective', this)">選修科目</button>
-            <button class="qa-subject-btn" onclick="switchQASubject('other', this)">其他</button>
+            <button class="qa-subject-btn active" onclick="switchQASubject('all', this)" data-i18n="room.filterAll">全部</button>
+            <button class="qa-subject-btn" onclick="switchQASubject('core', this)" data-i18n="room.filterCore">必修科目</button>
+            <button class="qa-subject-btn" onclick="switchQASubject('elective', this)" data-i18n="room.filterElective">選修科目</button>
+            <button class="qa-subject-btn" onclick="switchQASubject('other', this)" data-i18n="room.filterOther">其他</button>
           </div>
 
           <div id="qa-subject-detail-wrap" style="display:none; margin-bottom:14px;">
@@ -2226,13 +2226,13 @@
           </div>
 
           <!-- 發起提問按鈕 -->
-          <button class="btn btn-primary" type="button" onclick="openQAModal()" style="margin-bottom:14px; width:100%;">
+          <button class="btn btn-primary" type="button" onclick="openQAModal()" style="margin-bottom:14px; width:100%;" data-i18n="qa.askQuestion">
             發起提問
           </button>
 
           <!-- 問題列表 -->
           <div id="qa-post-list">
-            <div style="text-align:center; padding:30px; color:#7DB8C5; font-size:15px;">載入中…</div>
+            <div style="text-align:center; padding:30px; color:#7DB8C5; font-size:15px;" data-i18n="qa.loading">載入中…</div>
           </div>
 
         </section>
@@ -2240,35 +2240,35 @@
         <!-- ===== 發起提問 Modal ===== -->
         <div class="modal-backdrop" id="modal-qa-post" style="display:none;">
           <div class="modal-box">
-            <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">發起提問</h3>
+            <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;" data-i18n="qa.askQuestion">發起提問</h3>
 
             <div style="display:flex; flex-direction:column; gap:10px;">
               <div>
-                <label style="font-size:13px; font-weight:bold; color:#555;">學科 *</label>
+                <label style="font-size:13px; font-weight:bold; color:#555;" data-i18n="qa.subjectLabel">學科 *</label>
                 <div id="qa-subject-picker"></div>
                 <input type="hidden" id="qa-subject-select">
               </div>
 
               <div>
-                <label style="font-size:13px; font-weight:bold; color:#555;">問題標題</label>
-                <input type="text" id="qa-title" class="input-field" placeholder="例：DSE 數學 2024 Paper 1 Q18 為什麼？" maxlength="80">
+                <label style="font-size:13px; font-weight:bold; color:#555;" data-i18n="qa.titleLabel">問題標題</label>
+                <input type="text" id="qa-title" class="input-field" placeholder="例：DSE 數學 2024 Paper 1 Q18 為什麼？" maxlength="80" data-i18n-placeholder="qa.titlePlaceholder">
               </div>
 
               <div>
-                <label style="font-size:13px; font-weight:bold; color:#555;">詳細描述</label>
-                <textarea id="qa-body" class="input-field" rows="4" placeholder="描述你的問題，或補充更多資料…" style="resize:vertical;"></textarea>
+                <label style="font-size:13px; font-weight:bold; color:#555;" data-i18n="qa.descLabel">詳細描述</label>
+                <textarea id="qa-body" class="input-field" rows="4" placeholder="描述你的問題，或補充更多資料…" style="resize:vertical;" data-i18n-placeholder="qa.descPlaceholder"></textarea>
               </div>
 
               <div>
-                <label style="font-size:13px; font-weight:bold; color:#555;">上傳圖片（最多 3 張）</label>
+                <label style="font-size:13px; font-weight:bold; color:#555;" data-i18n="qa.uploadPhotoLabel">上傳圖片（最多 3 張）</label>
                 <input type="file" id="qa-photos" accept="image/*" multiple style="margin-top:4px; font-size:14px;">
                 <div id="qa-photo-preview" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;"></div>
               </div>
             </div>
 
             <div style="display:flex; gap:8px; margin-top:16px;">
-              <button class="btn btn-outline" type="button" onclick="closeModal('modal-qa-post')" style="flex:1;">取消</button>
-              <button class="btn btn-primary" type="button" onclick="submitQAPost()" style="flex:2;">發布提問</button>
+              <button class="btn btn-outline" type="button" onclick="closeModal('modal-qa-post')" style="flex:1;" data-i18n="common.cancel">取消</button>
+              <button class="btn btn-primary" type="button" onclick="submitQAPost()" style="flex:2;" data-i18n="qa.submitPost">發布提問</button>
             </div>
           </div>
         </div>
@@ -2279,16 +2279,16 @@
             <div id="qa-detail-content"></div>
 
             <div style="border-top:1px solid var(--brand-200); margin-top:14px; padding-top:12px;">
-              <label style="font-size:13px; font-weight:bold; color:#555;">留言回答</label>
-              <textarea id="qa-comment-input" class="input-field" rows="3" placeholder="分享你的解題方法…" style="margin-top:4px; resize:vertical;"></textarea>
+              <label style="font-size:13px; font-weight:bold; color:#555;" data-i18n="qa.commentLabel">留言回答</label>
+              <textarea id="qa-comment-input" class="input-field" rows="3" placeholder="分享你的解題方法…" style="margin-top:4px; resize:vertical;" data-i18n-placeholder="qa.commentPlaceholder"></textarea>
               <div style="margin-top:8px;">
-                <label style="font-size:13px; font-weight:bold; color:#555;">附上圖片（最多 3 張）</label>
+                <label style="font-size:13px; font-weight:bold; color:#555;" data-i18n="qa.commentPhotoLabel">附上圖片（最多 3 張）</label>
                 <input type="file" id="qa-comment-photos" accept="image/*" multiple style="margin-top:4px; font-size:13px; width:100%;">
                 <div id="qa-comment-photo-preview" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;"></div>
               </div>
               <div style="display:flex; gap:8px; margin-top:10px;">
-                <button class="btn btn-outline" type="button" onclick="closeModal('modal-qa-detail')" style="flex:1;">關閉</button>
-                <button class="btn btn-primary" type="button" id="qa-comment-submit-btn" onclick="submitQAComment()" style="flex:2;">送出回答</button>
+                <button class="btn btn-outline" type="button" onclick="closeModal('modal-qa-detail')" style="flex:1;" data-i18n="common.close">關閉</button>
+                <button class="btn btn-primary" type="button" id="qa-comment-submit-btn" onclick="submitQAComment()" style="flex:2;" data-i18n="qa.submitComment">送出回答</button>
               </div>
             </div>
           </div>
