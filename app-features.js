@@ -2292,7 +2292,7 @@
       const subjects = qaCurrentSubject === 'core' ? QA_CORE_SUBJECTS : getQAElectiveSubjects();
       const categoryLabel = qaCurrentSubject === 'core' ? window.t('room.filterCore', '必修科目') : window.t('room.filterElective', '選修科目');
       const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-      const optionsHtml = subjects.map((s) => `<option value="${escAttr(s)}">${s}</option>`).join('');
+      const optionsHtml = subjects.map((s) => `<option value="${escAttr(s)}">${window.translateSubjectName ? window.translateSubjectName(s) : s}</option>`).join('');
       select.innerHTML = `<option value="">${window.t('qa.allOfCategoryTemplate', '全部{cat}').replace('{cat}', categoryLabel)}</option>${optionsHtml}`;
       select.value = qaCurrentSubjectDetail || '';
       wrap.style.display = 'block';
@@ -2329,7 +2329,7 @@
         return `
           <div class="qa-post-card" onclick="openQADetail('${p.id}')">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-              <span class="qa-subject-label">${QA_SUBJECTS[p.subject] || p.subject}</span>
+              <span class="qa-subject-label">${QA_SUBJECTS[p.subject] || (window.translateSubjectName ? window.translateSubjectName(p.subject) : p.subject)}</span>
               ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}')">${window.t('qa.delete', '刪除')}</button>` : ''}
             </div>
             <h4 style="font-size:13px; font-weight:700; margin:4px 0; color:var(--brand-800);">${escapeHtml(p.title)}</h4>
@@ -2509,7 +2509,7 @@
 
       document.getElementById('qa-detail-content').innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-          <span class="qa-subject-label">${QA_SUBJECTS[p.subject] || p.subject}</span>
+          <span class="qa-subject-label">${QA_SUBJECTS[p.subject] || (window.translateSubjectName ? window.translateSubjectName(p.subject) : p.subject)}</span>
           ${isOwn ? `<button class="btn btn-red" style="font-size:13px; padding:3px 8px;" onclick="deleteQAPost(event,'${p.id}'); closeModal('modal-qa-detail');">${window.t('qa.delete', '刪除')}</button>` : ''}
         </div>
         <h3 style="font-size:15px; font-weight:700; color:var(--brand-800); margin-bottom:8px;">${escapeHtml(p.title)}</h3>
@@ -3435,7 +3435,7 @@
     async function renderFriendActionButtons(targetUid, targetUserData) {
       const container = document.getElementById('pop-user-friend-actions');
       if (!container || !window.currentUser || !window.db || !window.fs) return;
-      container.innerHTML = '<p style="font-size:13px; color:#999;">載入中好友狀態...</p>';
+      container.innerHTML = `<p style="font-size:13px; color:#999;">${window.t('social.loadingFriendStatus', '載入中好友狀態...')}</p>`;
       try {
         const reqId = friendRequestDocId(window.currentUser.uid, targetUid);
         const [friendSnap, reqSnap] = await Promise.all([
@@ -3447,9 +3447,9 @@
           const safeChatName = (targetUserData.username || '同學').replace(/'/g, "\\'");
           container.innerHTML = `
             <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">
-              <span class="tag" style="background:var(--brand-100); color:var(--brand-700);">已經是好友</span>
-              <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="closeModal('modal-view-profile'); window.openChatWindow('${targetUid}', '${safeChatName}')">傳送訊息</button>
-              <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="removeFriendAction('${targetUid}')">移除好友</button>
+              <span class="tag" style="background:var(--brand-100); color:var(--brand-700);">${window.t('social.alreadyFriendsTag', '已經是好友')}</span>
+              <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="closeModal('modal-view-profile'); window.openChatWindow('${targetUid}', '${safeChatName}')">${window.t('social.sendMessageTitle', '傳送訊息')}</button>
+              <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="removeFriendAction('${targetUid}')">${window.t('social.removeFriendBtn', '移除好友')}</button>
             </div>
           `;
           return;
@@ -3459,40 +3459,40 @@
         if (req && req.status === 'pending') {
           if (req.toUid === window.currentUser.uid) {
             container.innerHTML = `
-              <p style="font-size:13px; color:#888; margin-bottom:6px;">對方想加你做好友</p>
+              <p style="font-size:13px; color:#888; margin-bottom:6px;">${window.t('social.theyWantToAddYou', '對方想加你做好友')}</p>
               <div style="display:flex; gap:8px; justify-content:center;">
-                <button class="btn btn-primary" type="button" onclick="respondFriendRequest('${reqId}', true)">接受</button>
-                <button class="btn btn-outline" type="button" onclick="respondFriendRequest('${reqId}', false)">拒絕</button>
+                <button class="btn btn-primary" type="button" onclick="respondFriendRequest('${reqId}', true)">${window.t('social.acceptBtn', '接受')}</button>
+                <button class="btn btn-outline" type="button" onclick="respondFriendRequest('${reqId}', false)">${window.t('social.declineBtn', '拒絕')}</button>
               </div>
             `;
           } else {
-            container.innerHTML = `<span class="tag">⏳ 邀請已送出，等待回覆</span>`;
+            container.innerHTML = `<span class="tag">${window.t('social.requestSentWaiting', '⏳ 邀請已送出，等待回覆')}</span>`;
           }
           return;
         }
 
         const safeLoginId = (targetUserData.loginId || '').replace(/'/g, "\\'");
         const safeUsername = (targetUserData.username || '').replace(/'/g, "\\'");
-        container.innerHTML = `<button class="btn btn-primary" type="button" onclick="sendFriendRequest('${targetUid}', '${safeLoginId}', '${safeUsername}')">加好友</button>`;
+        container.innerHTML = `<button class="btn btn-primary" type="button" onclick="sendFriendRequest('${targetUid}', '${safeLoginId}', '${safeUsername}')">${window.t('social.addFriendBtn', '加好友')}</button>`;
       } catch (e) {
         console.error('讀取好友狀態失敗:', e);
-        container.innerHTML = '<p style="font-size:13px; color:#D9764A;">讀取好友狀態失敗</p>';
+        container.innerHTML = `<p style="font-size:13px; color:#D9764A;">${window.t('social.loadFriendStatusFailed', '讀取好友狀態失敗')}</p>`;
       }
     }
 
     window.sendFriendRequest = async function(targetUid, targetLoginId, targetUsername) {
       if (!window.currentUser || !window.db || !window.fs) return;
-      if (targetUid === window.currentUser.uid) { window.showToast('不可以將自己加為好友', '😅'); return; }
+      if (targetUid === window.currentUser.uid) { window.showToast(window.t('social.cannotAddSelfToast', '不可以將自己加為好友'), '😅'); return; }
       const reqId = friendRequestDocId(window.currentUser.uid, targetUid);
       const reqRef = window.fs.doc(window.db, 'friendRequests', reqId);
       try {
         const existing = await window.fs.getDoc(reqRef);
         if (existing.exists() && existing.data().status === 'pending') {
-          window.showToast('已經送了邀請，等待對方回覆', 'ℹ️');
+          window.showToast(window.t('social.requestAlreadySentToast', '已經送了邀請，等待對方回覆'), 'ℹ️');
           return;
         }
         if (existing.exists() && existing.data().status === 'accepted') {
-          window.showToast('你們已經是好友', 'ℹ️');
+          window.showToast(window.t('social.alreadyFriendsToast', '你們已經是好友'), 'ℹ️');
           return;
         }
         await window.fs.setDoc(reqRef, {
@@ -3506,10 +3506,10 @@
           createdAt: Date.now(),
           respondedAt: null
         });
-        window.showToast('好友邀請已送出，等對方接受', '🤝');
+        window.showToast(window.t('social.requestSentToast', '好友邀請已送出，等對方接受'), '🤝');
         renderFriendActionButtons(targetUid, { loginId: targetLoginId, username: targetUsername });
       } catch (e) {
-        window.showToast('送出邀請失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('social.sendRequestFailedTemplate', `送出邀請失敗：${e.message || e}`).replace('{msg}', e.message || e), '❌');
       }
     };
 
@@ -3530,30 +3530,30 @@
           await window.fs.setDoc(window.fs.doc(window.db, 'users', data.fromUid, 'friends', data.toUid), {
             uid: data.toUid, loginId: data.toLoginId, username: data.toUsername, addedAt: now
           });
-          window.showToast('已成為好友！', '🤝');
+          window.showToast(window.t('social.becameFriendsToast', '已成為好友！'), '🤝');
         } else {
           await window.fs.updateDoc(reqRef, { status: 'declined', respondedAt: Date.now() });
-          window.showToast('已拒絕邀請', 'ℹ️');
+          window.showToast(window.t('social.requestDeclinedToast', '已拒絕邀請'), 'ℹ️');
         }
         closeModal('modal-view-profile');
         if (typeof window.loadFriendRequests === 'function') window.loadFriendRequests();
         if (typeof window.loadFriendsList === 'function') window.loadFriendsList();
       } catch (e) {
-        window.showToast('操作失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('social.respondFailedTemplate', `操作失敗：${e.message || e}`).replace('{msg}', e.message || e), '❌');
       }
     };
 
     window.removeFriendAction = async function(friendUid) {
       if (!window.currentUser || !window.db || !window.fs) return;
-      if (!confirm('確定要移除這位好友嗎？')) return;
+      if (!confirm(window.t('social.removeFriendConfirm', '確定要移除這位好友嗎？'))) return;
       try {
         await window.fs.deleteDoc(window.fs.doc(window.db, 'users', window.currentUser.uid, 'friends', friendUid));
         await window.fs.deleteDoc(window.fs.doc(window.db, 'users', friendUid, 'friends', window.currentUser.uid));
-        window.showToast('已移除好友', '🗑️');
+        window.showToast(window.t('social.friendRemovedToast', '已移除好友'), '🗑️');
         closeModal('modal-view-profile');
         if (typeof window.loadFriendsList === 'function') window.loadFriendsList();
       } catch (e) {
-        window.showToast('移除失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('social.removeFriendFailedTemplate', `移除失敗：${e.message || e}`).replace('{msg}', e.message || e), '❌');
       }
     };
 
@@ -3601,9 +3601,9 @@
     function buddyRenderCommentsHtml(comments) {
       return comments.length
         ? comments.map((c) =>
-            `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong style="cursor:pointer;" onclick="window.viewUserProfile && window.viewUserProfile('${c.authorUid || ''}')">${escapeHtml(c.authorName || '同學')}</strong>：${escapeHtml(c.text || '')}</div>`
+            `<div style="padding:6px 0; border-top:1px solid #F0F0F0; font-size:13px;"><strong style="cursor:pointer;" onclick="window.viewUserProfile && window.viewUserProfile('${c.authorUid || ''}')">${escapeHtml(c.authorName || window.t('lb.defaultUsername', '同學'))}</strong>：${escapeHtml(c.text || '')}</div>`
           ).join('')
-        : '<p style="font-size:12px; color:#999; padding:6px 0;">尚未有留言，做第一個留言的人吧！</p>';
+        : `<p style="font-size:12px; color:#999; padding:6px 0;">${window.t('social.noCommentsYet', '尚未有留言，做第一個留言的人吧！')}</p>`;
     }
 
     window.wallSubjectFilter = '全部';
@@ -3635,7 +3635,7 @@
       if (buddyWallUnsubscribe) { window.renderBuddyWallList(); return; }
 
       const listEl = document.getElementById('buddy-wall-list');
-      if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:24px;">載入中...</p>';
+      if (listEl) listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:24px;">${window.t('social.loadingWall', '載入中...')}</p>`;
 
       const q = window.fs.query(
         window.fs.collection(window.db, 'buddyPosts'),
@@ -3647,7 +3647,7 @@
         window.renderBuddyWallList();
       }, (e) => {
         console.error('讀取書伴留言牆失敗:', e);
-        if (listEl) listEl.innerHTML = '<p style="text-align:center; color:#D9764A; font-size:13px; padding:24px;">載入失敗，請稍後再試</p>';
+        if (listEl) listEl.innerHTML = `<p style="text-align:center; color:#D9764A; font-size:13px; padding:24px;">${window.t('social.loadWallFailed', '載入失敗，請稍後再試')}</p>`;
       });
     };
 
@@ -3658,7 +3658,7 @@
       });
       // 揀返常駐分頁嘅話，「其他科目」掣要還原返預設字樣同未選中狀態
       const moreBtn = document.getElementById('buddy-wall-more-btn');
-      if (moreBtn) moreBtn.textContent = '其他科目 ▾';
+      if (moreBtn) moreBtn.textContent = window.t('social.moreSubjectsBtn', '其他科目 ▾');
       window.renderBuddyWallList();
     };
 
@@ -3673,7 +3673,7 @@
         listEl.innerHTML = moreSubjects.map((s) => {
           const active = window.wallSubjectFilter === s;
           const safeS = s.replace(/'/g, "\\'");
-          return `<button type="button" class="room-subject-tab-btn${active ? ' active' : ''}" onclick="window.selectWallSubjectFromMore && window.selectWallSubjectFromMore('${safeS}')">${escapeHtml(s)}</button>`;
+          return `<button type="button" class="room-subject-tab-btn${active ? ' active' : ''}" onclick="window.selectWallSubjectFromMore && window.selectWallSubjectFromMore('${safeS}')">${escapeHtml(window.translateSubjectName ? window.translateSubjectName(s) : s)}</button>`;
         }).join('');
       }
       if (typeof window.openModal === 'function') window.openModal('modal-wall-subject-more');
@@ -3687,7 +3687,7 @@
       const moreBtn = document.getElementById('buddy-wall-more-btn');
       if (moreBtn) {
         moreBtn.classList.add('active');
-        moreBtn.textContent = `${subject} ▾`;
+        moreBtn.textContent = `${window.translateSubjectName ? window.translateSubjectName(subject) : subject} ▾`;
       }
       if (typeof window.closeModal === 'function') window.closeModal('modal-wall-subject-more');
       window.renderBuddyWallList();
@@ -3700,30 +3700,30 @@
       const posts = (window.buddyWallPostsCache || []).filter((p) => filter === '全部' || (p.subjects || []).includes(filter));
 
       if (posts.length === 0) {
-        listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:24px;">目前「${escapeHtml(filter)}」分類沒有貼文，換個分類看看，或者做第一個發帖的人！</p>`;
+        listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:24px;">${window.t('social.emptyWallTemplate', `目前「${filter}」分類沒有貼文，換個分類看看，或者做第一個發帖的人！`).replace('{subject}', window.translateSubjectName ? window.translateSubjectName(filter) : filter)}</p>`;
         return;
       }
 
       listEl.innerHTML = posts.map((post) => {
-        const roleMeta = window.BUDDY_ROLE_META[post.role] || { emoji: '📝', label: '書伴' };
+        const roleMeta = window.BUDDY_ROLE_META[post.role] || { emoji: '📝', label: window.t('social.roleDefaultLabel', '書伴') };
         const subjectTagsHtml = (post.subjects || []).map((s) =>
-          `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtml(s)}</span>`
+          `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtml(window.translateSubjectName ? window.translateSubjectName(s) : s)}</span>`
         ).join('');
         const isOwn = window.currentUser && post.authorUid === window.currentUser.uid;
         const secondBtnHtml = isOwn
-          ? `<button class="btn btn-red" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.deleteBuddyPost && window.deleteBuddyPost('${post.id}')">刪除</button>`
-          : `<button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.addFriendFromWallPost && window.addFriendFromWallPost('${post.id}')">加好友</button>`;
+          ? `<button class="btn btn-red" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.deleteBuddyPost && window.deleteBuddyPost('${post.id}')">${window.t('social.deleteBtn', '刪除')}</button>`
+          : `<button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.addFriendFromWallPost && window.addFriendFromWallPost('${post.id}')">${window.t('social.addFriendBtn', '加好友')}</button>`;
         const isOpen = buddyOpenPanels.has(post.id);
         const cachedComments = buddyCommentsCache[post.id];
         const commentsListHtml = cachedComments
           ? buddyRenderCommentsHtml(cachedComments)
-          : '<p style="font-size:12px; color:#999; padding:6px 0;">載入留言中…</p>';
+          : `<p style="font-size:12px; color:#999; padding:6px 0;">${window.t('social.loadingComments', '載入留言中…')}</p>`;
         return `
           <div class="card" style="margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
               <div class="avatar-circle" style="width:36px; height:36px; font-size:15px; background:var(--brand-500); border-color:var(--brand-200); cursor:pointer;" onclick="window.viewUserProfile && window.viewUserProfile('${post.authorUid}')">${escapeHtml((post.authorName || '?').charAt(0))}</div>
               <div style="flex:1;">
-                <strong style="font-size:14px; color:var(--brand-800); cursor:pointer;" onclick="window.viewUserProfile && window.viewUserProfile('${post.authorUid}')">${escapeHtml(post.authorName || '同學')}</strong>
+                <strong style="font-size:14px; color:var(--brand-800); cursor:pointer;" onclick="window.viewUserProfile && window.viewUserProfile('${post.authorUid}')">${escapeHtml(post.authorName || window.t('lb.defaultUsername', '同學'))}</strong>
                 <span style="font-size:12px; color:#999; margin-left:4px;">${formatTime(post.createdAt)}</span>
               </div>
               <span class="tag" style="background:var(--brand-100); color:var(--brand-800);">${roleMeta.emoji} ${roleMeta.label}</span>
@@ -3731,14 +3731,14 @@
             <div style="margin-bottom:6px;">${subjectTagsHtml}</div>
             <p style="font-size:14px; color:#333; line-height:1.6; margin-bottom:10px;">${escapeHtml(post.content)}</p>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.toggleBuddyPostComments && window.toggleBuddyPostComments('${post.id}')">留言（${post.commentCount || 0}）</button>
+              <button class="btn btn-outline" type="button" style="flex:1; font-size:13px; padding:6px;" onclick="window.toggleBuddyPostComments && window.toggleBuddyPostComments('${post.id}')">${window.t('social.commentsBtnTemplate', `留言（${post.commentCount || 0}）`).replace('{n}', post.commentCount || 0)}</button>
               ${secondBtnHtml}
             </div>
             <div id="buddy-comments-${post.id}" style="display:${isOpen ? 'block' : 'none'}; margin-top:8px;">
               <div id="buddy-comments-list-${post.id}">${commentsListHtml}</div>
               <div style="display:flex; gap:6px; margin-top:8px;">
-                <input type="text" id="buddy-comment-input-${post.id}" class="input-field" style="flex:1; font-size:13px;" placeholder="回覆這則貼文…" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.addBuddyWallComment('${post.id}');}">
-                <button class="btn btn-primary" type="button" style="font-size:13px; padding:6px 10px;" onclick="window.addBuddyWallComment('${post.id}')">傳送</button>
+                <input type="text" id="buddy-comment-input-${post.id}" class="input-field" style="flex:1; font-size:13px;" placeholder="${escapeHtml(window.t('social.commentPlaceholder', '回覆這則貼文…'))}" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.addBuddyWallComment('${post.id}');}">
+                <button class="btn btn-primary" type="button" style="font-size:13px; padding:6px 10px;" onclick="window.addBuddyWallComment('${post.id}')">${window.t('social.sendBtn', '傳送')}</button>
               </div>
             </div>
           </div>
@@ -3774,7 +3774,7 @@
       const comments = buddyCommentsCache[postId];
       listEl.innerHTML = comments
         ? buddyRenderCommentsHtml(comments)
-        : '<p style="font-size:12px; color:#999; padding:6px 0;">載入留言中…</p>';
+        : `<p style="font-size:12px; color:#999; padding:6px 0;">${window.t('social.loadingComments', '載入留言中…')}</p>`;
     };
 
     // 開始監聽某一則貼文嘅留言（第一次展開先裝，之後保持住監聽，收埋
@@ -3791,12 +3791,12 @@
       }, (e) => {
         console.error('讀取留言失敗:', e);
         const listEl = document.getElementById('buddy-comments-list-' + postId);
-        if (listEl) listEl.innerHTML = '<p style="font-size:12px; color:#D9764A; padding:6px 0;">讀取留言失敗，請稍後再試</p>';
+        if (listEl) listEl.innerHTML = `<p style="font-size:12px; color:#D9764A; padding:6px 0;">${window.t('social.loadCommentsFailed', '讀取留言失敗，請稍後再試')}</p>`;
       });
     };
 
     window.addBuddyWallComment = async function(postId) {
-      if (!window.currentUser) { window.showToast && window.showToast('請先登入', '⚠️'); return; }
+      if (!window.currentUser) { window.showToast && window.showToast(window.t('common.loginFirst', '請先登入'), '⚠️'); return; }
       const input = document.getElementById('buddy-comment-input-' + postId);
       if (!input) return;
       const text = input.value.trim();
@@ -3816,7 +3816,7 @@
         input.value = '';
       } catch (e) {
         console.error('留言失敗:', e);
-        window.showToast && window.showToast('留言失敗，請稍後再試', '❌');
+        window.showToast && window.showToast(window.t('social.commentFailedToast', '留言失敗，請稍後再試'), '❌');
       } finally {
         input.disabled = false;
       }
@@ -3827,11 +3827,11 @@
     // （window.sendFriendRequest()），唔再係第一步嗰個純粹顯示示範訊息
     // 嘅假掣。
     window.addFriendFromWallPost = function(postId) {
-      if (!window.currentUser) { window.showToast && window.showToast('請先登入', '⚠️'); return; }
+      if (!window.currentUser) { window.showToast && window.showToast(window.t('common.loginFirst', '請先登入'), '⚠️'); return; }
       const post = (window.buddyWallPostsCache || []).find((p) => p.id === postId);
       if (!post) return;
       if (post.authorUid === window.currentUser.uid) {
-        window.showToast && window.showToast('不可以將自己加為好友', '😅');
+        window.showToast && window.showToast(window.t('social.cannotAddSelfToast', '不可以將自己加為好友'), '😅');
         return;
       }
       window.sendFriendRequest(post.authorUid, post.authorLoginId || '', post.authorName || '');
@@ -3839,13 +3839,13 @@
 
     window.deleteBuddyPost = async function(postId) {
       if (!window.currentUser || !window.db || !window.fs) return;
-      if (!confirm('確定刪除這則貼文？')) return;
+      if (!confirm(window.t('social.deleteConfirm', '確定刪除這則貼文？'))) return;
       try {
         await window.fs.deleteDoc(window.fs.doc(window.db, 'buddyPosts', postId));
-        window.showToast && window.showToast('貼文已刪除', '🗑️');
+        window.showToast && window.showToast(window.t('social.postDeletedToast', '貼文已刪除'), '🗑️');
       } catch (e) {
         console.error('刪除貼文失敗:', e);
-        window.showToast && window.showToast('刪除失敗，請稍後再試', '❌');
+        window.showToast && window.showToast(window.t('social.deleteFailedToast', '刪除失敗，請稍後再試'), '❌');
       }
     };
 
@@ -3906,25 +3906,25 @@
 
     window.submitBuddyPost = async function(event) {
       event.preventDefault();
-      if (!window.currentUser) { window.showToast && window.showToast('請先登入', '⚠️'); closeModal('modal-buddy-post'); openModal('modal-login'); return; }
+      if (!window.currentUser) { window.showToast && window.showToast(window.t('common.loginFirst', '請先登入'), '⚠️'); closeModal('modal-buddy-post'); openModal('modal-login'); return; }
       if (!window.db || !window.fs) return;
       const roleInput = document.getElementById('buddy-post-role');
       const contentInput = document.getElementById('buddy-post-content');
       const subjectsInput = document.getElementById('buddy-post-subjects');
       if (!roleInput || !roleInput.value) {
-        window.showToast && window.showToast('請先揀一個身份標籤', '⚠️');
+        window.showToast && window.showToast(window.t('social.selectRoleFirstToast', '請先揀一個身份標籤'), '⚠️');
         return;
       }
       const content = (contentInput && contentInput.value.trim()) || '';
       if (!content) {
-        window.showToast && window.showToast('請輸入貼文內容', '⚠️');
+        window.showToast && window.showToast(window.t('social.enterContentToast', '請輸入貼文內容'), '⚠️');
         return;
       }
       const subjects = ((subjectsInput && subjectsInput.value) || '').split(/[,，、]/).map((s) => s.trim()).filter(Boolean).slice(0, 3);
 
       const submitBtn = document.querySelector('#modal-buddy-post .btn-primary');
       const origText = submitBtn ? submitBtn.innerText : '';
-      if (submitBtn) { submitBtn.innerText = '⏳ 發佈中…'; submitBtn.disabled = true; }
+      if (submitBtn) { submitBtn.innerText = window.t('social.postingBtn', '⏳ 發佈中…'); submitBtn.disabled = true; }
 
       try {
         await window.fs.addDoc(window.fs.collection(window.db, 'buddyPosts'), {
@@ -3939,10 +3939,10 @@
         });
         window.resetBuddyPostForm();
         closeModal('modal-buddy-post');
-        window.showToast && window.showToast('貼文已發佈！', '✨');
+        window.showToast && window.showToast(window.t('social.postPublishedToast', '貼文已發佈！'), '✨');
       } catch (e) {
         console.error('發佈貼文失敗:', e);
-        window.showToast && window.showToast('發佈失敗，請稍後再試', '❌');
+        window.showToast && window.showToast(window.t('social.postFailedToast', '發佈失敗，請稍後再試'), '❌');
       } finally {
         if (submitBtn) { submitBtn.innerText = origText; submitBtn.disabled = false; }
       }
@@ -3957,22 +3957,22 @@
       if (!raw) return;
       if (!window.currentUser) { openModal('modal-login'); return; }
       if (!window.db || !window.fs) return;
-      resultEl.innerHTML = '<p style="font-size:13px; color:#999;">搜尋中...</p>';
+      resultEl.innerHTML = `<p style="font-size:13px; color:#999;">${window.t('social.searchingText', '搜尋中...')}</p>`;
       const idLower = raw.toLowerCase();
       try {
         const mapSnap = await window.fs.getDoc(window.fs.doc(window.db, 'usernames', idLower));
         if (!mapSnap.exists()) {
-          resultEl.innerHTML = '<p style="font-size:13px; color:#D9764A;">找不到這個帳號 ID，請檢查有沒有打錯</p>';
+          resultEl.innerHTML = `<p style="font-size:13px; color:#D9764A;">${window.t('social.accountNotFoundText', '找不到這個帳號 ID，請檢查有沒有打錯')}</p>`;
           return;
         }
         const targetUid = mapSnap.data().uid;
         if (targetUid === window.currentUser.uid) {
-          resultEl.innerHTML = '<p style="font-size:13px; color:#999;">這個是你自己的帳號 ID</p>';
+          resultEl.innerHTML = `<p style="font-size:13px; color:#999;">${window.t('social.thisIsYourOwnAccount', '這個是你自己的帳號 ID')}</p>`;
           return;
         }
         const userSnap = await window.fs.getDoc(window.fs.doc(window.db, 'users', targetUid));
         if (!userSnap.exists()) {
-          resultEl.innerHTML = '<p style="font-size:13px; color:#D9764A;">找不到這位使用者的資料</p>';
+          resultEl.innerHTML = `<p style="font-size:13px; color:#D9764A;">${window.t('social.userDataNotFoundText', '找不到這位使用者的資料')}</p>`;
           return;
         }
         const u = userSnap.data();
@@ -3980,7 +3980,7 @@
         // 呢度只係俾學生同學生互加做讀書夥伴用，導師帳號請學生去
         // 「溫習資源」分頁嘅導師名錄度搵。
         if (u.role === 'tutor') {
-          resultEl.innerHTML = '<p style="font-size:13px; color:#D9764A;">找不到這個帳號 ID，請檢查有沒有打錯</p>';
+          resultEl.innerHTML = `<p style="font-size:13px; color:#D9764A;">${window.t('social.accountNotFoundText', '找不到這個帳號 ID，請檢查有沒有打錯')}</p>`;
           return;
         }
         const levelInfo = calcLevelInfo(u.exp || 0);
@@ -3990,7 +3990,7 @@
             <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="viewUserProfile('${targetUid}')">
               <div class="avatar-circle" style="width:40px; height:40px; font-size:16px;">${(u.username||'U').charAt(0).toUpperCase()}</div>
               <div>
-                <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(u.username||'同學')}</div>
+                <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(u.username||window.t('lb.defaultUsername', '同學'))}</div>
                 <div style="font-size:13px; color:#888;">${escapeHtml(u.loginId || idLower)}</div>
               </div>
             </div>
@@ -4000,13 +4000,13 @@
                 <div style="color:${rank.color};">Lv.${levelInfo.level} ${escapeHtml(rank.title)}</div>
                 <div>累積溫習 ${(parseFloat(u.hours) || 0).toFixed(1)} 小時</div>
               </div>
-              <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="viewUserProfile('${targetUid}')">看資料 / 加好友</button>
+              <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="viewUserProfile('${targetUid}')">${window.t('social.viewProfileAddFriendBtn', '看資料 / 加好友')}</button>
             </div>
           </div>
         `;
       } catch (e) {
         console.error(e);
-        resultEl.innerHTML = '<p style="font-size:13px; color:#D9764A;">搜尋失敗，請再試一次</p>';
+        resultEl.innerHTML = `<p style="font-size:13px; color:#D9764A;">${window.t('social.searchFailedText', '搜尋失敗，請再試一次')}</p>`;
       }
     };
 
@@ -4055,7 +4055,7 @@
       if (!container) return;
       const friends = window.friendsListDataCache || [];
       if (friends.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:20px;">尚未有好友，請使用上方的帳號 ID 搜尋並新增幾位！</p>';
+        container.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:20px;">${window.t('social.noFriendsYet', '尚未有好友，請使用上方的帳號 ID 搜尋並新增幾位！')}</p>`;
         return;
       }
       const presenceMap = window.friendPresenceMap || {};
@@ -4070,13 +4070,13 @@
                 <span class="presence-dot ${online ? 'online' : ''}"></span>
               </div>
               <div style="min-width:0;">
-                <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(f.username||'同學')} <span style="font-weight:normal; font-size:13px; color:${online ? '#4CAF50' : '#999'};">${online ? '● 在線' : ''}</span></div>
+                <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(f.username||window.t('lb.defaultUsername', '同學'))} <span style="font-weight:normal; font-size:13px; color:${online ? '#4CAF50' : '#999'};">${online ? window.t('social.onlineLabel', '● 在線') : ''}</span></div>
                 <div style="font-size:13px; color:#888;">${escapeHtml(f.loginId||'')}</div>
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-              <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 8px;" onclick="window.openChatWindow('${f.uid}', '${safeChatName}')" title="傳送訊息">💬</button>
-              <span style="font-size:13px; color:#3E7A8A; cursor:pointer;" onclick="viewUserProfile('${f.uid}')">看資料 ›</span>
+              <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 8px;" onclick="window.openChatWindow('${f.uid}', '${safeChatName}')" title="${escapeHtml(window.t('social.sendMessageTitle', '傳送訊息'))}">💬</button>
+              <span style="font-size:13px; color:#3E7A8A; cursor:pointer;" onclick="viewUserProfile('${f.uid}')">${window.t('social.viewProfileLink', '看資料 ›')}</span>
             </div>
           </div>
         `;
@@ -4121,12 +4121,12 @@
           return `
             <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
               <div style="cursor:pointer;" onclick="viewUserProfile('${r.fromUid}')">
-                <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(r.fromUsername||'同學')}</div>
+                <div style="font-weight:bold; color:var(--brand-800); font-size:14px;">${escapeHtml(r.fromUsername||window.t('lb.defaultUsername', '同學'))}</div>
                 <div style="font-size:13px; color:#888;">${escapeHtml(r.fromLoginId||'')}</div>
               </div>
               <div style="display:flex; gap:6px;">
-                <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="respondFriendRequest('${d.id}', true)">接受</button>
-                <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="respondFriendRequest('${d.id}', false)">拒絕</button>
+                <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="respondFriendRequest('${d.id}', true)">${window.t('social.acceptBtn', '接受')}</button>
+                <button class="btn btn-outline" type="button" style="font-size:13px; padding:5px 10px;" onclick="respondFriendRequest('${d.id}', false)">${window.t('social.declineBtn', '拒絕')}</button>
               </div>
             </div>
           `;
@@ -4433,7 +4433,7 @@
         .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
 
       if (conversations.length === 0) {
-        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:13px; padding:16px;">尚未有任何對話紀錄，請到「夥伴與讀書會」找一位好友按「💬」開始聊天！</p>';
+        listEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px; padding:16px;">${window.t('chatdock.noConversationsEmpty', '尚未有任何對話紀錄，請到「書伴廣場」找一位好友按「💬」開始聊天！')}</p>`;
         return;
       }
 

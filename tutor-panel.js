@@ -160,7 +160,7 @@ window.applyRoleBasedSidebar = function() {
       return `<button type="button" class="btn ${active ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="window.selectTutorDirectorySubject(${value === null ? 'null' : `'${escapeHtmlLocal(value).replace(/'/g, "\\'")}'`})">${escapeHtmlLocal(label)}</button>`;
     };
 
-    tabsContainer.innerHTML = [makeTabBtn(window.t('room.filterAll', '全部'), null), ...orderedSubjects.map((s) => makeTabBtn(s, s))].join('');
+    tabsContainer.innerHTML = [makeTabBtn(window.t('room.filterAll', '全部'), null), ...orderedSubjects.map((s) => makeTabBtn(window.translateSubjectName ? window.translateSubjectName(s) : s, s))].join('');
   }
 
   // 導師專頁：學生撳導師卡片（頭像除外）入嚟嘅完整版面，顯示呢位導師
@@ -209,7 +209,7 @@ window.applyRoleBasedSidebar = function() {
       }
       if (subjectsEl) {
         subjectsEl.innerHTML = (t.subjectsIntended || [])
-          .map((s) => `<span class="tag" style="background:#F0F6F8; color:#1E4550;">${escapeHtmlLocal(s)}</span>`)
+          .map((s) => `<span class="tag" style="background:#F0F6F8; color:#1E4550;">${escapeHtmlLocal(window.translateSubjectName ? window.translateSubjectName(s) : s)}</span>`)
           .join('');
       }
       if (followerCountEl) followerCountEl.innerText = u.followerCount || 0;
@@ -239,7 +239,7 @@ window.applyRoleBasedSidebar = function() {
 
     if (!filtered.length) {
       listContainer.innerHTML = tutorDirectorySelectedSubject
-        ? `<div class="card" style="text-align:center; color:#999;">${window.t('vip.noTutorsForSubjectTemplate', '暫時未有教授「{subject}」的已上架導師').replace('{subject}', escapeHtmlLocal(tutorDirectorySelectedSubject))}</div>`
+        ? `<div class="card" style="text-align:center; color:#999;">${window.t('vip.noTutorsForSubjectTemplate', '暫時未有教授「{subject}」的已上架導師').replace('{subject}', escapeHtmlLocal(window.translateSubjectName ? window.translateSubjectName(tutorDirectorySelectedSubject) : tutorDirectorySelectedSubject))}</div>`
         : `<div class="card" style="text-align:center; color:#999;">${window.t('vip.noTutorsYet', '目前尚未有已上架的導師')}</div>`;
       return;
     }
@@ -247,7 +247,7 @@ window.applyRoleBasedSidebar = function() {
     listContainer.innerHTML = filtered.map((t) => {
       const uid = t.uid;
       const subjectsHtml = (t.subjectsIntended || [])
-        .map((s) => `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtmlLocal(s)}</span>`)
+        .map((s) => `<span class="tag" style="background:#F0F6F8; color:#1E4550; margin-right:4px;">${escapeHtmlLocal(window.translateSubjectName ? window.translateSubjectName(s) : s)}</span>`)
         .join('');
       // 撳頭像／導師名稱：只開細細張「資料卡」（window.viewUserProfile()），
       // 純顯示基本身份資訊；撳卡片其他位置（簡介、科目標籤、「查看 ›」、
@@ -408,7 +408,7 @@ window.applyRoleBasedSidebar = function() {
   window.openTutorAddSubjectModal = function() {
     const select = document.getElementById('tutor-add-subject-select');
     if (select) {
-      select.innerHTML = TUTOR_DSE_SUBJECTS.map((s) => `<option value="${escapeHtmlLocal(s)}">${escapeHtmlLocal(s)}</option>`).join('');
+      select.innerHTML = TUTOR_DSE_SUBJECTS.map((s) => `<option value="${escapeHtmlLocal(s)}">${escapeHtmlLocal(window.translateSubjectName ? window.translateSubjectName(s) : s)}</option>`).join('');
       select.value = TUTOR_DSE_SUBJECTS[0];
     }
     const customInput = document.getElementById('tutor-add-subject-custom');

@@ -39,6 +39,54 @@
   window.SUPPORTED_LANGUAGES = ['zh-Hant', 'en', 'yue'];
   window.LANGUAGE_LABELS = { 'zh-Hant': '繁體中文', 'en': 'English', 'yue': '廣東話' };
 
+  // ── HKDSE 科目英文名（跟教育局／考評局官方英文科目名）──
+  // 呢份淨係俾「English」語言用：繁體中文／廣東話兩個語言版本嘅科目名
+  // 一律維持原本嘅中文（Alvis 明確要求唔好改），科目名本身（見
+  // tutor-panel.js 嘅 window.TUTOR_DSE_SUBJECTS）亦都繼續係中文，唔改
+  // ——因為呢個陣列同時做緊「篩選用嘅資料值」（data-subject、Firestore
+  // 存嘅 post.subjects 等），改咗會累壞晒篩選同已經存落資料庫嘅舊資料。
+  // 呢度淨係喺「English」呢個語言先將顯示文字換做官方英文名，經
+  // window.translateSubjectName() 呢個函數轉換，唔改任何底層資料值。
+  window.DSE_SUBJECT_EN_NAMES = {
+    '中國語文': 'Chinese Language',
+    '英國語文': 'English Language',
+    '數學（必修部分）': 'Mathematics Compulsory Part',
+    '數學延伸部分單元一（M1）': 'Mathematics Extended Part Module 1 (M1)',
+    '數學延伸部分單元二（M2）': 'Mathematics Extended Part Module 2 (M2)',
+    '公民與社會發展': 'Citizenship and Social Development',
+    '中國歷史': 'Chinese History',
+    '歷史': 'History',
+    '地理': 'Geography',
+    '經濟': 'Economics',
+    '企業、會計與財務概論（BAFS）': 'Business, Accounting and Financial Studies (BAFS)',
+    '倫理與宗教': 'Ethics and Religious Studies',
+    '中國文學': 'Chinese Literature',
+    '英語文學': 'Literature in English',
+    '物理': 'Physics',
+    '化學': 'Chemistry',
+    '生物': 'Biology',
+    '資訊及通訊科技': 'Information and Communication Technology',
+    '健康管理與社會關懷': 'Health Management and Social Care',
+    '科技與生活': 'Technology and Living',
+    '設計與應用科技': 'Design and Applied Technology',
+    '旅遊與款待': 'Tourism and Hospitality Studies',
+    '視覺藝術': 'Visual Arts',
+    '音樂': 'Music',
+    '體育': 'Physical Education',
+    '其他（自行輸入）': 'Other (custom)',
+  };
+
+  // 將一個科目名（繁體中文原文）按目前語言轉做顯示用文字：English 先
+  // 會查返上面嗰份官方英文名對照表，繁體中文／廣東話一律原文奉還。
+  // 揾唔到對應英文名（例如導師自行輸入嘅自訂科目）就自動退返用原文，
+  // 唔會開天窗。
+  window.translateSubjectName = function (name) {
+    if (window.getAppLanguage() === 'en' && window.DSE_SUBJECT_EN_NAMES[name]) {
+      return window.DSE_SUBJECT_EN_NAMES[name];
+    }
+    return name;
+  };
+
   // ── 翻譯字典（第一階段：淨係示範性咁做咗側邊選單／語言掣本身呢
   //    幾組，其餘留返第二／三階段陸續加）──
   window.I18N_DICT = {
@@ -295,6 +343,90 @@
     'lb.emptySchoolInternal': { 'zh-Hant': '你的學校暫時未有同學上榜，開始溫習就可以成為第一位！', 'en': 'No one from your school has made the leaderboard yet — start studying and be the first!', 'yue': '你間學校暫時未有同學上榜，開始溫習就可以做第一位！' },
     'lb.emptySchoolTotal': { 'zh-Hant': '暫時未有學校上榜，開始溫習就可以幫你的學校爭取第一！', 'en': 'No schools on the leaderboard yet — start studying and help your school claim first place!', 'yue': '暫時未有學校上榜，開始溫習幫你間學校爭第一啦！' },
     'lb.unnamedSchool': { 'zh-Hant': '未命名學校', 'en': 'Unnamed School', 'yue': '未命名學校' },
+
+    // ── 書伴廣場（第八階段：English 由 Claude 翻譯、廣東話口語由
+    //    Claude 起草，交 Alvis 覆核／修正）──
+    'social.friendsTabBtn': { 'zh-Hant': '我的好友', 'en': 'My Friends', 'yue': '我嘅朋友' },
+    'social.wallTabBtn': { 'zh-Hant': '尋找書伴留言牆', 'en': 'Find a Study Buddy', 'yue': '搵書伴留言牆' },
+    'social.searchTitle': { 'zh-Hant': '用帳號 ID 搜尋朋友', 'en': 'Search Friends by Account ID', 'yue': '用帳號 ID 搵朋友' },
+    'social.searchPlaceholder': { 'zh-Hant': '輸入完整帳號 ID，例如：student001', 'en': 'Enter the full account ID, e.g. student001', 'yue': '輸入完整帳號 ID，例如：student001' },
+    'social.searchBtn': { 'zh-Hant': '搜尋', 'en': 'Search', 'yue': '搜尋' },
+    'social.requestsTitle': { 'zh-Hant': '收到的好友邀請', 'en': 'Friend Requests Received', 'yue': '收到嘅好友邀請' },
+    'social.friendsCountPrefix': { 'zh-Hant': '我的好友（', 'en': 'My Friends (', 'yue': '我嘅好友（' },
+    'social.friendsCountSuffix': { 'zh-Hant': '）', 'en': ')', 'yue': '）' },
+    'social.loadingFriendsList': { 'zh-Hant': '載入中好友名單...', 'en': 'Loading friend list...', 'yue': 'Load 緊好友名單...' },
+    'social.postBtn': { 'zh-Hant': '發佈徵求書伴貼文', 'en': 'Post a Study Buddy Request', 'yue': '出個搵書伴帖文' },
+    'social.wallPrivacyNotice': { 'zh-Hant': '請注意：所有已登入用戶都可以看到你的貼文及留言，請勿透露個人聯絡方式或其他敏感資料。', 'en': 'Please note: all logged-in users can see your posts and comments — do not share personal contact details or other sensitive information.', 'yue': '請留意：所有已登入用戶都睇到你嘅帖文同留言，唔好透露個人聯絡方法或者其他敏感資料。' },
+    'social.moreSubjectsBtn': { 'zh-Hant': '其他科目 ▾', 'en': 'Other Subjects ▾', 'yue': '其他科目 ▾' },
+    'social.roleWantTaught': { 'zh-Hant': '想找人教我', 'en': 'Looking to be taught', 'yue': '想搵人教我' },
+    'social.roleCanTeach': { 'zh-Hant': '我可以教人', 'en': 'I can teach', 'yue': '我可以教人' },
+    'social.roleTogether': { 'zh-Hant': '想找人一齊溫書', 'en': 'Looking to study together', 'yue': '想搵人一齊溫書' },
+    'social.roleLabel': { 'zh-Hant': '身份標籤 *', 'en': 'Role Tag *', 'yue': '身份標籤 *' },
+    'social.subjectLabel': { 'zh-Hant': '科目標籤（可選多科，最多 3 科）', 'en': 'Subject Tags (optional, up to 3)', 'yue': '科目標籤（可以揀多科，最多 3 科）' },
+    'social.contentLabel': { 'zh-Hant': '內容 *', 'en': 'Content *', 'yue': '內容 *' },
+    'social.contentPlaceholder': { 'zh-Hant': '例如：DSE 數學卷一經常不及格，想找一位成績較好的同學一齊溫習，互相督促！', 'en': 'e.g. I keep failing DSE Maths Paper 1 — looking for a strong student to study with and keep each other on track!', 'yue': '例如：DSE 數學卷一成日唔合格，想搵個成績好啲嘅同學一齊溫，互相督促吓！' },
+    'social.postSubmitBtn': { 'zh-Hant': '發佈', 'en': 'Post', 'yue': '發佈' },
+    'social.otherSubjectsModalTitle': { 'zh-Hant': '選擇其他科目', 'en': 'Choose Another Subject', 'yue': '揀其他科目' },
+    'social.loadingWall': { 'zh-Hant': '載入中...', 'en': 'Loading...', 'yue': 'Load 緊...' },
+    'social.loadWallFailed': { 'zh-Hant': '載入失敗，請稍後再試', 'en': 'Failed to load, please try again later', 'yue': 'Load 唔到，遲啲再試吓' },
+    // {subject} 係佔位符，塞入而家篩選緊嘅科目名（或者「全部」）。
+    'social.emptyWallTemplate': { 'zh-Hant': '目前「{subject}」分類沒有貼文，換個分類看看，或者做第一個發帖的人！', 'en': 'No posts under "{subject}" yet — try another category, or be the first to post!', 'yue': '而家「{subject}」呢類冇帖文，轉個分類睇吓，或者做第一個出帖嘅人啦！' },
+    'social.roleDefaultLabel': { 'zh-Hant': '書伴', 'en': 'Study Buddy', 'yue': '書伴' },
+    // {n} 係佔位符，塞入留言數目。
+    'social.commentsBtnTemplate': { 'zh-Hant': '留言（{n}）', 'en': 'Comments ({n})', 'yue': '留言（{n}）' },
+    'social.deleteBtn': { 'zh-Hant': '刪除', 'en': 'Delete', 'yue': '刪除' },
+    'social.addFriendBtn': { 'zh-Hant': '加好友', 'en': 'Add Friend', 'yue': '加好友' },
+    'social.commentPlaceholder': { 'zh-Hant': '回覆這則貼文…', 'en': 'Reply to this post…', 'yue': '回覆呢個帖文…' },
+    'social.sendBtn': { 'zh-Hant': '傳送', 'en': 'Send', 'yue': '傳送' },
+    'social.noCommentsYet': { 'zh-Hant': '尚未有留言，做第一個留言的人吧！', 'en': 'No comments yet — be the first to comment!', 'yue': '仲未有留言，做第一個留言嘅人啦！' },
+    'social.loadingComments': { 'zh-Hant': '載入留言中…', 'en': 'Loading comments…', 'yue': 'Load 緊留言…' },
+    'social.loadCommentsFailed': { 'zh-Hant': '讀取留言失敗，請稍後再試', 'en': 'Failed to load comments, please try again later', 'yue': '睇唔到留言，遲啲再試吓' },
+    'social.commentFailedToast': { 'zh-Hant': '留言失敗，請稍後再試', 'en': 'Failed to comment, please try again later', 'yue': '留唔到言，遲啲再試吓' },
+    'social.deleteConfirm': { 'zh-Hant': '確定刪除這則貼文？', 'en': 'Delete this post?', 'yue': '真係要刪除呢個帖文？' },
+    'social.postDeletedToast': { 'zh-Hant': '貼文已刪除', 'en': 'Post deleted', 'yue': '帖文刪除咗喇' },
+    'social.deleteFailedToast': { 'zh-Hant': '刪除失敗，請稍後再試', 'en': 'Failed to delete, please try again later', 'yue': '刪除唔到，遲啲再試吓' },
+    'social.cannotAddSelfToast': { 'zh-Hant': '不可以將自己加為好友', 'en': "You can't add yourself as a friend", 'yue': '唔可以加自己做好友' },
+    'social.postingBtn': { 'zh-Hant': '⏳ 發佈中…', 'en': '⏳ Posting…', 'yue': '⏳ 發佈緊…' },
+    'social.selectRoleFirstToast': { 'zh-Hant': '請先揀一個身份標籤', 'en': 'Please choose a role tag first', 'yue': '揀返個身份標籤先' },
+    'social.enterContentToast': { 'zh-Hant': '請輸入貼文內容', 'en': 'Please enter your post content', 'yue': '要打返啲內容先得' },
+    'social.postPublishedToast': { 'zh-Hant': '貼文已發佈！', 'en': 'Post published!', 'yue': '帖文出咗喇！' },
+    'social.postFailedToast': { 'zh-Hant': '發佈失敗，請稍後再試', 'en': 'Failed to post, please try again later', 'yue': '出唔到帖，遲啲再試吓' },
+    'social.searchingText': { 'zh-Hant': '搜尋中...', 'en': 'Searching...', 'yue': '搵緊...' },
+    'social.accountNotFoundText': { 'zh-Hant': '找不到這個帳號 ID，請檢查有沒有打錯', 'en': "Account ID not found — please check for typos", 'yue': '搵唔到呢個帳號 ID，睇吓係咪打錯咗' },
+    'social.thisIsYourOwnAccount': { 'zh-Hant': '這個是你自己的帳號 ID', 'en': 'This is your own account ID', 'yue': '呢個係你自己嘅帳號 ID' },
+    'social.userDataNotFoundText': { 'zh-Hant': '找不到這位使用者的資料', 'en': "Couldn't find this user's data", 'yue': '搵唔到呢個用戶嘅資料' },
+    'social.viewProfileAddFriendBtn': { 'zh-Hant': '看資料 / 加好友', 'en': 'View Profile / Add Friend', 'yue': '睇資料 / 加好友' },
+    'social.searchFailedText': { 'zh-Hant': '搜尋失敗，請再試一次', 'en': 'Search failed, please try again', 'yue': '搵唔到，再試多次' },
+    'social.noFriendsYet': { 'zh-Hant': '尚未有好友，請使用上方的帳號 ID 搜尋並新增幾位！', 'en': 'No friends yet — use the account ID search above to add some!', 'yue': '仲未有好友，用返上面嘅帳號 ID 搜尋加幾個啦！' },
+    'social.onlineLabel': { 'zh-Hant': '● 在線', 'en': '● Online', 'yue': '● 在線' },
+    'social.sendMessageTitle': { 'zh-Hant': '傳送訊息', 'en': 'Send Message', 'yue': '傳送訊息' },
+    'social.viewProfileLink': { 'zh-Hant': '看資料 ›', 'en': 'View Profile ›', 'yue': '睇資料 ›' },
+    'social.acceptBtn': { 'zh-Hant': '接受', 'en': 'Accept', 'yue': '接受' },
+    'social.declineBtn': { 'zh-Hant': '拒絕', 'en': 'Decline', 'yue': '拒絕' },
+    'social.alreadyFriendsTag': { 'zh-Hant': '已經是好友', 'en': 'Already Friends', 'yue': '已經係好友' },
+    'social.removeFriendBtn': { 'zh-Hant': '移除好友', 'en': 'Remove Friend', 'yue': '移除好友' },
+    'social.theyWantToAddYou': { 'zh-Hant': '對方想加你做好友', 'en': 'This person wants to add you as a friend', 'yue': '對方想加你做好友' },
+    'social.requestSentWaiting': { 'zh-Hant': '⏳ 邀請已送出，等待回覆', 'en': '⏳ Request sent, awaiting reply', 'yue': '⏳ 邀請送咗喇，等緊回覆' },
+    'social.loadingFriendStatus': { 'zh-Hant': '載入中好友狀態...', 'en': 'Loading friend status...', 'yue': 'Load 緊好友狀態...' },
+    'social.loadFriendStatusFailed': { 'zh-Hant': '讀取好友狀態失敗', 'en': 'Failed to load friend status', 'yue': '睇唔到好友狀態' },
+    'social.requestAlreadySentToast': { 'zh-Hant': '已經送了邀請，等待對方回覆', 'en': 'Request already sent, awaiting reply', 'yue': '已經送咗邀請，等緊對方回覆' },
+    'social.alreadyFriendsToast': { 'zh-Hant': '你們已經是好友', 'en': "You're already friends", 'yue': '你哋已經係好友喇' },
+    'social.requestSentToast': { 'zh-Hant': '好友邀請已送出，等對方接受', 'en': 'Friend request sent, waiting for them to accept', 'yue': '好友邀請送咗喇，等對方接受' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'social.sendRequestFailedTemplate': { 'zh-Hant': '送出邀請失敗：{msg}', 'en': 'Failed to send request: {msg}', 'yue': '送唔到邀請：{msg}' },
+    'social.becameFriendsToast': { 'zh-Hant': '已成為好友！', 'en': 'You are now friends!', 'yue': '而家係好友喇！' },
+    'social.requestDeclinedToast': { 'zh-Hant': '已拒絕邀請', 'en': 'Request declined', 'yue': '拒絕咗邀請' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'social.respondFailedTemplate': { 'zh-Hant': '操作失敗：{msg}', 'en': 'Action failed: {msg}', 'yue': '操作失敗：{msg}' },
+    'social.removeFriendConfirm': { 'zh-Hant': '確定要移除這位好友嗎？', 'en': 'Remove this friend?', 'yue': '真係要移除呢個好友？' },
+    'social.friendRemovedToast': { 'zh-Hant': '已移除好友', 'en': 'Friend removed', 'yue': '移除咗好友喇' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'social.removeFriendFailedTemplate': { 'zh-Hant': '移除失敗：{msg}', 'en': 'Failed to remove: {msg}', 'yue': '移除唔到：{msg}' },
+
+    // ── 即時對話浮動視窗（右下角圓形掣）──
+    'chatdock.title': { 'zh-Hant': '即時對話', 'en': 'Chat', 'yue': '即時對話' },
+    'chatdock.noFriendsEmpty': { 'zh-Hant': '尚未有好友，請先到「書伴廣場」新增幾位！', 'en': 'No friends yet — go to "Study Buddy Plaza" to add some!', 'yue': '仲未有好友，去「書伴廣場」加幾個先啦！' },
+    'chatdock.noConversationsEmpty': { 'zh-Hant': '尚未有任何對話紀錄，請到「書伴廣場」找一位好友按「💬」開始聊天！', 'en': 'No conversations yet — go to "Study Buddy Plaza" and tap "💬" on a friend to start chatting!', 'yue': '仲未有對話記錄，去「書伴廣場」揾個好友撳「💬」開始傾偈啦！' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置
@@ -375,6 +507,15 @@
     document.querySelectorAll('[data-i18n-title]').forEach((el) => {
       const key = el.getAttribute('data-i18n-title');
       el.setAttribute('title', window.t(key, el.getAttribute('title')));
+    });
+    // 科目名按鈕（例如書伴留言牆常駐嘅 3 個科目分頁掣）：呢啲元素本身
+    // 已經有 data-subject="中國語文" 呢類屬性做篩選用（唔可以改，改咗
+    // 篩選邏輯會壞），淨係將顯示文字（textContent）按目前語言轉做官方
+    // 英文名／原文——已經有 data-i18n 屬性嘅（例如「全部」呢粒掣）唔屬
+    // 於呢度，跳過，避免同上面 data-i18n 嗰段打架。
+    document.querySelectorAll('[data-subject]:not([data-i18n])').forEach((el) => {
+      const subj = el.getAttribute('data-subject');
+      if (subj) el.textContent = window.translateSubjectName(subj);
     });
     document.querySelectorAll('.lang-option-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.lang === lang);

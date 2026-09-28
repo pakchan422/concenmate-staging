@@ -1168,13 +1168,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           return `<button type="button" class="tag" data-subject="${escAttr(s)}"
             style="cursor:pointer; border:1px solid ${active ? 'var(--brand-500)' : '#ddd'};
             background:${active ? 'var(--brand-500)' : '#F5F7F8'}; color:${active ? '#fff' : '#555'};
-            border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">${active ? '✓ ' : ''}${s}</button>`;
+            border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">${active ? '✓ ' : ''}${window.escapeHtml(window.translateSubjectName ? window.translateSubjectName(s) : s)}</button>`;
         }).join('');
         const customSelected = Array.from(selected).filter((s) => !fixedSubjects.includes(s));
         const customChipsHtml = customSelected.map((s) => `
           <button type="button" class="tag" data-custom-subject="${escAttr(s)}"
             style="cursor:pointer; border:1px solid var(--brand-500); background:var(--brand-500);
-            color:#fff; border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">✓ ${s} ✕</button>
+            color:#fff; border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">✓ ${window.escapeHtml(s)} ✕</button>
         `).join('');
         picker.innerHTML = `
           <div style="display:flex; flex-wrap:wrap;">${chipsHtml}${customChipsHtml}</div>
@@ -1243,13 +1243,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           return `<button type="button" class="tag" data-subject="${escAttr(s)}" ${disabled ? 'disabled' : ''}
             style="cursor:${disabled ? 'not-allowed' : 'pointer'}; border:1px solid ${active ? 'var(--brand-500)' : '#ddd'};
             background:${active ? 'var(--brand-500)' : (disabled ? '#eee' : '#F5F7F8')}; color:${active ? '#fff' : (disabled ? '#bbb' : '#555')};
-            border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">${active ? '✓ ' : ''}${s}</button>`;
+            border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">${active ? '✓ ' : ''}${window.escapeHtml(window.translateSubjectName ? window.translateSubjectName(s) : s)}</button>`;
         }).join('');
         const customSelected = Array.from(selected).filter((s) => !fixedSubjects.includes(s));
         const customChipsHtml = customSelected.map((s) => `
           <button type="button" class="tag" data-custom-subject="${escAttr(s)}"
             style="cursor:pointer; border:1px solid var(--brand-500); background:var(--brand-500);
-            color:#fff; border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">✓ ${s} ✕</button>
+            color:#fff; border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">✓ ${window.escapeHtml(s)} ✕</button>
         `).join('');
         picker.innerHTML = `
           <div style="display:flex; flex-wrap:wrap;">${chipsHtml}${customChipsHtml}</div>
@@ -1326,13 +1326,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           return `<button type="button" class="tag" data-subject="${escAttr(s)}"
             style="cursor:pointer; border:1px solid ${active ? 'var(--brand-500)' : '#ddd'};
             background:${active ? 'var(--brand-500)' : '#F5F7F8'}; color:${active ? '#fff' : '#555'};
-            border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">${active ? '✓ ' : ''}${s}</button>`;
+            border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">${active ? '✓ ' : ''}${window.escapeHtml(window.translateSubjectName ? window.translateSubjectName(s) : s)}</button>`;
         }).join('');
         const isCustomSelected = selected && !fixedSubjects.includes(selected);
         const customChipHtml = isCustomSelected ? `
           <button type="button" class="tag" data-custom-subject="${escAttr(selected)}"
             style="cursor:pointer; border:1px solid var(--brand-500); background:var(--brand-500);
-            color:#fff; border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">✓ ${selected} ✕</button>
+            color:#fff; border-radius:99px; padding:4px 10px; font-size:13px; margin:0 6px 6px 0;">✓ ${window.escapeHtml(selected)} ✕</button>
         ` : '';
         picker.innerHTML = `
           <div style="display:flex; flex-wrap:wrap;">${chipsHtml}${customChipHtml}</div>
