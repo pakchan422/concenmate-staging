@@ -427,6 +427,53 @@
     'chatdock.title': { 'zh-Hant': '即時對話', 'en': 'Chat', 'yue': '即時對話' },
     'chatdock.noFriendsEmpty': { 'zh-Hant': '尚未有好友，請先到「書伴廣場」新增幾位！', 'en': 'No friends yet — go to "Study Buddy Plaza" to add some!', 'yue': '仲未有好友，去「書伴廣場」加幾個先啦！' },
     'chatdock.noConversationsEmpty': { 'zh-Hant': '尚未有任何對話紀錄，請到「書伴廣場」找一位好友按「💬」開始聊天！', 'en': 'No conversations yet — go to "Study Buddy Plaza" and tap "💬" on a friend to start chatting!', 'yue': '仲未有對話記錄，去「書伴廣場」揾個好友撳「💬」開始傾偈啦！' },
+
+    // ── 溫習日記（第九階段：English 由 Claude 翻譯、廣東話口語由
+    //    Claude 起草，交 Alvis 覆核／修正）──
+    'diary.backButton': { 'zh-Hant': '← 返回我的溫習日記', 'en': '← Back to My Study Diary', 'yue': '← 返去我嘅溫習日記' },
+    'diary.photosLabel': { 'zh-Hant': '相片', 'en': 'Photos', 'yue': '相片' },
+    'diary.followingLabel': { 'zh-Hant': '追蹤中', 'en': 'Following', 'yue': '追蹤緊' },
+    'diary.postPhotoBtn': { 'zh-Hant': '發佈今日溫習相片', 'en': "Post Today's Study Photo", 'yue': 'Post 返張今日溫習相' },
+    'diary.postPhotoBtnLocked': { 'zh-Hant': '🔒 發佈今日溫習相片', 'en': "🔒 Post Today's Study Photo", 'yue': '🔒 Post 返張今日溫習相' },
+    'diary.uploadingBtn': { 'zh-Hant': '⏳ 上傳中…', 'en': '⏳ Uploading…', 'yue': '⏳ 上傳緊…' },
+    'diary.postPhotoHint': { 'zh-Hant': '每日限發佈一張，需條件：在視訊溫習室累積溫習滿 15 分鐘', 'en': 'Limited to one photo per day, and requires 15 minutes of accumulated study time in the Video Study Room', 'yue': '每日淨係可以出一張，條件：喺視訊溫習室溫夠 15 分鐘先得' },
+    'diary.myPhotosHeading': { 'zh-Hant': '我的溫習相片', 'en': 'My Study Photos', 'yue': '我嘅溫習相片' },
+    'diary.photosHeadingGeneric': { 'zh-Hant': '溫習相片', 'en': 'Study Photos', 'yue': '溫習相片' },
+    'diary.noPhotosYet': { 'zh-Hant': '仲未發佈過溫習相片', 'en': 'No study photos posted yet', 'yue': '仲未 Post 過溫習相片' },
+    'diary.moreBtn': { 'zh-Hant': '更多', 'en': 'More', 'yue': '更多' },
+    'diary.loginFirstMember': { 'zh-Hant': '請先登入會員', 'en': 'Please log in first', 'yue': '要登入會員先得' },
+    'diary.alreadyPostedToday': { 'zh-Hant': '今日已經發佈過一張溫習相片，請明天再發佈', 'en': "You've already posted a study photo today — please come back tomorrow", 'yue': '今日已經 Post 咗張溫習相喇，聽日先再 Post 啦' },
+    // {min} 係佔位符，塞入所需分鐘數；{cur} 係佔位符，塞入現時已累積分鐘數。
+    'diary.needMoreMinutesTemplate': { 'zh-Hant': '需要在視訊溫習室累積溫習滿 {min} 分鐘，先可以發佈當日溫習相片（現時：{cur} 分鐘）', 'en': 'You need {min} minutes of accumulated study time in the Video Study Room to post today’s study photo (currently: {cur} minutes)', 'yue': '要喺視訊溫習室溫夠 {min} 分鐘，先可以 Post 返張當日溫習相（而家：{cur} 分鐘）' },
+    'diary.imageLoadFailed': { 'zh-Hant': '圖片載入失敗，請更換其他相片', 'en': 'Failed to load the image, please choose another photo', 'yue': 'Load 唔到張相，換第張啦' },
+    'diary.photoPostedToast': { 'zh-Hant': '溫習相片已成功發佈！', 'en': 'Study photo posted!', 'yue': '溫習相 Post 咗喇！' },
+    'diary.notEligibleFallback': { 'zh-Hant': '尚未符合發佈條件', 'en': 'You do not meet the posting conditions yet', 'yue': '仲未夠條件 Post 相' },
+    'diary.tooManyRequestsFallback': { 'zh-Hant': '操作次數過多，請稍後再試', 'en': 'Too many attempts, please try again later', 'yue': '搞得太密，遲啲再試吓' },
+    'diary.photoRejectedFallback': { 'zh-Hant': '相片不符合要求，請更換其他相片', 'en': 'This photo does not meet the requirements, please choose another one', 'yue': '呢張相唔啱要求，換第張啦' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'diary.postFailedTemplate': { 'zh-Hant': '發佈失敗：{msg}', 'en': 'Failed to post: {msg}', 'yue': 'Post 唔到：{msg}' },
+    'diary.userNotFound': { 'zh-Hant': '找不到這位使用者', 'en': 'User not found', 'yue': '搵唔到呢個用戶' },
+    'diary.photoAlt': { 'zh-Hant': '溫習相片', 'en': 'Study photo', 'yue': '溫習相片' },
+
+    // ── 追蹤書伴（Follow） ──
+    'follow.alreadyFollowingBtn': { 'zh-Hant': '已追蹤（點擊取消）', 'en': 'Following (tap to unfollow)', 'yue': '已追蹤緊（撳一下取消）' },
+    'follow.verbTutor': { 'zh-Hant': '導師', 'en': 'Tutor', 'yue': '導師' },
+    'follow.verbBuddy': { 'zh-Hant': '書伴', 'en': 'Study Buddy', 'yue': '書伴' },
+    // {verb} 係佔位符，塞入上面 follow.verbTutor／follow.verbBuddy 其中一個。
+    'follow.followBtnTemplate': { 'zh-Hant': '追蹤{verb}', 'en': 'Follow {verb}', 'yue': '追蹤{verb}' },
+    'follow.followedToast': { 'zh-Hant': '已追蹤這位書伴！', 'en': 'You are now following this study buddy!', 'yue': '追蹤咗呢位書伴喇！' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'follow.followFailedTemplate': { 'zh-Hant': '追蹤失敗：{msg}', 'en': 'Failed to follow: {msg}', 'yue': '追蹤唔到：{msg}' },
+    'follow.unfollowedToast': { 'zh-Hant': '已取消追蹤', 'en': 'Unfollowed', 'yue': '取消咗追蹤' },
+    // {msg} 係佔位符，塞入錯誤訊息本身。
+    'follow.unfollowFailedTemplate': { 'zh-Hant': '取消追蹤失敗：{msg}', 'en': 'Failed to unfollow: {msg}', 'yue': '取消唔到追蹤：{msg}' },
+    'follow.followingListTitle': { 'zh-Hant': '追蹤中名單', 'en': 'Following List', 'yue': '追蹤緊名單' },
+    'follow.followersListTitle': { 'zh-Hant': '粉絲名單', 'en': 'Followers List', 'yue': '粉絲名單' },
+    'follow.loadingList': { 'zh-Hant': '載入中...', 'en': 'Loading...', 'yue': 'Load 緊...' },
+    'follow.noFollowingYet': { 'zh-Hant': '未有追蹤緊任何書伴', 'en': 'Not following any study buddies yet', 'yue': '未追蹤緊任何書伴' },
+    'follow.noFollowersYet': { 'zh-Hant': '仲未有粉絲', 'en': 'No followers yet', 'yue': '仲未有粉絲' },
+    'follow.noUserDataFound': { 'zh-Hant': '找不到相關用戶資料', 'en': "Couldn't find the related user data", 'yue': '搵唔到相關用戶資料' },
+    'follow.loadListFailed': { 'zh-Hant': '讀取名單失敗，請稍後再試', 'en': 'Failed to load the list, please try again later', 'yue': '睇唔到名單，遲啲再試吓' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置
