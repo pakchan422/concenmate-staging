@@ -91,6 +91,61 @@
     // 樣板，唔再淨係換一個固定字尾。
     'home.streakTemplate': { 'zh-Hant': '{n} 連續', 'en': '{n} day streak', 'yue': '{n} 日連續' },
     'home.totalDaysTemplate': { 'zh-Hant': '{n} 總日數', 'en': '{n} total days', 'yue': '總共 {n} 日' },
+
+    // ── 視訊溫習室（第三階段：English 由 Claude 翻譯、廣東話口語由
+    //    Claude 起草，兩者都仲要 Alvis 過目先算數，未過目之前先當
+    //    草稿睇待）。呢個分頁淨係轉咗頁面本身嘅固定文字／狀態標籤，
+    //    邀請朋友／建立房間／舉報等彈出視窗仲未轉，留返下一階段。 ──
+    'room.lobbyTitle': { 'zh-Hant': '公開溫習大廳', 'en': 'Public Study Lobby', 'yue': '公開溫習大廳' },
+    'room.togglePool': { 'zh-Hant': '轉換溫習室', 'en': 'Switch Room Pool', 'yue': '轉換溫習室' },
+    'room.createRoom': { 'zh-Hant': '+ 建立新溫習房', 'en': '+ Create New Room', 'yue': '+ 開間新溫習房' },
+    'room.filterAll': { 'zh-Hant': '全部', 'en': 'All', 'yue': '全部' },
+    'room.filterCore': { 'zh-Hant': '必修科目', 'en': 'Core Subjects', 'yue': '必修科目' },
+    'room.filterElective': { 'zh-Hant': '選修科目', 'en': 'Elective Subjects', 'yue': '選修科目' },
+    'room.filterOther': { 'zh-Hant': '其他', 'en': 'Other', 'yue': '其他' },
+    'room.loadingRooms': { 'zh-Hant': '正在透過 Firebase 加載公開溫習房列表...', 'en': 'Loading public study rooms via Firebase...', 'yue': '正在透過 Firebase Load緊公開溫習房資料...' },
+    'room.cameraOn': { 'zh-Hant': '開啟鏡頭', 'en': 'Turn On Camera', 'yue': '開鏡頭' },
+    'room.cameraOff': { 'zh-Hant': '關閉鏡頭', 'en': 'Turn Off Camera', 'yue': '閂鏡頭' },
+    'room.cameraStarting': { 'zh-Hant': '⏳ 鏡頭啟動中...', 'en': '⏳ Starting Camera...', 'yue': '⏳ 開緊鏡頭...' },
+    'room.micMuted': { 'zh-Hant': '已靜音', 'en': 'Muted', 'yue': '已靜音' },
+    'room.bgNoise': { 'zh-Hant': '背景音', 'en': 'Ambient Sound', 'yue': '背景音' },
+    'room.bgNoiseOff': { 'zh-Hant': '背景音：關閉', 'en': 'Ambient Sound: Off', 'yue': '背景音：關閉' },
+    'room.whiteNoise': { 'zh-Hant': '白噪音', 'en': 'White Noise', 'yue': '白噪音' },
+    'room.rain1': { 'zh-Hant': '雨聲 1', 'en': 'Rain 1', 'yue': '落雨聲 1' },
+    'room.rain2': { 'zh-Hant': '雨聲 2', 'en': 'Rain 2', 'yue': '落雨聲 2' },
+    'room.cafe1': { 'zh-Hant': '咖啡室環境聲 1', 'en': 'Cafe Ambience 1', 'yue': '咖啡室環境聲 1' },
+    'room.cafe2': { 'zh-Hant': '咖啡室環境聲 2', 'en': 'Cafe Ambience 2', 'yue': '咖啡室環境聲 2' },
+    'room.train1': { 'zh-Hant': '火車聲 1', 'en': 'Train 1', 'yue': '火車聲 1' },
+    'room.train2': { 'zh-Hant': '火車聲 2', 'en': 'Train 2', 'yue': '火車聲 2' },
+    'room.fullscreen': { 'zh-Hant': '全螢幕', 'en': 'Fullscreen', 'yue': '全螢幕' },
+    'room.exitFullscreen': { 'zh-Hant': '退出全螢幕', 'en': 'Exit Fullscreen', 'yue': '退出全螢幕' },
+    'room.leaveRoom': { 'zh-Hant': '退出房間', 'en': 'Leave Room', 'yue': '離開房間' },
+    'room.studiedTime': { 'zh-Hant': '已溫習', 'en': 'Studied', 'yue': '溫咗' },
+    'room.readyMsg': { 'zh-Hant': '溫習房已就緒！', 'en': 'Study room ready!', 'yue': '房間準備好喇！' },
+    'room.clickToJoin': { 'zh-Hant': '請點擊上方「開啟鏡頭」加入 P2P 視訊互聯', 'en': 'Click "Turn On Camera" above to join the video call', 'yue': '撳返上面個「開鏡頭」，就可以加入視訊喇' },
+    'room.hostFocusing': { 'zh-Hant': '房主專注中', 'en': 'Host Focusing', 'yue': '房主專注中' },
+    'room.youAreHost': { 'zh-Hant': '你是房主', 'en': "You're the Host", 'yue': '你係房主' },
+    'room.cameraLive': { 'zh-Hant': '鏡頭即時串流中', 'en': 'Camera Streaming Live', 'yue': '鏡頭直播緊' },
+    'room.micOn': { 'zh-Hant': '已開啟麥克風', 'en': 'Microphone On', 'yue': '咪開咗' },
+    'room.emojiReaction': { 'zh-Hant': '表情反應', 'en': 'Reactions', 'yue': '表情反應' },
+    'room.waitingUser': { 'zh-Hant': '等待用家加入...', 'en': 'Waiting for someone to join...', 'yue': '等緊人加入...' },
+    'room.inviteFriend': { 'zh-Hant': '邀請朋友', 'en': 'Invite Friend', 'yue': '叫朋友嚟' },
+    'room.remoteWaitStream': { 'zh-Hant': '連線中...', 'en': 'Connecting...', 'yue': '連緊線...' },
+    'room.remoteLiveStream': { 'zh-Hant': '即時串流', 'en': 'Live', 'yue': '直播緊' },
+    'room.remoteCameraOff': { 'zh-Hant': '對方鏡頭已關閉', 'en': "Their camera is off", 'yue': '對方閂咗鏡頭' },
+    'room.otherUser': { 'zh-Hant': '其他用家', 'en': 'Other User', 'yue': '其他用家' },
+    'room.hostBadge': { 'zh-Hant': '房主', 'en': 'Host', 'yue': '房主' },
+    'room.viewProfile': { 'zh-Hant': '點擊查看資料／加好友', 'en': 'Click to view profile / add friend', 'yue': '撳吓睇資料／加好友' },
+    'room.moreOptions': { 'zh-Hant': '更多選項', 'en': 'More Options', 'yue': '更多選項' },
+    'room.transferHost': { 'zh-Hant': '轉移房主給他', 'en': 'Transfer Host To Them', 'yue': '轉個房主俾佢' },
+    'room.kickUser': { 'zh-Hant': '踢走呢位同學', 'en': 'Remove This Student', 'yue': '踢走呢位同學' },
+    'room.reportUser': { 'zh-Hant': '舉報呢位同學', 'en': 'Report This Student', 'yue': '舉報呢位同學' },
+    // 咪掣／咪標籤嘅倒數狀態：{n} 係佔位符，實際倒數數字由
+    // updateMicButtonUI()（room-video.js）用 String.replace('{n}', ...) 塞入去。
+    'room.micCooldownBtn': { 'zh-Hant': '冷卻中 {n}', 'en': 'Cooling Down {n}', 'yue': '冷卻緊 {n}' },
+    'room.micCooldownTag': { 'zh-Hant': '咪冷卻中 {n}', 'en': 'Mic Cooling Down {n}', 'yue': 'Mic 冷卻緊 {n}' },
+    'room.micOnBtn': { 'zh-Hant': '已開咪{n}', 'en': 'Mic On{n}', 'yue': '開咗Mic{n}' },
+    'room.micOnTag': { 'zh-Hant': '已開啟麥克風{n}', 'en': 'Microphone On{n}', 'yue': '開咗Mic{n}' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置
@@ -143,6 +198,7 @@
     if (typeof window.updateGoalBarDisplay === 'function') window.updateGoalBarDisplay();
     if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard();
     if (typeof window.renderStudyCalendar === 'function') window.renderStudyCalendar();
+    if (typeof window.updateMicButtonUI === 'function') window.updateMicButtonUI();
     if (typeof window.closeModal === 'function') {
       window.closeModal('modal-language-switcher');
     } else {
@@ -164,6 +220,12 @@
     document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
       const key = el.getAttribute('data-i18n-placeholder');
       el.setAttribute('placeholder', window.t(key, el.getAttribute('placeholder')));
+    });
+    // data-i18n-title：用喺 title="..." 呢類 hover 提示文字（同樣唔算
+    // textContent，要獨立處理先換得到）。
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-title');
+      el.setAttribute('title', window.t(key, el.getAttribute('title')));
     });
     document.querySelectorAll('.lang-option-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.lang === lang);

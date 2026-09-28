@@ -192,7 +192,7 @@
       if (!roomActive) return;
       const willBeFullscreen = !roomActive.classList.contains('video-fullscreen-mode');
       roomActive.classList.toggle('video-fullscreen-mode', willBeFullscreen);
-      if (fsBtn) fsBtn.innerHTML = willBeFullscreen ? '退出全螢幕' : '全螢幕';
+      if (fsBtn) fsBtn.innerHTML = willBeFullscreen ? window.t('room.exitFullscreen', '退出全螢幕') : window.t('room.fullscreen', '全螢幕');
       // 全螢幕嗰陣鎖住背景頁面唔畀捲動，唔係嘅話手指喺黑色空隙度拖到
       // 都會意外拉動咗底下嗰版，畀人覺得畫面甩晒版
       document.body.style.overflow = willBeFullscreen ? 'hidden' : '';
@@ -218,7 +218,7 @@
       const roomActive = document.getElementById('room-active');
       const fsBtn = document.getElementById('video-fullscreen-btn');
       if (roomActive) roomActive.classList.remove('video-fullscreen-mode');
-      if (fsBtn) fsBtn.innerHTML = '全螢幕';
+      if (fsBtn) fsBtn.innerHTML = window.t('room.fullscreen', '全螢幕');
       document.body.style.overflow = '';
       // 清返 inline style，唔係就會用返呢啲 px 數值蓋晒返正常（非全
       // 螢幕）嗰個 CSS 版面規則
@@ -334,8 +334,8 @@
       el.innerHTML = `
         <div class="slot-empty-inner">
           <div class="slot-empty-icon">➕</div>
-          <p>等待用家加入...</p>
-          <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">邀請朋友</button>
+          <p>${window.t('room.waitingUser', '等待用家加入...')}</p>
+          <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">${window.t('room.inviteFriend', '邀請朋友')}</button>
         </div>
       `;
     }
@@ -393,18 +393,18 @@
           <video class="remote-video-element" autoplay playsinline muted></video>
           <div class="video-overlay" style="display:none;">
             <div class="avatar-circle" style="opacity:.6;"></div>
-            <p style="font-size:13px; color:#ccc; margin-top:6px;">對方鏡頭已關閉</p>
+            <p style="font-size:13px; color:#ccc; margin-top:6px;">${window.t('room.remoteCameraOff', '對方鏡頭已關閉')}</p>
           </div>
           <div class="video-header">
-            <span class="video-tag" style="cursor:pointer;" onclick="viewUserProfile('${uid}')" title="點擊查看資料／加好友">${name || '其他用家'}</span>
-            <span class="video-tag" id="remote-host-badge-${slotNum}" style="background:#D9EBEF; color:#1E4550; display:none;">房主</span>
-            <span class="video-tag" id="stream-status-${uid}" style="background:#3E7A8A; color:#fff;">連線中...</span>
+            <span class="video-tag" style="cursor:pointer;" onclick="viewUserProfile('${uid}')" title="${window.t('room.viewProfile', '點擊查看資料／加好友')}">${name || window.t('room.otherUser', '其他用家')}</span>
+            <span class="video-tag" id="remote-host-badge-${slotNum}" style="background:#D9EBEF; color:#1E4550; display:none;">${window.t('room.hostBadge', '房主')}</span>
+            <span class="video-tag" id="stream-status-${uid}" style="background:#3E7A8A; color:#fff;">${window.t('room.remoteWaitStream', '連線中...')}</span>
             <div class="video-more-menu-wrap">
-              <span class="video-tag video-more-menu-toggle" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}')" title="更多選項">⋮</span>
+              <span class="video-tag video-more-menu-toggle" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}')" title="${window.t('room.moreOptions', '更多選項')}">⋮</span>
               <div class="video-more-menu-dropdown" id="video-more-menu-${uid}" style="display:none;">
-                <button type="button" class="video-more-menu-item" id="transfer-host-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.transferHostTo('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">轉移房主給他</button>
-                <button type="button" class="video-more-menu-item danger" id="kick-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.kickParticipant('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">踢走呢位同學</button>
-                <button type="button" class="video-more-menu-item danger" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.openReportModal('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">舉報呢位同學</button>
+                <button type="button" class="video-more-menu-item" id="transfer-host-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.transferHostTo('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">${window.t('room.transferHost', '轉移房主給他')}</button>
+                <button type="button" class="video-more-menu-item danger" id="kick-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.kickParticipant('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">${window.t('room.kickUser', '踢走呢位同學')}</button>
+                <button type="button" class="video-more-menu-item danger" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.openReportModal('${uid}', '${(name||'呢位同學').replace(/'/g, "\\'")}')">${window.t('room.reportUser', '舉報呢位同學')}</button>
               </div>
             </div>
           </div>
@@ -428,7 +428,7 @@
       if (selfHostTag) {
         if (hostUid && myUid && hostUid === myUid) {
           selfHostTag.style.display = 'flex';
-          selfHostTag.innerText = '你是房主';
+          selfHostTag.innerText = window.t('room.youAreHost', '你是房主');
         } else {
           selfHostTag.style.display = 'none';
           selfHostTag.innerText = '';
@@ -672,7 +672,7 @@
       const statusTag = document.getElementById('stream-status-' + uid);
       if (statusTag) {
         statusTag.style.background = '#D2C4AD';
-        statusTag.innerText = '即時串流';
+        statusTag.innerText = window.t('room.remoteLiveStream', '即時串流');
       }
     }
 
@@ -1939,7 +1939,7 @@
       if (canvasEl) canvasEl.style.display = 'none';
       if (overlayEl) overlayEl.style.display = 'flex';
       if (statusTag) statusTag.style.display = 'none';
-      if (btn) { btn.innerText = '開啟鏡頭'; btn.className = 'btn btn-primary'; }
+      if (btn) { btn.innerText = window.t('room.cameraOn', '開啟鏡頭'); btn.className = 'btn btn-primary'; }
       updateMicButtonUI();
 
       if (state.signalingUnsubscribe) {
@@ -2203,7 +2203,7 @@
       return `${m}:${String(sec).padStart(2, '0')}`;
     }
 
-    function updateMicButtonUI() {
+    window.updateMicButtonUI = function updateMicButtonUI() {
       const micBtn = document.getElementById('btn-mic');
       const micTag = document.getElementById('mic-status-tag');
       if (!micBtn) return;
@@ -2216,11 +2216,11 @@
         const remainSec = Math.ceil((state.micCooldownUntil - Date.now()) / 1000);
         const countdown = formatMicCountdown(remainSec);
         micBtn.disabled = true;
-        micBtn.innerText = `冷卻中 ${countdown}`;
+        micBtn.innerText = window.t('room.micCooldownBtn', '冷卻中 {n}').replace('{n}', countdown);
         micBtn.className = 'btn btn-outline';
         if (micTag) {
           micTag.style.display = state.isCameraOn ? 'flex' : 'none';
-          micTag.innerText = `咪冷卻中 ${countdown}`;
+          micTag.innerText = window.t('room.micCooldownTag', '咪冷卻中 {n}').replace('{n}', countdown);
           micTag.style.background = 'rgba(125,184,197,0.7)';
         }
         return;
@@ -2232,19 +2232,19 @@
         // 房間嘅番茄鐘）一樣淨係用空格分隔，唔加括號
         const remainSec = state.micOpenUntil ? Math.ceil((state.micOpenUntil - Date.now()) / 1000) : null;
         const countdown = remainSec !== null ? ` ${formatMicCountdown(remainSec)}` : '';
-        micBtn.innerText = `已開咪${countdown}`;
+        micBtn.innerText = window.t('room.micOnBtn', '已開咪{n}').replace('{n}', countdown);
         micBtn.className = 'btn btn-outline';
         if (micTag) {
           micTag.style.display = state.isCameraOn ? 'flex' : 'none';
-          micTag.innerText = `已開啟麥克風${countdown}`;
+          micTag.innerText = window.t('room.micOnTag', '已開啟麥克風{n}').replace('{n}', countdown);
           micTag.style.background = 'rgba(134,239,172,0.9)';
         }
       } else {
-        micBtn.innerText = '已靜音';
+        micBtn.innerText = window.t('room.micMuted', '已靜音');
         micBtn.className = 'btn btn-red';
         if (micTag) {
           micTag.style.display = state.isCameraOn ? 'flex' : 'none';
-          micTag.innerText = '已靜音';
+          micTag.innerText = window.t('room.micMuted', '已靜音');
           micTag.style.background = 'rgba(125,184,197,0.7)';
         }
       }
@@ -2332,13 +2332,13 @@
         canvasEl.style.display = 'none';
         overlayEl.style.display = 'flex';
         statusTag.style.display = 'none';
-        btn.innerText = '開啟鏡頭';
+        btn.innerText = window.t('room.cameraOn', '開啟鏡頭');
         btn.className = 'btn btn-primary';
         updateMicButtonUI();
 
         updateMyCameraStatus(false);
       } else {
-        btn.innerText = '⏳ 鏡頭啟動中...';
+        btn.innerText = window.t('room.cameraStarting', '⏳ 鏡頭啟動中...');
 
         try {
           let videoTrack;
@@ -2390,7 +2390,7 @@
           canvasEl.style.display = 'block';
           overlayEl.style.display = 'none';
           statusTag.style.display = 'flex';
-          btn.innerText = '關閉鏡頭';
+          btn.innerText = window.t('room.cameraOff', '關閉鏡頭');
           btn.className = 'btn btn-red';
           updateMicButtonUI();
 
@@ -2415,7 +2415,7 @@
         } catch (err) {
           console.error("相機存取失敗:", err);
           window.showToast(describeMediaError(err), '❌');
-          btn.innerText = '開啟鏡頭';
+          btn.innerText = window.t('room.cameraOn', '開啟鏡頭');
           btn.className = 'btn btn-primary';
         }
       }

@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.177.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.178.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2000,7 +2000,7 @@
           <div id="room-lobby">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <div style="display:flex; align-items:center; gap:6px;">
-                <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800);" id="room-lobby-title">公開溫習大廳</h2>
+                <h2 style="font-size:18px; font-weight:bold; color:var(--brand-800);" id="room-lobby-title" data-i18n="room.lobbyTitle">公開溫習大廳</h2>
                 <!-- 撳呢粒「！」會彈出解釋大廳分咗「中學溫習室」／「公開溫習室」
                      兩池嘅彈窗（見 window.openRoomPoolInfoModal，同下面
                      #modal-room-pool-info）。 -->
@@ -2011,10 +2011,10 @@
                      測試兩邊嘅房間，唔使開多個帳戶。呢個切換淨係影響
                      「而家睇緊邊個池」，唔會影響管理員自己建房嗰陣所屬
                      嘅池（見 window.toggleAdminRoomPool）。 -->
-                <button type="button" id="admin-room-pool-toggle-btn" style="display:none; font-size:12px; padding:4px 10px; border-radius:8px; border:1px solid var(--brand-200); background:#fff; color:var(--brand-800); cursor:pointer; white-space:nowrap;" onclick="window.toggleAdminRoomPool && window.toggleAdminRoomPool()">轉換溫習室</button>
+                <button type="button" id="admin-room-pool-toggle-btn" style="display:none; font-size:12px; padding:4px 10px; border-radius:8px; border:1px solid var(--brand-200); background:#fff; color:var(--brand-800); cursor:pointer; white-space:nowrap;" onclick="window.toggleAdminRoomPool && window.toggleAdminRoomPool()" data-i18n="room.togglePool">轉換溫習室</button>
               </div>
               <button class="btn btn-primary" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-create-room')">
-                + 建立新溫習房
+                <span data-i18n="room.createRoom">+ 建立新溫習房</span>
               </button>
             </div>
 
@@ -2023,14 +2023,14 @@
                  之前固定嗰 5 個學科名——因為建立房間嗰個下拉選單而家已
                  經改用晒完整 HKDSE 科目清單，用返分類 Tab 先篩得晒。 -->
             <div id="room-subject-tabs" style="display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px;">
-              <button type="button" class="room-subject-tab-btn active" data-subject="全部" onclick="setRoomSubjectFilter('全部')">全部</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="core" onclick="setRoomSubjectFilter('core')">必修科目</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="elective" onclick="setRoomSubjectFilter('elective')">選修科目</button>
-              <button type="button" class="room-subject-tab-btn" data-subject="other" onclick="setRoomSubjectFilter('other')">其他</button>
+              <button type="button" class="room-subject-tab-btn active" data-subject="全部" onclick="setRoomSubjectFilter('全部')" data-i18n="room.filterAll">全部</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="core" onclick="setRoomSubjectFilter('core')" data-i18n="room.filterCore">必修科目</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="elective" onclick="setRoomSubjectFilter('elective')" data-i18n="room.filterElective">選修科目</button>
+              <button type="button" class="room-subject-tab-btn" data-subject="other" onclick="setRoomSubjectFilter('other')" data-i18n="room.filterOther">其他</button>
             </div>
 
             <div id="public-rooms-container" class="rooms-grid">
-              <div style="grid-column: 1 / -1; text-align:center; padding: 40px; color: #888; font-size: 13px;">
+              <div style="grid-column: 1 / -1; text-align:center; padding: 40px; color: #888; font-size: 13px;" data-i18n="room.loadingRooms">
                 正在透過 Firebase 加載公開溫習房列表...
               </div>
             </div>
@@ -2056,8 +2056,8 @@
               </button>
 
               <div class="room-bar-btn-group" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                <button class="btn btn-primary" type="button" id="btn-camera" onclick="toggleCamera()">開啟鏡頭</button>
-                <button class="btn btn-red" type="button" id="btn-mic" onclick="toggleMic()">已靜音</button>
+                <button class="btn btn-primary" type="button" id="btn-camera" onclick="toggleCamera()" data-i18n="room.cameraOn">開啟鏡頭</button>
+                <button class="btn btn-red" type="button" id="btn-mic" onclick="toggleMic()" data-i18n="room.micMuted">已靜音</button>
 
                 <!-- 全螢幕專用嘅背景音掣：平時（唔係全螢幕）呢粒掣係收埋嘅，正常
                      背景音控制擺喺下面嗰個 .fs-hide-in-fullscreen div 度顯示緊。
@@ -2067,7 +2067,7 @@
                      擺喺呢個位置（開鏡頭／靜音之後）係跟返用家
                      喺全螢幕控制列想要嘅第 3 個位置。 -->
                 <div class="fs-bg-noise-only" style="display:none; position:relative;">
-                  <button class="btn btn-outline" type="button" id="fs-bg-noise-toggle-btn" onclick="toggleFsBgNoisePanel()" title="選擇背景音" style="border-color:#DDCABB; color:#1E4550;">背景音</button>
+                  <button class="btn btn-outline" type="button" id="fs-bg-noise-toggle-btn" onclick="toggleFsBgNoisePanel()" title="選擇背景音" style="border-color:#DDCABB; color:#1E4550;" data-i18n="room.bgNoise">背景音</button>
                   <!-- ⚠️ position:fixed（唔係 absolute）：room-bar 喺橫向全螢幕
                        嗰陣係個 148px 闊嘅直向窄條，仲有 overflow-y:auto（會連
                        帶令 overflow-x 都變成 auto），如果個面板用 absolute
@@ -2077,14 +2077,14 @@
                        座標。 -->
                   <div id="fs-bg-noise-panel" style="display:none; position:fixed; z-index:10001; background:#111; color:#fff; padding:8px; border-radius:10px; font-size:13px; flex-direction:column; gap:6px; width:170px; box-sizing:border-box; box-shadow:0 4px 14px rgba(0,0,0,.35);">
                     <select id="fs-bg-noise-select" style="background:#222; color:#fff; border:1px solid #444; border-radius:6px; font-size:13px; padding:4px;" onchange="setBgNoiseType(this.value)">
-                      <option value="off">背景音：關閉</option>
-                      <option value="white">白噪音</option>
-                      <option value="rain1">雨聲 1</option>
-                      <option value="rain2">雨聲 2</option>
-                      <option value="cafe1">咖啡室環境聲 1</option>
-                      <option value="cafe2">咖啡室環境聲 2</option>
-                      <option value="train1">火車聲 1</option>
-                      <option value="train2">火車聲 2</option>
+                      <option value="off" data-i18n="room.bgNoiseOff">背景音：關閉</option>
+                      <option value="white" data-i18n="room.whiteNoise">白噪音</option>
+                      <option value="rain1" data-i18n="room.rain1">雨聲 1</option>
+                      <option value="rain2" data-i18n="room.rain2">雨聲 2</option>
+                      <option value="cafe1" data-i18n="room.cafe1">咖啡室環境聲 1</option>
+                      <option value="cafe2" data-i18n="room.cafe2">咖啡室環境聲 2</option>
+                      <option value="train1" data-i18n="room.train1">火車聲 1</option>
+                      <option value="train2" data-i18n="room.train2">火車聲 2</option>
                     </select>
                     <div style="display:flex; align-items:center; gap:6px;">
                       <input type="range" id="fs-bg-noise-volume" min="0" max="1" step="0.05" value="0.39" style="flex:1;" oninput="setBgNoiseVolume(this.value)">
@@ -2097,29 +2097,29 @@
                      而家嘅「總溫習時間」：順時計，只在被判定為閒置、暫停計分
                      嗰陣先會跟住暫停累積 -->
                 <div id="room-total-time-widget" style="background:#fff; color:var(--brand-800); padding:6px 10px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:6px; border:1px solid var(--brand-200);" title="這次入房到現在的總溫習時間（正向計時，閒置暫停計分時會暫停累積）">
-                  <span>已溫習</span>
+                  <span data-i18n="room.studiedTime">已溫習</span>
                   <span id="room-total-time" style="font-family:monospace; font-size:14px; font-weight:700; white-space:nowrap;">00:00</span>
                 </div>
 
                 <div class="fs-hide-in-fullscreen bg-noise-inline-row" style="background:#111; color:white; padding:4px 8px; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:6px;" title="專注背景音，建議戴耳機使用">
                   <span></span>
                   <select id="bg-noise-select" style="background:#222; color:#fff; border:1px solid #444; border-radius:6px; font-size:13px; padding:2px 4px;" onchange="setBgNoiseType(this.value)">
-                    <option value="off">背景音：關閉</option>
-                    <option value="white">白噪音</option>
-                    <option value="rain1">雨聲 1</option>
-                    <option value="rain2">雨聲 2</option>
-                    <option value="cafe1">咖啡室環境聲 1</option>
-                    <option value="cafe2">咖啡室環境聲 2</option>
-                    <option value="train1">火車聲 1</option>
-                    <option value="train2">火車聲 2</option>
+                    <option value="off" data-i18n="room.bgNoiseOff">背景音：關閉</option>
+                    <option value="white" data-i18n="room.whiteNoise">白噪音</option>
+                    <option value="rain1" data-i18n="room.rain1">雨聲 1</option>
+                    <option value="rain2" data-i18n="room.rain2">雨聲 2</option>
+                    <option value="cafe1" data-i18n="room.cafe1">咖啡室環境聲 1</option>
+                    <option value="cafe2" data-i18n="room.cafe2">咖啡室環境聲 2</option>
+                    <option value="train1" data-i18n="room.train1">火車聲 1</option>
+                    <option value="train2" data-i18n="room.train2">火車聲 2</option>
                   </select>
                   <input type="range" id="bg-noise-volume" min="0" max="1" step="0.05" value="0.39" style="width:60px;" oninput="setBgNoiseVolume(this.value)">
                   <button type="button" id="bg-noise-pause-btn" onclick="toggleBgNoisePause()" disabled title="暫停／繼續背景音" style="background:#333; color:#fff; border:1px solid #555; border-radius:6px; font-size:13px; padding:2px 6px; cursor:pointer; opacity:.4; line-height:1.4;">⏸️</button>
                 </div>
 
-                <button class="btn btn-outline" type="button" id="video-fullscreen-btn" style="border-color:#DDCABB; color:#1E4550;" onclick="toggleVideoFullscreenMode()" title="四格鏡頭放到全螢幕，一次過看清楚晒所有人">全螢幕</button>
+                <button class="btn btn-outline" type="button" id="video-fullscreen-btn" style="border-color:#DDCABB; color:#1E4550;" onclick="toggleVideoFullscreenMode()" title="四格鏡頭放到全螢幕，一次過看清楚晒所有人" data-i18n="room.fullscreen">全螢幕</button>
 
-                <button class="btn btn-outline fs-hide-in-fullscreen" type="button" style="border-color:#DDCABB; color:#1E4550;" onclick="leaveRoom()">退出房間</button>
+                <button class="btn btn-outline fs-hide-in-fullscreen" type="button" style="border-color:#DDCABB; color:#1E4550;" onclick="leaveRoom()" data-i18n="room.leaveRoom">退出房間</button>
               </div>
 
               <!-- 全螢幕控制列收埋掣：平時收埋（inline display:none），入咗
@@ -2139,20 +2139,20 @@
 
                 <div class="video-overlay" id="self-overlay">
                   <div class="avatar-circle" id="room-self-avatar">A</div>
-                  <p style="font-size:14px; font-weight:bold; color:#fff;" id="overlay-msg">溫習房已就緒！</p>
-                  <p style="font-size:13px; margin-top:4px; color:#aaa;">請點擊上方「開啟鏡頭」加入 P2P 視訊互聯</p>
+                  <p style="font-size:14px; font-weight:bold; color:#fff;" id="overlay-msg" data-i18n="room.readyMsg">溫習房已就緒！</p>
+                  <p style="font-size:13px; margin-top:4px; color:#aaa;" data-i18n="room.clickToJoin">請點擊上方「開啟鏡頭」加入 P2P 視訊互聯</p>
                 </div>
 
                 <div class="video-header">
                   <span class="video-tag">
                     <span id="room-user-name-tag">Alex Wong (你)</span> ✓
                   </span>
-                  <span class="video-tag" style="background:#D9EBEF; color:#1E4550;" id="room-host-tag">房主專注中</span>
+                  <span class="video-tag" style="background:#D9EBEF; color:#1E4550;" id="room-host-tag" data-i18n="room.hostFocusing">房主專注中</span>
                 </div>
 
                 <div class="video-footer">
-                  <span class="video-tag" id="camera-status-tag" style="background:rgba(134,239,172,0.9); color:#1E4550; display:none;">鏡頭即時串流中</span>
-                  <span class="video-tag" id="mic-status-tag" style="background:rgba(134,239,172,0.9); color:#1E4550; display:none; margin-left:4px;">已開啟麥克風</span>
+                  <span class="video-tag" id="camera-status-tag" style="background:rgba(134,239,172,0.9); color:#1E4550; display:none;" data-i18n="room.cameraLive">鏡頭即時串流中</span>
+                  <span class="video-tag" id="mic-status-tag" style="background:rgba(134,239,172,0.9); color:#1E4550; display:none; margin-left:4px;" data-i18n="room.micOn">已開啟麥克風</span>
                 </div>
 
                 <!-- 表情反應：平時收埋（唔常用），撳個細圓掣先彈出嚟揀，
@@ -2163,7 +2163,7 @@
                      面板改為只喺撳返「😊」個切換掣，或者撳返畫面其他
                      地方（見 document click 監聽）先會關閉。 -->
                 <div class="emoji-reaction-toggle-wrap" onclick="event.stopPropagation();">
-                  <button type="button" class="emoji-reaction-toggle-btn" onclick="toggleEmojiReactionPanel()" title="表情反應">😊</button>
+                  <button type="button" class="emoji-reaction-toggle-btn" onclick="toggleEmojiReactionPanel()" title="表情反應" data-i18n-title="room.emojiReaction">😊</button>
                   <div class="emoji-reaction-popover" id="emoji-reaction-popover" style="display:none;">
                     <button type="button" onclick="sendDanmakuSticker('😆')">😆</button>
                     <button type="button" onclick="sendDanmakuSticker('😍')">😍</button>
@@ -2179,22 +2179,22 @@
               <div class="video-card-single video-slot-placeholder" id="video-slot-2">
                 <div class="slot-empty-inner">
                   <div class="slot-empty-icon"></div>
-                  <p>等待用家加入...</p>
-                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">邀請朋友</button>
+                  <p data-i18n="room.waitingUser">等待用家加入...</p>
+                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()" data-i18n="room.inviteFriend">邀請朋友</button>
                 </div>
               </div>
               <div class="video-card-single video-slot-placeholder" id="video-slot-3">
                 <div class="slot-empty-inner">
                   <div class="slot-empty-icon"></div>
-                  <p>等待用家加入...</p>
-                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">邀請朋友</button>
+                  <p data-i18n="room.waitingUser">等待用家加入...</p>
+                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()" data-i18n="room.inviteFriend">邀請朋友</button>
                 </div>
               </div>
               <div class="video-card-single video-slot-placeholder" id="video-slot-4">
                 <div class="slot-empty-inner">
                   <div class="slot-empty-icon"></div>
-                  <p>等待用家加入...</p>
-                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">邀請朋友</button>
+                  <p data-i18n="room.waitingUser">等待用家加入...</p>
+                  <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()" data-i18n="room.inviteFriend">邀請朋友</button>
                 </div>
               </div>
             </div>
