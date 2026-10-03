@@ -661,6 +661,32 @@
     'ptsExp.expBullet1': { 'zh-Hant': '每次獲得 PTS，都會同時獲得同等數量的 EXP', 'en': 'Every time you earn PTS, you earn the same amount of EXP too', 'yue': '每次攞到 PTS，都會同時攞埋同等數量嘅 EXP' },
     'ptsExp.expBullet2': { 'zh-Hant': 'EXP 只升不跌，記錄你的總溫習成就', 'en': 'EXP only goes up, and records your total study achievement', 'yue': 'EXP 淨係升唔跌，記錄晒你總溫習成就' },
     'ptsExp.expBullet3': { 'zh-Hant': '累積足夠即可升級', 'en': 'Level up once you have enough', 'yue': '儲夠就會升級' },
+
+    // ── Landing page（未登入主頁）──
+    'landing.navLogin': { 'zh-Hant': '登入', 'en': 'Log In', 'yue': '登入' },
+    'landing.registerBtn': { 'zh-Hant': '註冊帳號', 'en': 'Sign Up', 'yue': '註冊帳號' },
+    'landing.slogan': { 'zh-Hant': 'Always By Your Side', 'en': 'Always By Your Side', 'yue': 'Always By Your Side' },
+    'landing.eyebrow': { 'zh-Hant': '認識 ConcenMate 書伴', 'en': 'Meet ConcenMate', 'yue': '認識吓 ConcenMate 書伴' },
+    'landing.heroH1Line1': { 'zh-Hant': '相遇你的書伴，陪你走過', 'en': 'Meet your study companion, by your side through', 'yue': '遇到你嘅書伴，陪你行過' },
+    'landing.heroH1Line2': { 'zh-Hant': '每一段溫習時光', 'en': 'every moment of studying', 'yue': '每一段溫書時光' },
+    'landing.heroSub': { 'zh-Hant': 'ConcenMate 書伴是專為學生設計的線上溫習室，讓你尋找志同道合的夥伴，結合專注力計時、溫習社群與成長獎勵機制，陪伴你建立持續而穩定的學習習慣。', 'en': 'ConcenMate is an online study room designed for students, helping you find like-minded study partners. It combines focus timers, a study community, and a growth reward system to help you build a consistent study habit.', 'yue': 'ConcenMate 書伴係專為學生設計嘅線上溫習室，等你搵到志同道合嘅夥伴，結合專注力計時、溫習社群同成長獎勵機制，陪你養成持續而穩定嘅學習習慣。' },
+    'landing.subjectChinese': { 'zh-Hant': '中文', 'en': 'Chinese', 'yue': '中文' },
+    'landing.subjectEnglish': { 'zh-Hant': '英文', 'en': 'English', 'yue': '英文' },
+    'landing.subjectMath': { 'zh-Hant': '數學', 'en': 'Math', 'yue': '數學' },
+    'landing.stepsEyebrow': { 'zh-Hant': '書伴的溫習方式', 'en': 'How ConcenMate Works', 'yue': '書伴嘅溫書方式' },
+    'landing.stepsH2': { 'zh-Hant': '三個核心，陪你溫習', 'en': 'Three pillars to study with you', 'yue': '三個核心，陪你溫書' },
+    'landing.stepsSub': { 'zh-Hant': '註冊帳戶即可開始使用。', 'en': 'Sign up to get started.', 'yue': '註冊帳戶就可以開始用。' },
+    'landing.step1Title': { 'zh-Hant': '建立帳戶', 'en': 'Create an Account', 'yue': '開個帳戶' },
+    'landing.step1Desc': { 'zh-Hant': '只需一分鐘完成註冊，即可解鎖專注溫習室、貼紙圖鑑及全部功能。', 'en': 'Sign up in just a minute to unlock focus study rooms, the sticker collection, and every feature.', 'yue': '一分鐘就搞完註冊，即刻解鎖專注溫習室、貼紙圖鑑同全部功能。' },
+    'landing.step2Title': { 'zh-Hant': '專注溫習室', 'en': 'Focus Study Rooms', 'yue': '專注溫習室' },
+    'landing.step2Desc': { 'zh-Hant': '與其他學生一同在鏡頭前互相督促專注溫習，同時累積積分與經驗值。', 'en': 'Study alongside other students on camera, keeping each other focused while earning points and experience.', 'yue': '同其他同學一齊開住鏡頭互相督促專注溫書，仲可以攢積分同經驗值。' },
+    'landing.step3Title': { 'zh-Hant': '成長與獎勵', 'en': 'Growth & Rewards', 'yue': '成長與獎勵' },
+    'landing.step3Desc': { 'zh-Hant': '累積的溫習時數與積分可兌換 Ottiee 貼紙，並提升等級，見證自己一步步累積的溫習成果。', 'en': 'Redeem your accumulated study hours and points for Ottiee stickers, level up, and watch your study progress build step by step.', 'yue': '累積嘅溫習時數同積分可以換 Ottiee 貼紙，仲可以升級，見證自己一步步嘅溫書成果。' },
+    'landing.ctaH2': { 'zh-Hant': '由今天開始，讓書伴陪你溫習', 'en': 'Start today, let ConcenMate study with you', 'yue': '由今日開始，等書伴陪你溫書' },
+    'landing.ctaSub': { 'zh-Hant': '免費註冊帳戶，開始你的專注溫習旅程。', 'en': 'Sign up for free and start your focused study journey.', 'yue': '免費註冊帳戶，開始你嘅專注溫書之旅。' },
+    'landing.footerCopyright': { 'zh-Hant': '© 2026 ConcenMate 書伴', 'en': '© 2026 ConcenMate 書伴', 'yue': '© 2026 ConcenMate 書伴' },
+    'landing.footerTerms': { 'zh-Hant': '服務條款', 'en': 'Terms of Service', 'yue': '服務條款' },
+    'landing.footerPrivacy': { 'zh-Hant': '私隱政策', 'en': 'Privacy Policy', 'yue': '私隱政策' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置

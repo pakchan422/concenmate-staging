@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.188.2"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.189.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1388,9 +1388,9 @@
     .landing-hero-art-blob { position: absolute; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, var(--brand-100), var(--brand-50) 70%); z-index: 0; }
     .landing-hero-art img { position: relative; z-index: 1; width: 480px; max-width: 114%; filter: drop-shadow(0 18px 30px rgba(30,69,80,.16)); }
     .landing-hero-subjects { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-    .landing-hero-subject-tile { position: absolute; width: 64px; height: 64px; border-radius: 16px; background: #fff; border: 1px solid var(--brand-200); box-shadow: 0 8px 20px rgba(30,69,80,.12); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; color: var(--brand-800); }
+    .landing-hero-subject-tile { position: absolute; width: 128px; height: 128px; border-radius: 32px; background: #fff; border: 1px solid var(--brand-200); box-shadow: 0 8px 20px rgba(30,69,80,.12); display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 800; color: var(--brand-800); }
     .landing-hero-subject-tile:nth-child(1) { top: 16%; left: 4%; transform: rotate(-10deg); }
-    .landing-hero-subject-tile:nth-child(2) { top: 48%; right: 4%; transform: rotate(8deg); }
+    .landing-hero-subject-tile:nth-child(2) { top: 48%; right: -2%; transform: rotate(8deg); }
     .landing-hero-subject-tile:nth-child(3) { bottom: -4%; left: 30%; transform: rotate(-6deg); }
 
     .landing-steps { background: var(--brand-50); padding: 96px 0; }
@@ -1421,9 +1421,9 @@
       .landing-hero-art-visual { width: 280px; height: 280px; }
       .landing-hero-art-blob { width: 260px; height: 260px; }
       .landing-hero-art img { width: 375px; max-width: 114%; }
-      .landing-hero-subject-tile { width: 52px; height: 52px; font-size: 13px; }
+      .landing-hero-subject-tile { width: 104px; height: 104px; font-size: 26px; }
       .landing-hero-subject-tile:nth-child(1) { top: 12%; left: 2%; }
-      .landing-hero-subject-tile:nth-child(2) { top: 46%; right: 2%; }
+      .landing-hero-subject-tile:nth-child(2) { top: 46%; right: -4%; }
       .landing-hero-subject-tile:nth-child(3) { bottom: -6%; left: 28%; }
       .landing-steps { padding: 60px 0; }
       .landing-steps-h2 { font-size: 29px; }
@@ -1514,8 +1514,8 @@
           </div>
         </div>
         <div class="landing-nav-actions">
-          <button type="button" class="landing-nav-login landing-nav-login-header" onclick="typeof window.openModal==='function' && window.openModal('modal-login')">登入</button>
-          <button type="button" class="landing-btn landing-btn-primary" style="padding:11px 22px; font-size:15px;" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
+          <button type="button" class="landing-nav-login landing-nav-login-header" data-i18n="landing.navLogin" onclick="typeof window.openModal==='function' && window.openModal('modal-login')">登入</button>
+          <button type="button" class="landing-btn landing-btn-primary" style="padding:11px 22px; font-size:15px;" data-i18n="landing.registerBtn" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
         </div>
       </div>
     </nav>
@@ -1523,12 +1523,12 @@
     <section class="landing-hero">
       <div class="landing-container landing-hero-inner">
         <div class="landing-hero-text">
-          <div class="landing-eyebrow">認識 ConcenMate 書伴</div>
-          <h1 class="landing-hero-h1"><span>相遇你的書伴，陪你走過</span><span>每一段溫習時光</span></h1>
-          <p class="landing-hero-slogan">Always By Your Side</p>
-          <p class="landing-hero-sub">ConcenMate 書伴是專為學生設計的線上溫習室，讓你尋找志同道合的夥伴，結合專注力計時、溫習社群與成長獎勵機制，陪伴你建立持續而穩定的學習習慣。</p>
+          <div class="landing-eyebrow" data-i18n="landing.eyebrow">認識 ConcenMate 書伴</div>
+          <h1 class="landing-hero-h1"><span data-i18n="landing.heroH1Line1">相遇你的書伴，陪你走過</span><span data-i18n="landing.heroH1Line2">每一段溫習時光</span></h1>
+          <p class="landing-hero-slogan" data-i18n="landing.slogan">Always By Your Side</p>
+          <p class="landing-hero-sub" data-i18n="landing.heroSub">ConcenMate 書伴是專為學生設計的線上溫習室，讓你尋找志同道合的夥伴，結合專注力計時、溫習社群與成長獎勵機制，陪伴你建立持續而穩定的學習習慣。</p>
           <div class="landing-hero-ctas">
-            <button type="button" class="landing-btn landing-btn-primary" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
+            <button type="button" class="landing-btn landing-btn-primary" data-i18n="landing.registerBtn" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
           </div>
         </div>
         <div class="landing-hero-art">
@@ -1536,9 +1536,9 @@
             <div class="landing-hero-art-blob"></div>
             <img src="ottie-wave.png" alt="ConcenMate 書伴 Logo">
             <div class="landing-hero-subjects">
-              <div class="landing-hero-subject-tile">中文</div>
-              <div class="landing-hero-subject-tile">英文</div>
-              <div class="landing-hero-subject-tile">數學</div>
+              <div class="landing-hero-subject-tile" data-i18n="landing.subjectChinese">中文</div>
+              <div class="landing-hero-subject-tile" data-i18n="landing.subjectEnglish">英文</div>
+              <div class="landing-hero-subject-tile" data-i18n="landing.subjectMath">數學</div>
             </div>
           </div>
         </div>
@@ -1548,28 +1548,28 @@
     <section class="landing-steps">
       <div class="landing-container">
         <div class="landing-steps-head">
-          <p class="landing-steps-eyebrow">書伴的溫習方式</p>
-          <h2 class="landing-steps-h2">三個核心，陪你溫習</h2>
-          <p class="landing-steps-sub">註冊帳戶即可開始使用。</p>
+          <p class="landing-steps-eyebrow" data-i18n="landing.stepsEyebrow">書伴的溫習方式</p>
+          <h2 class="landing-steps-h2" data-i18n="landing.stepsH2">三個核心，陪你溫習</h2>
+          <p class="landing-steps-sub" data-i18n="landing.stepsSub">註冊帳戶即可開始使用。</p>
         </div>
         <div class="landing-steps-grid">
           <div class="landing-step-card">
             <div class="landing-step-num">1</div>
             <div class="landing-step-icon"></div>
-            <h3 class="landing-step-title">建立帳戶</h3>
-            <p class="landing-step-desc">只需一分鐘完成註冊，即可解鎖專注溫習室、貼紙圖鑑及全部功能。</p>
+            <h3 class="landing-step-title" data-i18n="landing.step1Title">建立帳戶</h3>
+            <p class="landing-step-desc" data-i18n="landing.step1Desc">只需一分鐘完成註冊，即可解鎖專注溫習室、貼紙圖鑑及全部功能。</p>
           </div>
           <div class="landing-step-card">
             <div class="landing-step-num">2</div>
             <div class="landing-step-icon"></div>
-            <h3 class="landing-step-title">專注溫習室</h3>
-            <p class="landing-step-desc">與其他學生一同在鏡頭前互相督促專注溫習，同時累積積分與經驗值。</p>
+            <h3 class="landing-step-title" data-i18n="landing.step2Title">專注溫習室</h3>
+            <p class="landing-step-desc" data-i18n="landing.step2Desc">與其他學生一同在鏡頭前互相督促專注溫習，同時累積積分與經驗值。</p>
           </div>
           <div class="landing-step-card">
             <div class="landing-step-num">3</div>
             <div class="landing-step-icon"></div>
-            <h3 class="landing-step-title">成長與獎勵</h3>
-            <p class="landing-step-desc">累積的溫習時數與積分可兌換 Ottiee 貼紙，並提升等級，見證自己一步步累積的溫習成果。</p>
+            <h3 class="landing-step-title" data-i18n="landing.step3Title">成長與獎勵</h3>
+            <p class="landing-step-desc" data-i18n="landing.step3Desc">累積的溫習時數與積分可兌換 Ottiee 貼紙，並提升等級，見證自己一步步累積的溫習成果。</p>
           </div>
         </div>
       </div>
@@ -1577,9 +1577,9 @@
 
     <section class="landing-cta-band">
       <div class="landing-container">
-        <h2 class="landing-cta-h2">由今天開始，讓書伴陪你溫習</h2>
-        <p class="landing-cta-sub">免費註冊帳戶，開始你的專注溫習旅程。</p>
-        <button type="button" class="landing-btn landing-btn-primary" style="padding:16px 36px; font-size:18px;" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
+        <h2 class="landing-cta-h2" data-i18n="landing.ctaH2">由今天開始，讓書伴陪你溫習</h2>
+        <p class="landing-cta-sub" data-i18n="landing.ctaSub">免費註冊帳戶，開始你的專注溫習旅程。</p>
+        <button type="button" class="landing-btn landing-btn-primary" style="padding:16px 36px; font-size:18px;" data-i18n="landing.registerBtn" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
       </div>
     </section>
 
@@ -1590,11 +1590,11 @@
          TERMS_OF_SERVICE.md 轉錄過嚟。 -->
     <footer style="padding:28px 20px; text-align:center; background:var(--brand-50, #F5F7F8); border-top:1px solid rgba(0,0,0,.06);">
       <div style="font-size:13px; color:#777; display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; align-items:center;">
-        <span>© 2026 ConcenMate 書伴</span>
+        <span data-i18n="landing.footerCopyright">© 2026 ConcenMate 書伴</span>
         <span style="color:#ccc;">|</span>
-        <span style="cursor:pointer; text-decoration:underline;" onclick="typeof window.openModal==='function' && window.openModal('modal-terms')">服務條款</span>
+        <span style="cursor:pointer; text-decoration:underline;" data-i18n="landing.footerTerms" onclick="typeof window.openModal==='function' && window.openModal('modal-terms')">服務條款</span>
         <span style="color:#ccc;">|</span>
-        <span style="cursor:pointer; text-decoration:underline;" onclick="typeof window.openModal==='function' && window.openModal('modal-privacy-policy')">私隱政策</span>
+        <span style="cursor:pointer; text-decoration:underline;" data-i18n="landing.footerPrivacy" onclick="typeof window.openModal==='function' && window.openModal('modal-privacy-policy')">私隱政策</span>
         <span style="color:#ccc;">|</span>
         <span>support@concenmate.com</span>
       </div>
