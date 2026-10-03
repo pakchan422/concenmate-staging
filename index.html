@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.190.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.190.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1365,7 +1365,7 @@
     .landing-nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--brand-200); }
     .landing-nav-inner { max-width: 1160px; margin: 0 auto; padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .landing-nav-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex-shrink: 0; }
-    .landing-nav-logo { width: 68px; height: 68px; object-fit: contain; flex-shrink: 0; }
+    .landing-nav-logo { width: 150px; height: auto; object-fit: contain; flex-shrink: 0; }
     .landing-nav-tagline { font-size: 11px; font-weight: 600; letter-spacing: .03em; color: var(--brand-500); white-space: nowrap; }
     .landing-nav-actions { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
     .landing-nav-login { font-size: 15px; font-weight: 700; color: var(--brand-700); text-decoration: none; white-space: nowrap; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
@@ -1432,7 +1432,7 @@
     @media (max-width: 430px) {
       .landing-nav-inner { padding-left: 16px; padding-right: 16px; gap: 8px; }
       .landing-nav-tagline { display: none; }
-      .landing-nav-logo { width: 48px; height: 48px; }
+      .landing-nav-logo { width: 100px; height: auto; }
       .landing-nav-actions { gap: 6px; }
       /* 手機窄畫面下都要保留「登入」按鈕，之前設定咗 display:none 會令
          登入前主頁完全冇入口去登入畫面，只剩返「免費開始使用」（註冊），
@@ -3678,7 +3678,7 @@
         <button class="btn btn-outline lang-option-btn" type="button" data-lang="zh-Hant" onclick="window.setAppLanguage('zh-Hant')" style="padding:12px; justify-content:center;">繁體中文</button>
         <button class="btn btn-outline lang-option-btn" type="button" data-lang="en" onclick="window.setAppLanguage('en')" style="padding:12px; justify-content:center;">English</button>
         <button class="btn btn-outline lang-option-btn" type="button" data-lang="yue" onclick="window.setAppLanguage('yue')" style="padding:12px; justify-content:center;">廣東話</button>
-        <button class="btn btn-outline" type="button" onclick="closeModal('modal-language-switcher')" style="padding:10px;">取消</button>
+        <button class="btn btn-outline" type="button" onclick="closeModal('modal-language-switcher')" style="padding:10px; justify-content:center;">取消</button>
       </div>
     </div>
   </div>
