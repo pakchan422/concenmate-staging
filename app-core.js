@@ -505,6 +505,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (typeof window.loadAdminIdsFromFirestore === 'function') {
           window.loadAdminIdsFromFirestore();
         }
+        if (typeof window.loadScoringRulesFromFirestore === 'function') {
+          window.loadScoringRulesFromFirestore();
+        }
       } else {
         window.currentUser = null;
         if (suspensionListenerUnsubscribe) { suspensionListenerUnsubscribe(); suspensionListenerUnsubscribe = null; }

@@ -167,6 +167,7 @@
       else if (tab === 'icons') renderAdminNavIconsTab();
       else if (tab === 'tutors') renderAdminTutorsTab();
       else if (tab === 'landing') renderAdminLandingTab();
+      else if (tab === 'scoring') renderAdminScoringTab();
     };
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -1889,6 +1890,114 @@
       });
     }
     window.loadLandingContentFromFirestore = loadLandingContentFromFirestore;
+
+    // ---------- 計分規則設定 ----------
+    // 每分鐘PTS、確認仍在學習嘅獎勵PTS——做法同其他幾個分頁一致，存喺
+    // Firestore（admin_config/scoringRules 文件），管理員喺呢度改完撳
+    // 「儲存」，全站即時生效。
+    //
+    // ⚠️ 同扭蛋／等級系統/Landing page嗰幾個分頁唯一唔同嘅地方：呢組
+    // 設定除咗前端讀（room-video.js 嘅 window.SCORING_RULES，用嚟顯示
+    // 畫面同決定要畀幾多分），仲有伺服器端（functions/index.js 嘅
+    // awardStudyPoints Cloud Function）會讀同一份文件做「呢個分數啱唔
+    // 啱」嘅安全驗證——如果淨係改前端、伺服器嗰邊個白名單對唔上，
+    // 寫入會被拒絕（學生會見到「無效的積分數量」錯誤）。前端呢度已經
+    // 自動跟返Firestore入面嘅最新數值，唔使擔心手動同步問題。
+    let adminScoringDraft = null;
+    let scoringConfigLoaded = false;
+
+    function renderAdminScoringTab() {
+      const container = document.getElementById('admin-tab-scoring');
+      if (!container) return;
+
+      if (!adminScoringDraft) {
+        if (!scoringConfigLoaded) {
+          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中計分規則設定...</p>';
+          return; // Firestore 資料一到，loadScoringRulesFromFirestore() 會自動再 render 多次
+        }
+        adminScoringDraft = {
+          ptsPerMinute: window.SCORING_RULES ? window.SCORING_RULES.ptsPerMinute : 1,
+          presenceCheckBonus: window.SCORING_RULES ? window.SCORING_RULES.presenceCheckBonus : 2
+        };
+      }
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">視訊溫習室計分規則</h3>
+          <p style="font-size:13px; color:#888; margin-bottom:16px;">呢度嘅數值會即時影響全站學生喺視訊溫習室可以賺到幾多PTS，改完記得核實清楚先撳儲存。</p>
+          <div style="margin-bottom:18px;">
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">每專注溫習 1 分鐘，可獲得幾多 PTS</label>
+            <input type="number" min="1" step="1" value="${adminScoringDraft.ptsPerMinute}" style="width:120px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" oninput="adminUpdateScoringDraft('ptsPerMinute', this.value)">
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">確認「仍在學習」彈窗，額外可獲得幾多 PTS</label>
+            <input type="number" min="1" step="1" value="${adminScoringDraft.presenceCheckBonus}" style="width:120px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" oninput="adminUpdateScoringDraft('presenceCheckBonus', this.value)">
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+          <button type="button" class="btn btn-primary" id="btn-admin-save-scoring" style="padding:12px 32px; font-size:15px;" onclick="adminSaveScoringRules()">儲存全部改動</button>
+        </div>
+      `;
+    }
+    window.renderAdminScoringTab = renderAdminScoringTab;
+
+    window.adminUpdateScoringDraft = function(key, value) {
+      if (!adminScoringDraft) return;
+      const n = parseInt(value, 10);
+      adminScoringDraft[key] = (Number.isFinite(n) && n > 0) ? n : adminScoringDraft[key];
+    };
+
+    window.adminSaveScoringRules = async function() {
+      if (!adminScoringDraft) return;
+      if (!(adminScoringDraft.ptsPerMinute > 0) || !(adminScoringDraft.presenceCheckBonus > 0)) {
+        window.showToast('兩個數值都要大於 0', '⚠️');
+        return;
+      }
+      const payload = {
+        ptsPerMinute: adminScoringDraft.ptsPerMinute,
+        presenceCheckBonus: adminScoringDraft.presenceCheckBonus,
+        updatedAt: Date.now(),
+        updatedBy: window.currentUser ? window.currentUser.email : null
+      };
+      const btn = document.getElementById('btn-admin-save-scoring');
+      if (btn) { btn.disabled = true; btn.innerText = '儲存中…'; }
+      try {
+        await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'scoringRules'), payload);
+        window.showToast('計分規則已儲存，即時對所有用戶生效！（伺服器端最多需要30秒追上最新設定）', '🎉');
+      } catch (err) {
+        window.showToast('儲存失敗：' + (err.message || err), '❌');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '儲存全部改動'; }
+      }
+    };
+
+    let scoringConfigUnsubscribe = null;
+    function loadScoringRulesFromFirestore() {
+      if (!window.db || !window.fs) return;
+      if (scoringConfigUnsubscribe) scoringConfigUnsubscribe();
+      const ref = window.fs.doc(window.db, 'admin_config', 'scoringRules');
+      scoringConfigUnsubscribe = window.fs.onSnapshot(ref, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (typeof data.ptsPerMinute === 'number' && data.ptsPerMinute > 0) window.SCORING_RULES.ptsPerMinute = data.ptsPerMinute;
+          if (typeof data.presenceCheckBonus === 'number' && data.presenceCheckBonus > 0) window.SCORING_RULES.presenceCheckBonus = data.presenceCheckBonus;
+        }
+        scoringConfigLoaded = true;
+        if (currentAdminTab === 'scoring' && !adminScoringDraft) {
+          const adminPanelEl = document.getElementById('admin-panel-container');
+          if (adminPanelEl && adminPanelEl.style.display !== 'none') {
+            renderAdminScoringTab();
+          }
+        }
+      }, (err) => {
+        console.error('讀取計分規則設定失敗:', err);
+        scoringConfigLoaded = true;
+        if (typeof window.isCurrentUserAdmin === 'function' && window.isCurrentUserAdmin()) {
+          window.showToast('讀取計分規則設定失敗（可能是 Firestore 規則未生效）：' + (err.message || err), '⚠️');
+        }
+      });
+    }
+    window.loadScoringRulesFromFirestore = loadScoringRulesFromFirestore;
 
     // 頁面一載入就檢查一次（處理直接開 #admin 網址嘅情況）
     checkAdminHashRoute();

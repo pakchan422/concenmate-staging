@@ -64,6 +64,16 @@
       wakeLockObj: null // Screen Wake Lock API 拎返嚟嘅 lock 物件，喺房入面攞住佢就可以擋住手機自動熄屏／鎖屏（見 requestRoomWakeLock/releaseRoomWakeLock）
     };
 
+    // 計分規則（每分鐘PTS、確認仍在學習嘅獎勵PTS）——Admin後台「計分
+    // 規則」分頁可以改（admin_config/scoringRules 文件），呢度嘅數值
+    // 淨係起步時嘅預設值／Firestore 讀唔到嗰陣嘅後備值，真正生效嘅
+    // 數值由 loadScoringRulesFromFirestore()（admin-panel.js）讀到之
+    // 後會覆蓋呢個物件。⚠️ Cloud Function（functions/index.js 嘅
+    // awardStudyPoints）嗰邊都係讀返同一份 admin_config/scoringRules
+    // 文件做伺服器端驗證，兩邊一定要跟同一個設定嚟源，唔係管理員改
+    // 咗呢度顯示嘅分數，但伺服器因為白名單對唔上而拒絕寫入。
+    window.SCORING_RULES = { ptsPerMinute: 1, presenceCheckBonus: 2 };
+
     const MIC_OPEN_LIMIT_SECONDS = 3 * 60; // 每次開咪最多連續 3 分鐘，避免學生掛住傾偈唔記得溫習
     const MIC_COOLDOWN_SECONDS = 5 * 60; // 開咪上限一到，要等 5 分鐘冷卻先可以再開
     const MIC_IDLE_RESET_SECONDS = 5 * 60; // 學生未撞到 3 分鐘上限、主動關咪之後，如果連續 5 分鐘都冇再開咪，就當佢已經完全休息返，回復返成套 3 分鐘預算（唔使一定撞晒 3 分鐘先可以歸零）
@@ -1568,9 +1578,11 @@
 
         if (secondsSinceLastAward >= 60 && !state.awardingPaused) {
           secondsSinceLastAward = 0;
-          // 每滿 60 秒真正嘅溫習時間，除咗畀 1 PTS，仲要累加 1/60 小時到
-          // 「累積溫習時數」度，等個時數可以同視訊房嘅實際溫習時間掛鈎
-          awardStudyPoint(1, 1 / 60);
+          // 每滿 60 秒真正嘅溫習時間，除咗畀 N PTS（可以喺Admin後台
+          // 「計分規則」分頁調整，見 window.SCORING_RULES），仲要累加
+          // 1/60 小時到「累積溫習時數」度，等個時數可以同視訊房嘅實際
+          // 溫習時間掛鈎
+          awardStudyPoint(window.SCORING_RULES.ptsPerMinute, 1 / 60);
         }
       }, 1000);
     }
@@ -1795,9 +1807,11 @@
 
     window.confirmStillHere = function() {
       resumePresenceSilently();
-      // 主動確認「仲喺度」都算係一種投入專注嘅表現，順手獎多 2 分鼓勵一下
-      awardStudyPoint(2);
-      window.showToast('讚！繼續加油溫習，額外送你 +2 PTS', '💪');
+      // 主動確認「仲喺度」都算係一種投入專注嘅表現，順手獎分鼓勵一下
+      // （獎勵PTS數值可以喺Admin後台「計分規則」分頁調整）
+      const bonus = window.SCORING_RULES.presenceCheckBonus;
+      awardStudyPoint(bonus);
+      window.showToast(`讚！繼續加油溫習，額外送你 +${bonus} PTS`, '💪');
     };
 
     window.leaveRoom = async function() {
