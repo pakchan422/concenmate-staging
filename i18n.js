@@ -679,9 +679,9 @@
     'landing.step1Title': { 'zh-Hant': '建立帳戶', 'en': 'Create an Account', 'yue': '開個帳戶' },
     'landing.step1Desc': { 'zh-Hant': '只需一分鐘完成註冊，即可解鎖專注溫習室、貼紙圖鑑及全部功能。', 'en': 'Sign up in just a minute to unlock focus study rooms, the sticker collection, and every feature.', 'yue': '一分鐘就搞完註冊，即刻解鎖專注溫習室、貼紙圖鑑同全部功能。' },
     'landing.step2Title': { 'zh-Hant': '專注溫習室', 'en': 'Focus Study Rooms', 'yue': '專注溫習室' },
-    'landing.step2Desc': { 'zh-Hant': '與其他學生一同在鏡頭前互相督促專注溫習，同時累積積分與經驗值。', 'en': 'Study alongside other students on camera, keeping each other focused while earning points and experience.', 'yue': '同其他同學一齊開住鏡頭互相督促專注溫書，仲可以攢積分同經驗值。' },
+    'landing.step2Desc': { 'zh-Hant': '與其他學生一同在鏡頭前互相督促專注溫習，同時累積積分與經驗值。', 'en': 'Study alongside other students on camera, keeping each other focused while earning points and experience.', 'yue': '同其他同學一齊開住鏡頭互相督促專注溫書，仲可以賺積分同經驗值。' },
     'landing.step3Title': { 'zh-Hant': '成長與獎勵', 'en': 'Growth & Rewards', 'yue': '成長與獎勵' },
-    'landing.step3Desc': { 'zh-Hant': '累積的溫習時數與積分可兌換 Ottiee 貼紙，並提升等級，見證自己一步步累積的溫習成果。', 'en': 'Redeem your accumulated study hours and points for Ottiee stickers, level up, and watch your study progress build step by step.', 'yue': '累積嘅溫習時數同積分可以換 Ottiee 貼紙，仲可以升級，見證自己一步步嘅溫書成果。' },
+    'landing.step3Desc': { 'zh-Hant': '累積的溫習時數與積分可兌換獎品，並提升等級，見證自己一步步累積的溫習成果。', 'en': 'Redeem your accumulated study hours and points for prizes, level up, and watch your study progress build step by step.', 'yue': '累積嘅溫習時數同積分可以換獎品，仲可以升級，見證自己一步步嘅溫書成果。' },
     'landing.ctaH2': { 'zh-Hant': '由今天開始，讓書伴陪你溫習', 'en': 'Start today, let ConcenMate study with you', 'yue': '由今日開始，等書伴陪你溫書' },
     'landing.ctaSub': { 'zh-Hant': '免費註冊帳戶，開始你的專注溫習旅程。', 'en': 'Sign up for free and start your focused study journey.', 'yue': '免費註冊帳戶，開始你嘅專注溫書之旅。' },
     'landing.footerCopyright': { 'zh-Hant': '© 2026 ConcenMate 書伴', 'en': '© 2026 ConcenMate 書伴', 'yue': '© 2026 ConcenMate 書伴' },
@@ -794,6 +794,10 @@
     });
     const currentLabelEl = document.getElementById('current-lang-label');
     if (currentLabelEl) currentLabelEl.textContent = window.LANGUAGE_LABELS[lang] || '繁體中文';
+    // Landing page（未登入主頁）頂部嘅語言切換掣，同 header 嗰個分開
+    // 一個元素，要分開更新先會顯示返啱嘅語言名。
+    const landingLabelEl = document.getElementById('landing-current-lang-label');
+    if (landingLabelEl) landingLabelEl.textContent = window.LANGUAGE_LABELS[lang] || '繁體中文';
   };
 
   // 一開波（未必已登入）都套用一次，等未登入嗰陣如果之前揀過語言，
