@@ -509,6 +509,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.currentUser = null;
         if (suspensionListenerUnsubscribe) { suspensionListenerUnsubscribe(); suspensionListenerUnsubscribe = null; }
       }
+      // Landing page（未登入主頁）嘅文案／圖片設定特登放喺 if/else
+      // 之外、兩種情況都會叫——同埋冇登入都要套用，先叫得過淨係喺
+      // if (user) 入面嗰堆 loadXxxFromFirestore()（admin_config/
+      // landingContent 喺 firestore.rules 入面已經特登開放俾未登入
+      // 用戶讀取，見 admin-panel.js 嘅 loadLandingContentFromFirestore
+      // 定義處嘅說明）。放喺呢度（而唔係成個檔案最頂、Firebase 岩岩
+      // init 完嗰陣）係因為呢度係 onAuthStateChanged 嘅 callback，
+      // 保證成個頁面所有 <script> 都已經載入執行完（包括
+      // admin-panel.js），window.loadLandingContentFromFirestore 先
+      // 實際存在，唔會因為載入順序問題而靜靜雞冧咗。
+      if (typeof window.loadLandingContentFromFirestore === 'function') {
+        window.loadLandingContentFromFirestore();
+      }
       // 登入／登出狀態一改變，「目前語言」嘅判斷依據都可能跟住變（已
       // 登入睇 users/{uid}.language，登出返又退返去睇 localStorage——
       // 見 i18n.js 嘅 window.getAppLanguage），所以要即刻重新套用一次，

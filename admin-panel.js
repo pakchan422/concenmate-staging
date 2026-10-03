@@ -166,6 +166,7 @@
       else if (tab === 'reports') renderAdminReportsTab();
       else if (tab === 'icons') renderAdminNavIconsTab();
       else if (tab === 'tutors') renderAdminTutorsTab();
+      else if (tab === 'landing') renderAdminLandingTab();
     };
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -1607,6 +1608,287 @@
         window.showToast('解除停權失敗：' + (err.message || err), '❌');
       }
     };
+
+    // ---------- Landing page（未登入主頁）文案／圖片管理 ----------
+    // 做法同扭蛋機／等級系統／功能圖示嗰幾個分頁一致：資料存喺 Firestore
+    // 嘅 admin_config/landingContent 文件，管理員喺呢度改完撳「儲存」，
+    // 全站（包括未登入訪客）即時生效，唔使再改 code、推 GitHub。
+    // 同其他幾個分頁唯一唔同嘅地方：呢份文件嘅讀取權限特登喺
+    // firestore.rules 開放俾未登入用戶（見 admin_config/landingContent
+    // 嗰條獨立規則），因為 Landing page 本身就係畀未登入嘅訪客睇。
+    //
+    // 文字部分直接存返 i18n.js 入面 'landing.*' 嗰 24 組 key 嘅三語
+    // 內容（zh-Hant／en／yue），管理員改嘅其實就係 window.I18N_DICT
+    // 入面呢幾組字嘅值；圖片部分（Nav Logo／主橫幅吉祥物圖）存返兩條
+    // Firebase Storage 下載連結，冇自訂圖片嗰陣就維持用返 index.html
+    // 寫死嘅預設檔案（logo-hero.png／ottie-wave.png）。
+
+    // 分組顯示用：每個分組底下嘅 key 清單＋中文標籤，純粹為咗令管理員
+    // 睇得明呢個欄位對應緊個網站邊一句字，唔影響實際儲存結構。
+    const LANDING_FIELD_GROUPS = [
+      {
+        title: '導覽列',
+        fields: [
+          { key: 'landing.navLogin', label: '「登入」按鈕文字' },
+          { key: 'landing.registerBtn', label: '「註冊帳號」按鈕文字（頂部導覽／主橫幅／底部行動呼籲共用同一句，改一次三處一齊變）' },
+          { key: 'landing.slogan', label: '品牌標語（Logo 右邊嗰句）' }
+        ]
+      },
+      {
+        title: '主橫幅',
+        fields: [
+          { key: 'landing.eyebrow', label: '小標籤' },
+          { key: 'landing.heroH1Line1', label: '主標題　第一行' },
+          { key: 'landing.heroH1Line2', label: '主標題　第二行' },
+          { key: 'landing.heroSub', label: '說明文字' },
+          { key: 'landing.subjectChinese', label: '科目裝飾格：中文' },
+          { key: 'landing.subjectEnglish', label: '科目裝飾格：英文' },
+          { key: 'landing.subjectMath', label: '科目裝飾格：數學' }
+        ]
+      },
+      {
+        title: '「三個核心」介紹區',
+        fields: [
+          { key: 'landing.stepsEyebrow', label: '小標籤' },
+          { key: 'landing.stepsH2', label: '大標題' },
+          { key: 'landing.stepsSub', label: '說明文字' },
+          { key: 'landing.step1Title', label: '第一步　標題' },
+          { key: 'landing.step1Desc', label: '第一步　說明' },
+          { key: 'landing.step2Title', label: '第二步　標題' },
+          { key: 'landing.step2Desc', label: '第二步　說明' },
+          { key: 'landing.step3Title', label: '第三步　標題' },
+          { key: 'landing.step3Desc', label: '第三步　說明' }
+        ]
+      },
+      {
+        title: '行動呼籲區',
+        fields: [
+          { key: 'landing.ctaH2', label: '大標題' },
+          { key: 'landing.ctaSub', label: '說明文字' }
+        ]
+      },
+      {
+        title: '頁尾',
+        fields: [
+          { key: 'landing.footerCopyright', label: '版權文字' },
+          { key: 'landing.footerTerms', label: '「服務條款」連結文字' },
+          { key: 'landing.footerPrivacy', label: '「私隱政策」連結文字' }
+        ]
+      }
+    ];
+
+    let adminLandingDraft = null;
+    let landingConfigLoaded = false;
+
+    function renderAdminLandingImageCard(imgKey, title, desc, defaultFile) {
+      const url = adminLandingDraft.images[imgKey];
+      const previewInner = url
+        ? `<img src="${url}" style="width:100%; height:100%; object-fit:contain;">`
+        : `<img src="${defaultFile}" style="width:100%; height:100%; object-fit:contain;">`;
+      return `
+        <div class="admin-card">
+          <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">${title}</h3>
+          <p style="font-size:13px; color:#888; margin-bottom:10px;">${desc}</p>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div id="admin-landing-${imgKey}-thumb" onclick="document.getElementById('admin-landing-${imgKey}-input').click()" title="點擊這裡上傳圖片" style="width:80px; height:80px; border-radius:10px; background:#F0F6F8; border:1px dashed #B3D6DE; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${previewInner}</div>
+            <input type="file" accept="image/*" id="admin-landing-${imgKey}-input" style="display:none;" onchange="adminUploadLandingImage('${imgKey}', this)">
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="document.getElementById('admin-landing-${imgKey}-input').click()">上傳新圖片</button>
+              ${url ? `<button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminRemoveLandingImage('${imgKey}')">還原做預設圖</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAdminLandingTab() {
+      const container = document.getElementById('admin-tab-landing');
+      if (!container) return;
+
+      if (!adminLandingDraft) {
+        if (!landingConfigLoaded) {
+          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中 Landing page 設定...</p>';
+          return; // Firestore 資料一到，loadLandingContentFromFirestore() 會自動再 render 多次
+        }
+        const texts = {};
+        LANDING_FIELD_GROUPS.forEach(group => {
+          group.fields.forEach(f => {
+            const entry = (window.I18N_DICT && window.I18N_DICT[f.key]) || {};
+            texts[f.key] = {
+              'zh-Hant': entry['zh-Hant'] || '',
+              'en': entry['en'] || '',
+              'yue': entry['yue'] || ''
+            };
+          });
+        });
+        adminLandingDraft = {
+          texts,
+          images: {
+            navLogoUrl: window.LANDING_IMAGE_OVERRIDES ? (window.LANDING_IMAGE_OVERRIDES.navLogoUrl || null) : null,
+            heroImageUrl: window.LANDING_IMAGE_OVERRIDES ? (window.LANDING_IMAGE_OVERRIDES.heroImageUrl || null) : null
+          }
+        };
+      }
+
+      const groupsHtml = LANDING_FIELD_GROUPS.map(group => {
+        const fieldsHtml = group.fields.map(f => {
+          const v = adminLandingDraft.texts[f.key];
+          return `
+            <div style="margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid #EEF3F4;">
+              <p style="font-size:13px; font-weight:bold; color:var(--brand-700); margin-bottom:6px;">${f.label}</p>
+              <div style="display:grid; grid-template-columns:1fr; gap:6px;">
+                <label style="font-size:12px; color:#999;">繁體中文
+                  <textarea rows="1" style="width:100%; font-size:14px; padding:6px 8px; border:1px solid #DDE7E9; border-radius:6px; font-family:inherit; resize:vertical;" oninput="adminUpdateLandingText('${f.key}','zh-Hant',this.value)">${v['zh-Hant']}</textarea>
+                </label>
+                <label style="font-size:12px; color:#999;">English
+                  <textarea rows="1" style="width:100%; font-size:14px; padding:6px 8px; border:1px solid #DDE7E9; border-radius:6px; font-family:inherit; resize:vertical;" oninput="adminUpdateLandingText('${f.key}','en',this.value)">${v['en']}</textarea>
+                </label>
+                <label style="font-size:12px; color:#999;">廣東話
+                  <textarea rows="1" style="width:100%; font-size:14px; padding:6px 8px; border:1px solid #DDE7E9; border-radius:6px; font-family:inherit; resize:vertical;" oninput="adminUpdateLandingText('${f.key}','yue',this.value)">${v['yue']}</textarea>
+                </label>
+              </div>
+            </div>
+          `;
+        }).join('');
+        return `
+          <div class="admin-card" style="margin-bottom:16px;">
+            <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">${group.title}</h3>
+            ${fieldsHtml}
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <p style="font-size:13px; color:#888; margin-bottom:14px;">呢度改嘅文字就係未登入訪客打開網站第一眼見到嘅 Landing page 內容，三種語言可以分開改，改完撳最底「儲存全部改動」就會即時全站生效（包括未登入嘅訪客），唔使搵開發者改 code。</p>
+        ${renderAdminLandingImageCard('navLogoUrl', '導覽列 Logo', '顯示喺 Landing page 頂部導覽列嘅 Logo 圖案。', 'logo-hero.png')}
+        ${renderAdminLandingImageCard('heroImageUrl', '主橫幅吉祥物圖', '顯示喺主橫幅中間嘅 Ottiee 吉祥物圖案。', 'ottie-wave.png')}
+        ${groupsHtml}
+        <div style="text-align:center; margin-top:10px;">
+          <button type="button" class="btn btn-primary" id="btn-admin-save-landing" style="padding:12px 32px; font-size:15px;" onclick="adminSaveLandingContent()">儲存全部改動</button>
+        </div>
+      `;
+    }
+    window.renderAdminLandingTab = renderAdminLandingTab;
+
+    window.adminUpdateLandingText = function(key, lang, value) {
+      if (!adminLandingDraft || !adminLandingDraft.texts[key]) return;
+      adminLandingDraft.texts[key][lang] = value;
+    };
+
+    window.adminUploadLandingImage = async function(imgKey, inputEl) {
+      if (!adminLandingDraft) return;
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        window.showToast('請選擇圖片檔案', '⚠️');
+        return;
+      }
+      if (!window.storage || !window.storageApi) {
+        window.showToast('Storage 未初始化，請重新整理頁面再試', '⚠️');
+        return;
+      }
+      const oldUrl = adminLandingDraft.images[imgKey];
+      window.showToast('上傳中圖片…', '📤');
+      try {
+        const { blob, mimeType } = await compressImageFileToBlob(file, 600, 0.9);
+        const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+        const path = `landing_assets/${imgKey}_${Date.now()}.${ext}`;
+        const fileRef = window.storageApi.ref(window.storage, path);
+        await window.storageApi.uploadBytes(fileRef, blob, { contentType: mimeType });
+        const downloadUrl = await window.storageApi.getDownloadURL(fileRef);
+        adminLandingDraft.images[imgKey] = downloadUrl;
+        renderAdminLandingTab();
+        window.showToast('圖片上傳成功，請點擊「儲存全部改動」才會正式生效', '🎉');
+        tryDeleteOldGachaStoragePhoto(oldUrl); // best-effort，呢個函式其實通用，唔止扭蛋貼紙先用得
+      } catch (err) {
+        window.showToast('圖片上傳失敗：' + (err.message || err), '❌');
+      }
+    };
+
+    window.adminRemoveLandingImage = function(imgKey) {
+      if (!adminLandingDraft) return;
+      const oldUrl = adminLandingDraft.images[imgKey];
+      tryDeleteOldGachaStoragePhoto(oldUrl); // best-effort
+      adminLandingDraft.images[imgKey] = null;
+      renderAdminLandingTab();
+    };
+
+    window.adminSaveLandingContent = async function() {
+      if (!adminLandingDraft) return;
+      const payload = {
+        texts: adminLandingDraft.texts,
+        images: adminLandingDraft.images,
+        updatedAt: Date.now(),
+        updatedBy: window.currentUser ? window.currentUser.email : null
+      };
+      const btn = document.getElementById('btn-admin-save-landing');
+      if (btn) { btn.disabled = true; btn.innerText = '儲存中…'; }
+      try {
+        await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'landingContent'), payload);
+        window.showToast('Landing page 設定已儲存，即時對所有訪客生效！', '🎉');
+      } catch (err) {
+        window.showToast('儲存失敗：' + (err.message || err), '❌');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '儲存全部改動'; }
+      }
+    };
+
+    // 讀取 Firestore 度嘅 Landing page 設定，覆蓋返 window.I18N_DICT 入面
+    // 'landing.*' 嗰幾組字、同埋 Nav Logo／主橫幅吉祥物圖嘅顯示。呢個
+    // 特登唔經 onAuthStateChanged 嗰邊叫（同 loadGachaConfigFromFirestore
+    // 等幾個唔同），而係一有 window.db／window.fs 就即刻叫（見
+    // app-core.js），因為 Landing page 係畀未登入嘅訪客睇，唔可以等
+    // 用戶登入咗先至套用翻譯／圖片。
+    //
+    // 合併規則：管理員喺某個語言留空＝「冇改動」，唔會用空字串覆蓋走
+    // 原本寫死喺 i18n.js 嘅預設翻譯（唔係咁嘅話，萬一得意管理員淨係
+    // 填咗中文、冚晒英文／廣東話留空，English／廣東話版就會由「冇翻
+    // 譯、自動退返用中文」變成「真係顯示緊一舊空白」，用戶體驗反而變差）。
+    let landingConfigUnsubscribe = null;
+    function loadLandingContentFromFirestore() {
+      if (!window.db || !window.fs) return;
+      if (landingConfigUnsubscribe) landingConfigUnsubscribe();
+      const ref = window.fs.doc(window.db, 'admin_config', 'landingContent');
+      landingConfigUnsubscribe = window.fs.onSnapshot(ref, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.texts && typeof data.texts === 'object' && window.I18N_DICT) {
+            Object.keys(data.texts).forEach((key) => {
+              if (!window.I18N_DICT[key]) return;
+              const override = data.texts[key];
+              ['zh-Hant', 'en', 'yue'].forEach((lang) => {
+                if (override && typeof override[lang] === 'string' && override[lang]) {
+                  window.I18N_DICT[key][lang] = override[lang];
+                }
+              });
+            });
+          }
+          window.LANDING_IMAGE_OVERRIDES = data.images || {};
+          const navLogoEl = document.getElementById('landing-nav-logo-img');
+          if (navLogoEl) navLogoEl.src = (data.images && data.images.navLogoUrl) ? data.images.navLogoUrl : 'logo-hero.png';
+          const heroImgEl = document.getElementById('landing-hero-mascot-img');
+          if (heroImgEl) heroImgEl.src = (data.images && data.images.heroImageUrl) ? data.images.heroImageUrl : 'ottie-wave.png';
+        }
+        landingConfigLoaded = true;
+        if (typeof window.applyAppLanguage === 'function') window.applyAppLanguage();
+        // 如果管理員岩岩好打開緊「Landing page文案」呢個分頁、又仲未開始
+        // 編輯（adminLandingDraft 仲係 null，卡喺「載入中...」畫面），
+        // 而家攞到資料喇，即刻幫佢重新 render 一次。
+        if (currentAdminTab === 'landing' && !adminLandingDraft) {
+          const adminPanelEl = document.getElementById('admin-panel-container');
+          if (adminPanelEl && adminPanelEl.style.display !== 'none') {
+            renderAdminLandingTab();
+          }
+        }
+      }, (err) => {
+        console.error('讀取 Landing page 設定失敗:', err);
+        landingConfigLoaded = true; // 唔好卡死喺「載入中...」畫面，起碼俾程式碼入面寫死嘅預設值可以用
+        if (typeof window.isCurrentUserAdmin === 'function' && window.isCurrentUserAdmin()) {
+          window.showToast('讀取 Landing page 設定失敗（可能是 Firestore 規則未生效）：' + (err.message || err), '⚠️');
+        }
+      });
+    }
+    window.loadLandingContentFromFirestore = loadLandingContentFromFirestore;
 
     // 頁面一載入就檢查一次（處理直接開 #admin 網址嘅情況）
     checkAdminHashRoute();
