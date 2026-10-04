@@ -218,6 +218,14 @@
           btn.style.display = isSuper ? '' : 'none';
         }
       });
+      // 分頁掣而家分咗三組顯示（日常營運／網站設定／管治）——「網站
+      // 設定」「管治」呢兩組入面嘅掣全部都係super限定，『support』
+      // 帳戶見唔到任何一粒，咁連個組嘅小標題都一齊隱藏埋，唔會見到
+      // 得個「網站設定」四個字、下面乜掣都冇咁奇怪。
+      ['admin-tab-group-settings', 'admin-tab-group-governance'].forEach((groupId) => {
+        const groupEl = document.getElementById(groupId);
+        if (groupEl) groupEl.style.display = isSuper ? '' : 'none';
+      });
       // 如果而家記住嘅分頁係『support』見唔到嗰啲，就退返去「數據總覽」，
       // 避免見到一個冇按鈕對應、又撳唔返嘅空白分頁。
       let startTab = currentAdminTab || 'dashboard';
