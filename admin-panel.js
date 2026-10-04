@@ -77,7 +77,7 @@
     let adminUsersUnsubscribe = null;
     let adminReportsUnsubscribe = null;
     let adminReportsBadgeUnsubscribe = null;
-    let currentAdminTab = 'gacha';
+    let currentAdminTab = 'dashboard';
 
     // 網址 hash 路由：#admin 先顯示管理後台，離開就切返正常介面。
     // 未登入／auth 仲未 resolve 之前 window.currentUser 係 undefined，
@@ -143,7 +143,7 @@
       // 「🎓 導師申請」個紅點徽章同上，唔理揀緊邊個分頁都要見到
       if (typeof window.startAdminTutorsBadgeListener === 'function') window.startAdminTutorsBadgeListener();
 
-      switchAdminTab(currentAdminTab || 'gacha');
+      switchAdminTab(currentAdminTab || 'dashboard');
     }
     window.checkAdminHashRoute = checkAdminHashRoute;
     window.addEventListener('hashchange', checkAdminHashRoute);
@@ -158,7 +158,8 @@
         panel.style.display = (panel.id === 'admin-tab-' + tab) ? 'block' : 'none';
       });
 
-      if (tab === 'gacha') renderAdminGachaTab();
+      if (tab === 'dashboard') renderAdminDashboardTab();
+      else if (tab === 'gacha') renderAdminGachaTab();
       else if (tab === 'rooms') renderAdminRoomsTab();
       else if (tab === 'qa') renderAdminQaTab();
       else if (tab === 'users') renderAdminUsersTab();
@@ -2289,6 +2290,130 @@
       });
     }
     window.loadAntiIdleRulesFromFirestore = loadAntiIdleRulesFromFirestore;
+
+    // ---------- 數據總覽 Dashboard ----------
+    // 第三階段（運營工具）第一項：畀Alvis一入Admin後台就即刻見到成個
+    // 平台嘅關鍵數字，唔使逐個分頁揭嚟揭去自己數。
+    //
+    // 做法同其他分頁唔同：唔用 onSnapshot 持續監聽（用戶／房間呢兩個
+    // collection 會隨平台成長越嚟越大，持續監聽成個dashboard會一直
+    // 掛住唔少實時流量），而係用 getDocs／getCountFromServer 做「一次
+    // 性讀取」，撳「重新整理」先再讀多次——對一個總覽畫面嚟講，數字
+    // 唔使去到秒秒都即時更新，呢種做法對 Firestore 讀取量更溫和。
+    // 「待處理舉報」「待審批導師申請」用 getCountFromServer 直接喺伺服
+    // 器端計數，唔使下載晒成批文件，比較慳。
+    let adminDashboardStats = null;
+    let adminDashboardLoading = false;
+    let adminDashboardLoadedAt = null;
+
+    async function loadAdminDashboardStats() {
+      if (!window.db || !window.fs) return;
+      adminDashboardLoading = true;
+      renderAdminDashboardTab();
+      try {
+        const [usersSnap, roomsSnap, reportsCountSnap, tutorsCountSnap] = await Promise.all([
+          window.fs.getDocs(window.fs.collection(window.db, 'users')),
+          window.fs.getDocs(window.fs.collection(window.db, 'rooms')),
+          window.fs.getCountFromServer(window.fs.query(window.fs.collection(window.db, 'reports'), window.fs.where('status', '==', 'pending'))),
+          window.fs.getCountFromServer(window.fs.query(window.fs.collection(window.db, 'tutorApplications'), window.fs.where('status', '==', 'pending')))
+        ]);
+
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayStartMs = todayStart.getTime();
+        const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+        let totalUsers = 0, newToday = 0, newThisWeek = 0, activeToday = 0;
+        let suspendedCount = 0, tutorCount = 0, totalPoints = 0, totalHours = 0;
+
+        usersSnap.forEach(docSnap => {
+          const u = docSnap.data();
+          totalUsers++;
+          // createdAt／lastLoginAt 喺唔同時期寫入嘅帳號可能係數字（ms
+          // 時間戳）或者 ISO字串，new Date() 兩種都食得，跟返其他分頁
+          // （例如「房間管理」）一致嘅寬容寫法
+          const createdMs = typeof u.createdAt === 'number' ? u.createdAt : (u.createdAt ? new Date(u.createdAt).getTime() : 0);
+          if (createdMs >= todayStartMs) newToday++;
+          if (createdMs >= weekAgoMs) newThisWeek++;
+          const lastLoginMs = typeof u.lastLoginAt === 'number' ? u.lastLoginAt : (u.lastLoginAt ? new Date(u.lastLoginAt).getTime() : 0);
+          if (lastLoginMs >= todayStartMs) activeToday++;
+          if (u.suspended) suspendedCount++;
+          if (u.accountType === 'tutor') tutorCount++;
+          totalPoints += parseFloat(u.points) || 0;
+          totalHours += parseFloat(u.hours) || 0;
+        });
+
+        adminDashboardStats = {
+          totalUsers, newToday, newThisWeek, activeToday, suspendedCount, tutorCount,
+          totalPoints: Math.round(totalPoints),
+          totalHours: Math.round(totalHours * 10) / 10,
+          roomCount: roomsSnap.size,
+          pendingReports: reportsCountSnap.data().count,
+          pendingTutorApps: tutorsCountSnap.data().count
+        };
+      } catch (err) {
+        console.error('載入數據總覽失敗:', err);
+        adminDashboardStats = { error: err.message || String(err) };
+      } finally {
+        adminDashboardLoading = false;
+        adminDashboardLoadedAt = Date.now();
+        renderAdminDashboardTab();
+      }
+    }
+    window.loadAdminDashboardStats = loadAdminDashboardStats;
+    window.adminRefreshDashboard = function() { loadAdminDashboardStats(); };
+
+    function renderAdminDashboardTab() {
+      const container = document.getElementById('admin-tab-dashboard');
+      if (!container) return;
+
+      if (!adminDashboardStats && !adminDashboardLoading) {
+        loadAdminDashboardStats();
+        return;
+      }
+      if (adminDashboardLoading && !adminDashboardStats) {
+        container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中數據總覽...</p>';
+        return;
+      }
+      if (adminDashboardStats && adminDashboardStats.error) {
+        container.innerHTML = `<div class="admin-card" style="color:#c0392b;">載入失敗：${escapeHtml(adminDashboardStats.error)}</div>`;
+        return;
+      }
+
+      const s = adminDashboardStats;
+      const lastUpdateText = adminDashboardLoadedAt ? new Date(adminDashboardLoadedAt).toLocaleString('zh-HK') : '—';
+      const refreshingNow = adminDashboardLoading;
+
+      const cards = [
+        { label: '總註冊用戶', value: s.totalUsers },
+        { label: '今日新註冊', value: s.newToday },
+        { label: '本週新註冊', value: s.newThisWeek },
+        { label: '今日活躍用戶（有登入）', value: s.activeToday },
+        { label: '目前溫習房間數', value: s.roomCount },
+        { label: '現存總 PTS（已扣除兌換）', value: s.totalPoints.toLocaleString('zh-HK') },
+        { label: '累積總溫習時數', value: s.totalHours.toLocaleString('zh-HK') + ' 小時' },
+        { label: '導師帳戶數', value: s.tutorCount },
+        { label: '停權帳戶數', value: s.suspendedCount },
+        { label: '待處理舉報', value: s.pendingReports },
+        { label: '待審批導師申請', value: s.pendingTutorApps }
+      ];
+
+      container.innerHTML = `
+        <div class="admin-card" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <p style="font-size:13px; color:#888; margin:0;">數據截至：${lastUpdateText}（讀取當刻嘅快照，唔會自動即時更新，想攞最新數字就撳右邊個掣）</p>
+          <button type="button" class="btn btn-outline" style="font-size:13px; padding:6px 14px;" ${refreshingNow ? 'disabled' : ''} onclick="window.adminRefreshDashboard()">${refreshingNow ? '更新中…' : '🔄 重新整理'}</button>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px;">
+          ${cards.map(c => `
+            <div class="admin-card" style="text-align:center;">
+              <div style="font-size:28px; font-weight:800; color:var(--brand-800);">${c.value}</div>
+              <div style="font-size:13px; color:#888; margin-top:6px;">${c.label}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    window.renderAdminDashboardTab = renderAdminDashboardTab;
 
     // 頁面一載入就檢查一次（處理直接開 #admin 網址嘅情況）
     checkAdminHashRoute();

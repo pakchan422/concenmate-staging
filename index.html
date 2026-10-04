@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.192.6"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.192.7"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -3788,7 +3788,8 @@
       </div>
 
       <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;" id="admin-tab-nav">
-        <button class="btn btn-primary admin-tab-btn active" data-tab="gacha" onclick="switchAdminTab('gacha')">扭蛋機獎品</button>
+        <button class="btn btn-primary admin-tab-btn active" data-tab="dashboard" onclick="switchAdminTab('dashboard')">數據總覽</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="gacha" onclick="switchAdminTab('gacha')">扭蛋機獎品</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="rooms" onclick="switchAdminTab('rooms')">房間管理</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="qa" onclick="switchAdminTab('qa')">疑難解答區</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="users" onclick="switchAdminTab('users')">用戶管理</button>
@@ -3802,7 +3803,8 @@
         <button class="btn btn-outline admin-tab-btn" data-tab="antiidle" onclick="switchAdminTab('antiidle')">防掛機參數</button>
       </div>
 
-      <div id="admin-tab-gacha" class="admin-tab-panel"></div>
+      <div id="admin-tab-dashboard" class="admin-tab-panel"></div>
+      <div id="admin-tab-gacha" class="admin-tab-panel" style="display:none;"></div>
       <div id="admin-tab-rooms" class="admin-tab-panel" style="display:none;"></div>
       <div id="admin-tab-qa" class="admin-tab-panel" style="display:none;"></div>
       <div id="admin-tab-users" class="admin-tab-panel" style="display:none;"></div>
