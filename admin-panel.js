@@ -168,6 +168,7 @@
       else if (tab === 'tutors') renderAdminTutorsTab();
       else if (tab === 'landing') renderAdminLandingTab();
       else if (tab === 'scoring') renderAdminScoringTab();
+      else if (tab === 'roomsettings') renderAdminRoomSettingsTab();
     };
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -1998,6 +1999,175 @@
       });
     }
     window.loadScoringRulesFromFirestore = loadScoringRulesFromFirestore;
+
+    // ---------- 房間設定（建立溫習房表格嘅人數上限／預計溫習時間選項）----------
+    // 做法同「計分規則」分頁一致，存喺 Firestore（admin_config/roomSettings
+    // 文件），管理員喺呢度改完撳「儲存」，全站「建立溫習房」表格即時跟
+    // 住變（見 room-video.js 嘅 window.ROOM_SETTINGS／window.renderRoomCreateOptions）。
+    //
+    // ⚠️ 人數上限刻意淨係畀管理員喺「2 人房」「4 人房」呢兩個選項度開
+    // 關同揀預設值，唔可以自訂其他數字——因為視訊格位版面寫死咗淨係
+    // 支援呢兩種排法（2 格或 2x2 四格），加其他人數會整壞版面。預計
+    // 溫習時間就純粹係畀學生參考嘅顯示文字，房間唔會因為時間到而自
+    // 動結束，所以呢項可以自由加／減／改分鐘數選項。
+    let adminRoomSettingsDraft = null;
+    let roomSettingsConfigLoaded = false;
+
+    function renderAdminRoomSettingsTab() {
+      const container = document.getElementById('admin-tab-roomsettings');
+      if (!container) return;
+
+      if (!adminRoomSettingsDraft) {
+        if (!roomSettingsConfigLoaded) {
+          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中房間設定...</p>';
+          return; // Firestore 資料一到，loadRoomSettingsFromFirestore() 會自動再 render 多次
+        }
+        const s = window.ROOM_SETTINGS || {};
+        adminRoomSettingsDraft = {
+          capacity2Enabled: s.capacity2Enabled !== false,
+          capacity4Enabled: s.capacity4Enabled !== false,
+          defaultCapacity: s.defaultCapacity === 2 ? 2 : 4,
+          durationOptionsText: Array.isArray(s.durationOptions) ? s.durationOptions.join(', ') : '15, 30, 40, 45, 60',
+          defaultDuration: s.defaultDuration || 30
+        };
+      }
+
+      const d = adminRoomSettingsDraft;
+      const capacityChoicesNow = [];
+      if (d.capacity2Enabled) capacityChoicesNow.push(2);
+      if (d.capacity4Enabled) capacityChoicesNow.push(4);
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">人數上限選項</h3>
+          <p style="font-size:13px; color:#888; margin-bottom:16px;">揀選學生建立溫習房嗰陣可以選擇嘅人數上限（固定只有 2 人房／4 人房兩種，因為視訊畫面格位設計只支援呢兩種排法）。</p>
+          <label style="display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:10px; cursor:pointer;">
+            <input type="checkbox" ${d.capacity2Enabled ? 'checked' : ''} onchange="adminUpdateRoomSettingsDraft('capacity2Enabled', this.checked)"> 開放「2 人房」選項
+          </label>
+          <label style="display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:16px; cursor:pointer;">
+            <input type="checkbox" ${d.capacity4Enabled ? 'checked' : ''} onchange="adminUpdateRoomSettingsDraft('capacity4Enabled', this.checked)"> 開放「4 人房」選項
+          </label>
+          <div>
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">預設人數上限（表格一開啟時預先揀好嗰個）</label>
+            <select style="width:160px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" onchange="adminUpdateRoomSettingsDraft('defaultCapacity', this.value)">
+              ${capacityChoicesNow.map(n => `<option value="${n}" ${d.defaultCapacity === n ? 'selected' : ''}>${n} 人房</option>`).join('') || '<option value="">（請先開放最少一個選項）</option>'}
+            </select>
+          </div>
+        </div>
+        <div class="admin-card" style="margin-top:16px;">
+          <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">預計溫習時間選項</h3>
+          <p style="font-size:13px; color:#888; margin-bottom:16px;">呢個時間純粹顯示喺公開大廳嘅房間列表，畀其他同學參考，房間唔會因為時間到而自動結束。可以自由加減分鐘數選項。</p>
+          <div style="margin-bottom:16px;">
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">分鐘數選項（用逗號分隔，例如：15, 30, 40, 45, 60）</label>
+            <input type="text" value="${d.durationOptionsText}" style="width:100%; max-width:420px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" oninput="adminUpdateRoomSettingsDraft('durationOptionsText', this.value)">
+          </div>
+          <div>
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">預設溫習時間（分鐘，表格一開啟時預先揀好嗰個）</label>
+            <input type="number" min="1" step="1" value="${d.defaultDuration}" style="width:160px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" oninput="adminUpdateRoomSettingsDraft('defaultDuration', this.value)">
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+          <button type="button" class="btn btn-primary" id="btn-admin-save-roomsettings" style="padding:12px 32px; font-size:15px;" onclick="adminSaveRoomSettings()">儲存全部改動</button>
+        </div>
+      `;
+    }
+    window.renderAdminRoomSettingsTab = renderAdminRoomSettingsTab;
+
+    window.adminUpdateRoomSettingsDraft = function(key, value) {
+      if (!adminRoomSettingsDraft) return;
+      if (key === 'capacity2Enabled' || key === 'capacity4Enabled') {
+        adminRoomSettingsDraft[key] = !!value;
+      } else if (key === 'defaultCapacity') {
+        const n = parseInt(value, 10);
+        adminRoomSettingsDraft.defaultCapacity = (n === 2 || n === 4) ? n : adminRoomSettingsDraft.defaultCapacity;
+      } else if (key === 'defaultDuration') {
+        const n = parseInt(value, 10);
+        adminRoomSettingsDraft.defaultDuration = (Number.isFinite(n) && n > 0) ? n : adminRoomSettingsDraft.defaultDuration;
+      } else if (key === 'durationOptionsText') {
+        adminRoomSettingsDraft.durationOptionsText = value;
+      }
+      renderAdminRoomSettingsTab();
+    };
+
+    window.adminSaveRoomSettings = async function() {
+      if (!adminRoomSettingsDraft) return;
+      const d = adminRoomSettingsDraft;
+
+      if (!d.capacity2Enabled && !d.capacity4Enabled) {
+        window.showToast('「2 人房」同「4 人房」唔可以兩個都關埋，最少要開放一個', '⚠️');
+        return;
+      }
+
+      // 解析「分鐘數選項」文字輸入：逗號分隔、去重、過濾唔合法嘅值、
+      // 由細到大排序，確保存落 Firestore 嘅係乾淨嘅正整數陣列。
+      const durationOptions = Array.from(new Set(
+        d.durationOptionsText.split(',')
+          .map(s => parseInt(s.trim(), 10))
+          .filter(n => Number.isFinite(n) && n > 0)
+      )).sort((a, b) => a - b);
+
+      if (durationOptions.length === 0) {
+        window.showToast('最少要有一個有效嘅溫習時間選項（正整數分鐘數）', '⚠️');
+        return;
+      }
+
+      const defaultCapacity = (d.defaultCapacity === 2 && d.capacity2Enabled) ? 2
+        : (d.defaultCapacity === 4 && d.capacity4Enabled) ? 4
+        : (d.capacity4Enabled ? 4 : 2);
+
+      const defaultDuration = durationOptions.includes(d.defaultDuration) ? d.defaultDuration : durationOptions[0];
+
+      const payload = {
+        capacity2Enabled: d.capacity2Enabled,
+        capacity4Enabled: d.capacity4Enabled,
+        defaultCapacity: defaultCapacity,
+        durationOptions: durationOptions,
+        defaultDuration: defaultDuration,
+        updatedAt: Date.now(),
+        updatedBy: window.currentUser ? window.currentUser.email : null
+      };
+      const btn = document.getElementById('btn-admin-save-roomsettings');
+      if (btn) { btn.disabled = true; btn.innerText = '儲存中…'; }
+      try {
+        await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'roomSettings'), payload);
+        window.showToast('房間設定已儲存，即時對所有用戶生效！', '🎉');
+      } catch (err) {
+        window.showToast('儲存失敗：' + (err.message || err), '❌');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '儲存全部改動'; }
+      }
+    };
+
+    let roomSettingsConfigUnsubscribe = null;
+    function loadRoomSettingsFromFirestore() {
+      if (!window.db || !window.fs) return;
+      if (roomSettingsConfigUnsubscribe) roomSettingsConfigUnsubscribe();
+      const ref = window.fs.doc(window.db, 'admin_config', 'roomSettings');
+      roomSettingsConfigUnsubscribe = window.fs.onSnapshot(ref, (snap) => {
+        if (snap.exists() && window.ROOM_SETTINGS) {
+          const data = snap.data();
+          if (typeof data.capacity2Enabled === 'boolean') window.ROOM_SETTINGS.capacity2Enabled = data.capacity2Enabled;
+          if (typeof data.capacity4Enabled === 'boolean') window.ROOM_SETTINGS.capacity4Enabled = data.capacity4Enabled;
+          if (data.defaultCapacity === 2 || data.defaultCapacity === 4) window.ROOM_SETTINGS.defaultCapacity = data.defaultCapacity;
+          if (Array.isArray(data.durationOptions) && data.durationOptions.length > 0) window.ROOM_SETTINGS.durationOptions = data.durationOptions;
+          if (typeof data.defaultDuration === 'number' && data.defaultDuration > 0) window.ROOM_SETTINGS.defaultDuration = data.defaultDuration;
+        }
+        roomSettingsConfigLoaded = true;
+        if (currentAdminTab === 'roomsettings' && !adminRoomSettingsDraft) {
+          const adminPanelEl = document.getElementById('admin-panel-container');
+          if (adminPanelEl && adminPanelEl.style.display !== 'none') {
+            renderAdminRoomSettingsTab();
+          }
+        }
+      }, (err) => {
+        console.error('讀取房間設定失敗:', err);
+        roomSettingsConfigLoaded = true;
+        if (typeof window.isCurrentUserAdmin === 'function' && window.isCurrentUserAdmin()) {
+          window.showToast('讀取房間設定失敗（可能是 Firestore 規則未生效）：' + (err.message || err), '⚠️');
+        }
+      });
+    }
+    window.loadRoomSettingsFromFirestore = loadRoomSettingsFromFirestore;
 
     // 頁面一載入就檢查一次（處理直接開 #admin 網址嘅情況）
     checkAdminHashRoute();

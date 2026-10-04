@@ -74,6 +74,62 @@
     // 咗呢度顯示嘅分數，但伺服器因為白名單對唔上而拒絕寫入。
     window.SCORING_RULES = { ptsPerMinute: 1, presenceCheckBonus: 2 };
 
+    // 房間設定（人數上限選項開關、預計溫習時間選項）——Admin後台「房間
+    // 設定」分頁可以改（admin_config/roomSettings 文件），呢度嘅數值
+    // 淨係起步時嘅預設值／Firestore 讀唔到嗰陣嘅後備值，真正生效嘅
+    // 數值由 loadRoomSettingsFromFirestore()（admin-panel.js）讀到之
+    // 後會覆蓋呢個物件，再由 window.renderRoomCreateOptions() 將「建立
+    // 溫習房」表格入面兩個下拉選單重畫一次。
+    // ⚠️ 人數上限淨係可以喺 2 人房／4 人房呢兩個選項度開關同揀預設值
+    // ——唔可以自訂其他數字，因為視訊格位版面（見下面 ROOM_CAPACITY_OPTIONS
+    // 註解、resetVideoSlots）寫死咗淨係支援 2x2 四格呢個排法，加其他
+    // 人數會令版面錯亂，所以呢度特登唔開放俾管理員自訂任意數字。
+    window.ROOM_SETTINGS = {
+      capacity2Enabled: true,
+      capacity4Enabled: true,
+      defaultCapacity: 4,
+      durationOptions: [15, 30, 40, 45, 60],
+      defaultDuration: 30
+    };
+
+    // 將「建立溫習房」表格入面「人數上限」／「預計溫習時間」兩個下拉
+    // 選單，跟返 window.ROOM_SETTINGS 最新數值重畫一次。每次打開
+    // modal-create-room 都會叫一次（見 app-features.js 嘅 openModal），
+    // Firestore 設定一讀到都會即時叫一次（見 admin-panel.js 嘅
+    // loadRoomSettingsFromFirestore），所以唔使擔心開 modal 嗰陣用緊
+    // 舊設定。
+    function renderRoomCreateOptions() {
+      const settings = window.ROOM_SETTINGS || {};
+      const lang = (typeof window.getAppLanguage === 'function') ? window.getAppLanguage() : 'zh-Hant';
+
+      const capacitySelectEl = document.getElementById('modal-room-capacity');
+      if (capacitySelectEl) {
+        const capacityChoices = [];
+        if (settings.capacity2Enabled !== false) capacityChoices.push(2);
+        if (settings.capacity4Enabled !== false) capacityChoices.push(4);
+        // 保險：萬一管理員兩個選項都關埋（手民之誤），依然要畀返最少
+        // 一個選項畀用戶揀，唔可以整到個下拉選單變空白
+        if (capacityChoices.length === 0) capacityChoices.push(4);
+        const defaultCapacity = capacityChoices.includes(settings.defaultCapacity) ? settings.defaultCapacity : capacityChoices[capacityChoices.length - 1];
+        capacitySelectEl.innerHTML = capacityChoices.map(n => {
+          const label = (lang === 'en') ? `${n}-person room` : `${n} 人房`;
+          return `<option value="${n}"${n === defaultCapacity ? ' selected' : ''}>${label}</option>`;
+        }).join('');
+      }
+
+      const durationSelectEl = document.getElementById('modal-room-duration');
+      if (durationSelectEl) {
+        let durationChoices = Array.isArray(settings.durationOptions) ? settings.durationOptions.filter(n => Number.isFinite(n) && n > 0) : [];
+        if (durationChoices.length === 0) durationChoices = [15, 30, 40, 45, 60];
+        const defaultDuration = durationChoices.includes(settings.defaultDuration) ? settings.defaultDuration : durationChoices[0];
+        durationSelectEl.innerHTML = durationChoices.map(n => {
+          const label = (lang === 'en') ? `${n} min` : `${n} 分鐘`;
+          return `<option value="${n}"${n === defaultDuration ? ' selected' : ''}>${label}</option>`;
+        }).join('');
+      }
+    }
+    window.renderRoomCreateOptions = renderRoomCreateOptions;
+
     const MIC_OPEN_LIMIT_SECONDS = 3 * 60; // 每次開咪最多連續 3 分鐘，避免學生掛住傾偈唔記得溫習
     const MIC_COOLDOWN_SECONDS = 5 * 60; // 開咪上限一到，要等 5 分鐘冷卻先可以再開
     const MIC_IDLE_RESET_SECONDS = 5 * 60; // 學生未撞到 3 分鐘上限、主動關咪之後，如果連續 5 分鐘都冇再開咪，就當佢已經完全休息返，回復返成套 3 分鐘預算（唔使一定撞晒 3 分鐘先可以歸零）
