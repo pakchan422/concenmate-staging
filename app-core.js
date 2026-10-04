@@ -531,6 +531,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (typeof window.loadLandingContentFromFirestore === 'function') {
         window.loadLandingContentFromFirestore();
       }
+      // 全站公告橫幅同Landing page文案一樣，登入前後都要顯示，所以都
+      // 放喺呢度（if/else之外），唔放入落面if(user){...}嗰堆
+      // loadXxxFromFirestore()——道理同上面嗰段註解一樣。
+      if (typeof window.loadSiteAnnouncementFromFirestore === 'function') {
+        window.loadSiteAnnouncementFromFirestore();
+      }
       // 登入／登出狀態一改變，「目前語言」嘅判斷依據都可能跟住變（已
       // 登入睇 users/{uid}.language，登出返又退返去睇 localStorage——
       // 見 i18n.js 嘅 window.getAppLanguage），所以要即刻重新套用一次，

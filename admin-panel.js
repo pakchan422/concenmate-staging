@@ -171,6 +171,7 @@
       else if (tab === 'scoring') renderAdminScoringTab();
       else if (tab === 'roomsettings') renderAdminRoomSettingsTab();
       else if (tab === 'antiidle') renderAdminAntiIdleTab();
+      else if (tab === 'announcement') renderAdminAnnouncementTab();
     };
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -2414,6 +2415,200 @@
       `;
     }
     window.renderAdminDashboardTab = renderAdminDashboardTab;
+
+    // ---------- 全站公告橫幅 ----------
+    // 第三階段（運營工具）第二項：Admin後台可以隨時開關／編輯一則顯示
+    // 喺成個網站最頂嘅公告橫幅（例如「今晚12點系統維護」「XX活動開
+    // 跑喇」），**登入前Landing page同登入後主應用都會見到**，同
+    // 「Landing page文案」一樣，存喺Firestore（admin_config/announcement
+    // 文件），要額外開放俾未登入用戶讀取（見firestore.rules）。
+    //
+    // 三種語言分開輸入（同Landing page文案呢度做法一致），顯示嗰陣跟
+    // 訪客而家揀緊嗰種語言。訪客撳橫幅嗰粒 ✕ 可以收埋，記喺呢部裝置
+    // 嘅localStorage——下次改咗公告內容（即係updatedAt變咗）先會再
+    // 跳出嚟，改返同一個內容唔會死纏爛打逼訪客睇。
+    let adminAnnouncementDraft = null;
+    let announcementConfigLoaded = false;
+
+    function renderAdminAnnouncementTab() {
+      const container = document.getElementById('admin-tab-announcement');
+      if (!container) return;
+
+      if (!adminAnnouncementDraft) {
+        if (!announcementConfigLoaded) {
+          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中全站公告設定...</p>';
+          return; // Firestore 資料一到，loadSiteAnnouncementFromFirestore() 會自動再 render 多次
+        }
+        const a = window.SITE_ANNOUNCEMENT_RAW || {};
+        adminAnnouncementDraft = {
+          enabled: !!a.enabled,
+          type: ['info', 'warning', 'urgent'].includes(a.type) ? a.type : 'info',
+          message: {
+            'zh-Hant': (a.message && a.message['zh-Hant']) || '',
+            'en': (a.message && a.message['en']) || '',
+            'yue': (a.message && a.message['yue']) || ''
+          }
+        };
+      }
+
+      const d = adminAnnouncementDraft;
+      const typeOptions = [
+        { v: 'info', label: '📘 一般資訊（藍色）' },
+        { v: 'warning', label: '📙 注意事項（橙黃色）' },
+        { v: 'urgent', label: '📕 緊急／重要（紅色）' }
+      ];
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">全站公告橫幅</h3>
+          <p style="font-size:13px; color:#888; margin-bottom:16px;">顯示喺成個網站最頂（登入前Landing page同登入後主應用都會見到）。訪客可以撳 ✕ 自行收埋，收埋之後除非你改咗底下嘅文字，否則唔會再跳出嚟煩佢。</p>
+          <label style="display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:18px; cursor:pointer;">
+            <input type="checkbox" ${d.enabled ? 'checked' : ''} onchange="adminUpdateAnnouncementDraft('enabled', this.checked)"> 開啟公告橫幅
+          </label>
+          <div style="margin-bottom:18px;">
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">顏色／緊急程度</label>
+            <select style="width:220px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" onchange="adminUpdateAnnouncementDraft('type', this.value)">
+              ${typeOptions.map(o => `<option value="${o.v}" ${d.type === o.v ? 'selected' : ''}>${o.label}</option>`).join('')}
+            </select>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">公告內容（繁體中文）</label>
+            <textarea rows="2" style="width:100%; max-width:560px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px; font-family:inherit;" oninput="adminUpdateAnnouncementMessage('zh-Hant', this.value)">${escapeHtml(d.message['zh-Hant'])}</textarea>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">公告內容（English）</label>
+            <textarea rows="2" style="width:100%; max-width:560px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px; font-family:inherit;" oninput="adminUpdateAnnouncementMessage('en', this.value)">${escapeHtml(d.message['en'])}</textarea>
+          </div>
+          <div>
+            <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">公告內容（廣東話）</label>
+            <textarea rows="2" style="width:100%; max-width:560px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px; font-family:inherit;" oninput="adminUpdateAnnouncementMessage('yue', this.value)">${escapeHtml(d.message['yue'])}</textarea>
+          </div>
+          <p style="font-size:13px; color:#999; margin-top:6px;">某種語言留空嘅話，揀咗嗰種語言嘅訪客會自動退返顯示繁體中文版本。</p>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+          <button type="button" class="btn btn-primary" id="btn-admin-save-announcement" style="padding:12px 32px; font-size:15px;" onclick="adminSaveAnnouncement()">儲存全部改動</button>
+        </div>
+      `;
+    }
+    window.renderAdminAnnouncementTab = renderAdminAnnouncementTab;
+
+    window.adminUpdateAnnouncementDraft = function(key, value) {
+      if (!adminAnnouncementDraft) return;
+      adminAnnouncementDraft[key] = value;
+    };
+
+    window.adminUpdateAnnouncementMessage = function(lang, value) {
+      if (!adminAnnouncementDraft) return;
+      adminAnnouncementDraft.message[lang] = value;
+    };
+
+    window.adminSaveAnnouncement = async function() {
+      if (!adminAnnouncementDraft) return;
+      const d = adminAnnouncementDraft;
+      if (d.enabled && !d.message['zh-Hant'].trim()) {
+        window.showToast('開啟公告橫幅之前，最少要填返繁體中文版本嘅內容', '⚠️');
+        return;
+      }
+      const payload = {
+        enabled: d.enabled,
+        type: d.type,
+        message: {
+          'zh-Hant': d.message['zh-Hant'].trim(),
+          'en': d.message['en'].trim(),
+          'yue': d.message['yue'].trim()
+        },
+        updatedAt: Date.now(),
+        updatedBy: window.currentUser ? window.currentUser.email : null
+      };
+      const btn = document.getElementById('btn-admin-save-announcement');
+      if (btn) { btn.disabled = true; btn.innerText = '儲存中…'; }
+      try {
+        await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'announcement'), payload);
+        window.showToast('全站公告已儲存，即時對所有訪客生效！', '🎉');
+      } catch (err) {
+        window.showToast('儲存失敗：' + (err.message || err), '❌');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '儲存全部改動'; }
+      }
+    };
+
+    let announcementConfigUnsubscribe = null;
+    function loadSiteAnnouncementFromFirestore() {
+      if (!window.db || !window.fs) return;
+      if (announcementConfigUnsubscribe) announcementConfigUnsubscribe();
+      const ref = window.fs.doc(window.db, 'admin_config', 'announcement');
+      announcementConfigUnsubscribe = window.fs.onSnapshot(ref, (snap) => {
+        const data = snap.exists() ? snap.data() : null;
+        window.SITE_ANNOUNCEMENT_RAW = data;
+        renderSiteAnnouncementBanner(data);
+        announcementConfigLoaded = true;
+        if (currentAdminTab === 'announcement' && !adminAnnouncementDraft) {
+          const adminPanelEl = document.getElementById('admin-panel-container');
+          if (adminPanelEl && adminPanelEl.style.display !== 'none') {
+            renderAdminAnnouncementTab();
+          }
+        }
+      }, (err) => {
+        console.error('讀取全站公告設定失敗:', err);
+        announcementConfigLoaded = true;
+      });
+    }
+    window.loadSiteAnnouncementFromFirestore = loadSiteAnnouncementFromFirestore;
+
+    const SITE_ANNOUNCEMENT_DISMISS_KEY = 'concenmate_announcement_dismissed_at';
+
+    // 將Firestore讀到嘅公告設定，實際畫落頁面最頂嘅橫幅。冇開啟、或者
+    // 訪客之前已經撳過 ✕ 收埋咗「同一個版本」（updatedAt冇變）嘅話就
+    // 唔顯示。
+    function renderSiteAnnouncementBanner(data) {
+      const banner = document.getElementById('site-announcement-banner');
+      const textEl = document.getElementById('site-announcement-text');
+      if (!banner || !textEl) return;
+
+      if (!data || !data.enabled) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      let dismissedAt = null;
+      try { dismissedAt = localStorage.getItem(SITE_ANNOUNCEMENT_DISMISS_KEY); } catch (e) { /* 私隱模式等場合讀唔到，忽略 */ }
+      if (dismissedAt && String(data.updatedAt) === dismissedAt) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      const lang = (typeof window.getAppLanguage === 'function') ? window.getAppLanguage() : 'zh-Hant';
+      const msgObj = data.message || {};
+      const text = (msgObj[lang] && msgObj[lang].trim()) || (msgObj['zh-Hant'] && msgObj['zh-Hant'].trim()) || '';
+      if (!text) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      textEl.innerText = text;
+      banner.className = 'type-' + (['info', 'warning', 'urgent'].includes(data.type) ? data.type : 'info');
+      banner.style.display = 'block';
+    }
+    window.renderSiteAnnouncementBanner = renderSiteAnnouncementBanner;
+
+    window.dismissSiteAnnouncement = function() {
+      const banner = document.getElementById('site-announcement-banner');
+      if (banner) banner.style.display = 'none';
+      try {
+        const data = window.SITE_ANNOUNCEMENT_RAW;
+        if (data && typeof data.updatedAt !== 'undefined') {
+          localStorage.setItem(SITE_ANNOUNCEMENT_DISMISS_KEY, String(data.updatedAt));
+        }
+      } catch (e) { /* 私隱模式等場合寫唔到，忽略——今次單純收埋返，下次重新整理可能又會跳返出嚟 */ }
+    };
+
+    // 切換語言之後，公告橫幅嘅文字都要跟住切返（唔使等下次Firestore
+    // 有更新先變語言）
+    window.refreshSiteAnnouncementLanguage = function() {
+      if (typeof window.SITE_ANNOUNCEMENT_RAW !== 'undefined') {
+        renderSiteAnnouncementBanner(window.SITE_ANNOUNCEMENT_RAW);
+      }
+    };
 
     // 頁面一載入就檢查一次（處理直接開 #admin 網址嘅情況）
     checkAdminHashRoute();
