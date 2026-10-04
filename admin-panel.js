@@ -47,15 +47,16 @@
     // Landing page文案／計分規則／房間設定／防掛機參數／全站公告）
     // 同管治類（管理員名單、操作紀錄）嗰幾頁。
     //
-    // ⚠️ 老實講清楚呢個分級嘅實際強度：而家淨係做到「UI入口限制」——
-    // 『support』帳戶喺Admin後台畫面入面見唔到、撳唔到嗰啲分頁，但
-    // Firestore安全規則嗰層（isAdmin()）暫時未有分級，即係話一個
-    // 『support』帳戶如果刻意開瀏覽器開發者工具、直接用Firestore SDK
-    // 嘅語法去寫，技術上仍然寫得入去嗰啲「唔開放俾佢」嘅設定文件。
-    // 呢個做法對一個互相信任嘅細團隊嚟講已經足夠（防止日常誤觸、簡化
-    // 介面），但唔係防惡意內部人員嘅硬性資料庫級保障。如果將來團隊大
-    // 咗、想要更強嘅保障，可以再喺firestore.rules加返一層isSuperAdmin()
-    // 檢查，分開限制邊啲collection淨係super先寫得入。
+    // ✅ 呢個分級而家唔淨係「UI入口限制」：firestore.rules已經加咗
+    // isSuperAdmin()，所有『support』喺畫面見唔到嗰啲設定文件
+    // （admin_config/gacha、levelSystem、navIcons、landingContent、
+    // scoringRules、roomSettings、antiIdleRules、announcement、
+    // adminIds）喺資料庫層一樣鎖死淨係super先寫得入——就算『support』
+    // 帳戶刻意開瀏覽器開發者工具、直接用Firestore SDK嘅語法去寫，都
+    // 一樣會被伺服器拒絕（唔再淨係靠前端唔顯示嗰粒掣）。操作紀錄
+    // （adminAuditLog）嘅讀取都同樣鎖返淨係super先睇得到，但寫入
+    // （create）保持任何管理員都得——因為『support』帳戶做嘅操作
+    // （例如停權用戶）都要寫得入呢份紀錄先追蹤得到。
     window.ADMIN_ROLES = {};
 
     async function loadAdminIdsFromFirestore() {
