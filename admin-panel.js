@@ -105,7 +105,7 @@
     const SUPER_ADMIN_ONLY_TABS = [
       'gacha', 'level', 'icons', 'landing', 'scoring', 'roomsettings',
       'antiidle', 'announcement', 'adminlist', 'auditlog',
-      'subjects', 'districts', 'legal'
+      'subjects', 'districts', 'schools', 'legal'
     ];
 
     // 操作紀錄（第四階段第10項）：將重要嘅管治／高風險操作（停權、
@@ -271,6 +271,7 @@
       else if (tab === 'auditlog') renderAdminAuditLogTab();
       else if (tab === 'subjects') renderAdminSubjectsTab();
       else if (tab === 'districts') renderAdminDistrictsTab();
+      else if (tab === 'schools') renderAdminSchoolsTab();
       else if (tab === 'legal') renderAdminLegalTab();
     };
 
@@ -3384,6 +3385,198 @@
         adminNewDistrictName = '';
         adminNewDistrictNameEn = '';
         window.showToast('已新增地區', '✅');
+      } catch (err) {
+        window.showToast('新增失敗：' + (err.message || err), '❌');
+      }
+    };
+
+    // ---------- 學校名單管理（Alvis主動要求，同科目／地區清單一樣
+    // 「淨係新增」模式）----------
+    // 背景：中學名單（window.HK_SECONDARY_SCHOOLS_BY_DISTRICT）、大專
+    // ／大學名單（window.HK_TERTIARY_INSTITUTIONS_BY_DISTRICT／
+    // window.HK_TERTIARY_INSTITUTIONS_COMMON，全部app-core.js定義）
+    // 一樣會存落users.school、schoolLeaderboard等地方做資料值，唔開放
+    // 改名／刪除。中學一定要揀返所屬地區（用返「地區清單」嗰份分區
+    // 清單，等新增咗嘅地區都可以即刻揀），大專院校可以唔揀地區（跟
+    // 現有做法，加入「常見院校」清單，唔分地區）。呢頁淨係顯示你後台
+    // 新增嗰啲學校——內建嗰成千幾間學校唔會喺度逐間列出嚟，唔係漏咗，
+    // 係特登咁做避免成頁好長，想睇內建完整清單可以直接去網站註冊表格
+    // 揀地區睇。
+    let schoolListConfigLoaded = false;
+    let schoolListConfigUnsubscribe = null;
+    let adminNewSecondarySchoolName = '';
+    let adminNewSecondarySchoolDistrict = '';
+    let adminNewTertiaryName = '';
+    let adminNewTertiaryDistrict = '';
+
+    function applySchoolListAdditions(data) {
+      if (!data) return;
+      if (Array.isArray(data.secondary) && window.HK_SECONDARY_SCHOOLS_BY_DISTRICT) {
+        data.secondary.forEach((s) => {
+          if (!s || !s.name || !s.district) return;
+          if (!window.HK_SECONDARY_SCHOOLS_BY_DISTRICT[s.district]) window.HK_SECONDARY_SCHOOLS_BY_DISTRICT[s.district] = [];
+          if (!window.HK_SECONDARY_SCHOOLS_BY_DISTRICT[s.district].includes(s.name)) {
+            window.HK_SECONDARY_SCHOOLS_BY_DISTRICT[s.district].push(s.name);
+          }
+        });
+      }
+      if (Array.isArray(data.tertiary)) {
+        data.tertiary.forEach((t) => {
+          if (!t || !t.name) return;
+          if (t.district && window.HK_TERTIARY_INSTITUTIONS_BY_DISTRICT) {
+            if (!window.HK_TERTIARY_INSTITUTIONS_BY_DISTRICT[t.district]) window.HK_TERTIARY_INSTITUTIONS_BY_DISTRICT[t.district] = [];
+            if (!window.HK_TERTIARY_INSTITUTIONS_BY_DISTRICT[t.district].includes(t.name)) {
+              window.HK_TERTIARY_INSTITUTIONS_BY_DISTRICT[t.district].push(t.name);
+            }
+          } else if (window.HK_TERTIARY_INSTITUTIONS_COMMON && !window.HK_TERTIARY_INSTITUTIONS_COMMON.includes(t.name)) {
+            window.HK_TERTIARY_INSTITUTIONS_COMMON.push(t.name);
+          }
+        });
+      }
+    }
+
+    function loadSchoolListFromFirestore() {
+      if (!window.db || !window.fs) return;
+      if (schoolListConfigUnsubscribe) schoolListConfigUnsubscribe();
+      const ref = window.fs.doc(window.db, 'admin_config', 'schoolList');
+      schoolListConfigUnsubscribe = window.fs.onSnapshot(ref, (snap) => {
+        const data = snap.exists() ? snap.data() : null;
+        window.ADMIN_SCHOOL_LIST_RAW = data;
+        applySchoolListAdditions(data);
+        schoolListConfigLoaded = true;
+        if (currentAdminTab === 'schools') {
+          const panelEl = document.getElementById('admin-panel-container');
+          if (panelEl && panelEl.style.display !== 'none') renderAdminSchoolsTab();
+        }
+      }, (err) => {
+        console.error('讀取學校名單失敗:', err);
+        schoolListConfigLoaded = true;
+      });
+    }
+    window.loadSchoolListFromFirestore = loadSchoolListFromFirestore;
+
+    function renderAdminSchoolsTab() {
+      const container = document.getElementById('admin-tab-schools');
+      if (!container) return;
+      if (!isCurrentUserSuperAdmin()) {
+        container.innerHTML = '<div class="admin-card" style="color:#c0392b;">淨係「超級管理員」先睇得到呢頁。</div>';
+        return;
+      }
+      if (!schoolListConfigLoaded) {
+        container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中學校名單...</p>';
+        return;
+      }
+      const districtOptionsHtml = (window.HK_DISTRICT_REGION_GROUPS || []).map((g) =>
+        `<optgroup label="${escapeHtml(g.region)}">${g.districts.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}</optgroup>`
+      ).join('');
+      const secondaryAdded = (window.ADMIN_SCHOOL_LIST_RAW && Array.isArray(window.ADMIN_SCHOOL_LIST_RAW.secondary)) ? window.ADMIN_SCHOOL_LIST_RAW.secondary : [];
+      const tertiaryAdded = (window.ADMIN_SCHOOL_LIST_RAW && Array.isArray(window.ADMIN_SCHOOL_LIST_RAW.tertiary)) ? window.ADMIN_SCHOOL_LIST_RAW.tertiary : [];
+      const secondaryRows = secondaryAdded.map((s) => `<tr><td>${escapeHtml(s.name)}</td><td style="color:#888;">${escapeHtml(s.district)}</td></tr>`).join('');
+      const tertiaryRows = tertiaryAdded.map((t) => `<tr><td>${escapeHtml(t.name)}</td><td style="color:#888;">${t.district ? escapeHtml(t.district) : '常見院校（唔分地區）'}</td></tr>`).join('');
+
+      container.innerHTML = `
+        <div class="admin-card" style="margin-bottom:16px;">
+          <p style="font-size:13px; color:#888; margin:0;">呢度可以新增註冊表格揀學校用嘅中學／大專院校。同科目清單／地區清單一樣，淨係可以<b>新增</b>，唔支援改名或者刪除。下面表格淨係顯示你喺呢度新增嘅學校，內建嗰成千幾間中學／院校唔會逐間列出嚟（可以去網站註冊表格揀地區睇齊內建清單）。</p>
+        </div>
+        <div class="admin-card" style="margin-bottom:16px;">
+          <p style="font-size:13px; font-weight:bold; margin-bottom:8px;">➕ 新增中學</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="flex:1; min-width:180px;">
+              <label style="font-size:12px; color:#888; display:block;">中學名稱 *</label>
+              <input type="text" class="input-field" value="${escapeHtml(adminNewSecondarySchoolName)}" oninput="window.adminUpdateNewSchoolField('secondaryName', this.value)" placeholder="例如：XX中學">
+            </div>
+            <div style="flex:1; min-width:160px;">
+              <label style="font-size:12px; color:#888; display:block;">所屬地區 *</label>
+              <select class="input-field" onchange="window.adminUpdateNewSchoolField('secondaryDistrict', this.value)">
+                <option value="">請選擇地區</option>
+                ${districtOptionsHtml}
+              </select>
+            </div>
+            <button type="button" class="btn btn-primary" style="height:38px;" onclick="window.adminAddSecondarySchool()">新增</button>
+          </div>
+        </div>
+        <div class="admin-card" style="margin-bottom:16px;">
+          <div style="overflow-x:auto;">
+            <table class="admin-table">
+              <thead><tr><th>中學（後台新增）</th><th>地區</th></tr></thead>
+              <tbody>${secondaryRows || '<tr><td colspan="2" style="text-align:center; color:#999;">暫時未有後台新增嘅中學</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+        <div class="admin-card" style="margin-bottom:16px;">
+          <p style="font-size:13px; font-weight:bold; margin-bottom:8px;">➕ 新增大專／大學</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="flex:1; min-width:180px;">
+              <label style="font-size:12px; color:#888; display:block;">院校名稱 *</label>
+              <input type="text" class="input-field" value="${escapeHtml(adminNewTertiaryName)}" oninput="window.adminUpdateNewSchoolField('tertiaryName', this.value)" placeholder="例如：XX學院">
+            </div>
+            <div style="flex:1; min-width:160px;">
+              <label style="font-size:12px; color:#888; display:block;">所屬地區（可留空＝加入常見院校清單）</label>
+              <select class="input-field" onchange="window.adminUpdateNewSchoolField('tertiaryDistrict', this.value)">
+                <option value="">唔揀地區（常見院校）</option>
+                ${districtOptionsHtml}
+              </select>
+            </div>
+            <button type="button" class="btn btn-primary" style="height:38px;" onclick="window.adminAddTertiaryInstitution()">新增</button>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div style="overflow-x:auto;">
+            <table class="admin-table">
+              <thead><tr><th>大專／大學（後台新增）</th><th>地區</th></tr></thead>
+              <tbody>${tertiaryRows || '<tr><td colspan="2" style="text-align:center; color:#999;">暫時未有後台新增嘅院校</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+    window.renderAdminSchoolsTab = renderAdminSchoolsTab;
+
+    window.adminUpdateNewSchoolField = function(key, value) {
+      if (key === 'secondaryName') adminNewSecondarySchoolName = value;
+      else if (key === 'secondaryDistrict') adminNewSecondarySchoolDistrict = value;
+      else if (key === 'tertiaryName') adminNewTertiaryName = value;
+      else if (key === 'tertiaryDistrict') adminNewTertiaryDistrict = value;
+    };
+
+    window.adminAddSecondarySchool = async function() {
+      const name = (adminNewSecondarySchoolName || '').trim();
+      const district = (adminNewSecondarySchoolDistrict || '').trim();
+      if (!name || !district) { window.showToast('請填寫中學名稱同所屬地區', '⚠️'); return; }
+      const alreadyExists = window.HK_SECONDARY_SCHOOLS_BY_DISTRICT && Object.values(window.HK_SECONDARY_SCHOOLS_BY_DISTRICT).some((list) => list.includes(name));
+      if (alreadyExists) { window.showToast('呢間中學已經存在喺清單度喇', '⚠️'); return; }
+      try {
+        const ref = window.fs.doc(window.db, 'admin_config', 'schoolList');
+        const existingSecondary = (window.ADMIN_SCHOOL_LIST_RAW && Array.isArray(window.ADMIN_SCHOOL_LIST_RAW.secondary)) ? window.ADMIN_SCHOOL_LIST_RAW.secondary.slice() : [];
+        const existingTertiary = (window.ADMIN_SCHOOL_LIST_RAW && Array.isArray(window.ADMIN_SCHOOL_LIST_RAW.tertiary)) ? window.ADMIN_SCHOOL_LIST_RAW.tertiary.slice() : [];
+        existingSecondary.push({ name, district });
+        await window.fs.setDoc(ref, { secondary: existingSecondary, tertiary: existingTertiary, updatedAt: Date.now(), updatedBy: (window.currentUser && window.currentUser.loginId) || null });
+        await logAdminAction('新增中學', { name, district });
+        adminNewSecondarySchoolName = '';
+        adminNewSecondarySchoolDistrict = '';
+        window.showToast('已新增中學', '✅');
+      } catch (err) {
+        window.showToast('新增失敗：' + (err.message || err), '❌');
+      }
+    };
+
+    window.adminAddTertiaryInstitution = async function() {
+      const name = (adminNewTertiaryName || '').trim();
+      const district = (adminNewTertiaryDistrict || '').trim();
+      if (!name) { window.showToast('請輸入院校名稱', '⚠️'); return; }
+      const inByDistrict = window.HK_TERTIARY_INSTITUTIONS_BY_DISTRICT && Object.values(window.HK_TERTIARY_INSTITUTIONS_BY_DISTRICT).some((list) => list.includes(name));
+      const inCommon = window.HK_TERTIARY_INSTITUTIONS_COMMON && window.HK_TERTIARY_INSTITUTIONS_COMMON.includes(name);
+      if (inByDistrict || inCommon) { window.showToast('呢間院校已經存在喺清單度喇', '⚠️'); return; }
+      try {
+        const ref = window.fs.doc(window.db, 'admin_config', 'schoolList');
+        const existingSecondary = (window.ADMIN_SCHOOL_LIST_RAW && Array.isArray(window.ADMIN_SCHOOL_LIST_RAW.secondary)) ? window.ADMIN_SCHOOL_LIST_RAW.secondary.slice() : [];
+        const existingTertiary = (window.ADMIN_SCHOOL_LIST_RAW && Array.isArray(window.ADMIN_SCHOOL_LIST_RAW.tertiary)) ? window.ADMIN_SCHOOL_LIST_RAW.tertiary.slice() : [];
+        existingTertiary.push({ name, district: district || null });
+        await window.fs.setDoc(ref, { secondary: existingSecondary, tertiary: existingTertiary, updatedAt: Date.now(), updatedBy: (window.currentUser && window.currentUser.loginId) || null });
+        await logAdminAction('新增大專院校', { name, district: district || '(常見院校)' });
+        adminNewTertiaryName = '';
+        adminNewTertiaryDistrict = '';
+        window.showToast('已新增院校', '✅');
       } catch (err) {
         window.showToast('新增失敗：' + (err.message || err), '❌');
       }

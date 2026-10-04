@@ -547,6 +547,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (typeof window.loadDistrictListFromFirestore === 'function') {
         window.loadDistrictListFromFirestore();
       }
+      if (typeof window.loadSchoolListFromFirestore === 'function') {
+        window.loadSchoolListFromFirestore();
+      }
       if (typeof window.loadLegalContentFromFirestore === 'function') {
         window.loadLegalContentFromFirestore();
       }
