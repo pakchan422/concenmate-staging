@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.192.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.192.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1364,11 +1364,11 @@
 
     .landing-nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--brand-200); }
     .landing-nav-inner { max-width: 1160px; margin: 0 auto; padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    .landing-nav-brand { display: flex; flex-direction: row; align-items: center; gap: 10px; flex-shrink: 0; }
+    .landing-nav-brand { display: flex; flex-direction: row; align-items: flex-end; gap: 10px; flex-shrink: 0; align-self: stretch; padding-top: 14px; }
     .landing-nav-logo { width: 150px; height: auto; object-fit: contain; flex-shrink: 0; }
-    .landing-nav-tagline { font-size: 11px; font-weight: 600; letter-spacing: .03em; color: var(--brand-500); white-space: nowrap; }
     .landing-nav-actions { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
-    .landing-nav-login { font-size: 15px; font-weight: 700; color: var(--brand-700); text-decoration: none; white-space: nowrap; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
+    .landing-nav-login { font-size: 15px; font-weight: 700; color: var(--brand-700); text-decoration: none; white-space: nowrap; cursor: pointer; background: #fff; border: 1px solid var(--brand-300); border-radius: 10px; padding: 8px 16px; font-family: inherit; }
+    .landing-nav-login:hover { background: var(--brand-50); }
 
     .landing-hero { padding: 84px 0 104px; overflow: hidden; }
     .landing-hero-inner { display: flex; align-items: center; gap: 56px; }
@@ -1431,7 +1431,7 @@
     }
     @media (max-width: 430px) {
       .landing-nav-inner { padding-left: 16px; padding-right: 16px; gap: 8px; }
-      .landing-nav-tagline { display: none; }
+      .landing-nav-brand { padding-top: 8px; }
       .landing-nav-logo { width: 100px; height: auto; }
       .landing-nav-actions { gap: 6px; }
       /* 手機窄畫面下都要保留「登入」按鈕，之前設定咗 display:none 會令
@@ -1439,7 +1439,7 @@
          而家改為縮細字體＋去除白位，保留於畫面上，確保語言切換、登入
          同註冊三個按鈕喺窄畫面都能夠並排顯示晒。 */
       .landing-nav-lang-btn { padding: 6px 7px !important; font-size: 12px; }
-      .landing-nav-login-header { font-size: 13px; }
+      .landing-nav-login-header { font-size: 13px; padding: 6px 12px; }
       .landing-nav-actions .landing-btn { padding: 10px 14px; font-size: 13px; }
     }
   </style>
@@ -1506,7 +1506,6 @@
       <div class="landing-nav-inner">
         <div class="landing-nav-brand">
           <img class="landing-nav-logo" id="landing-nav-logo-img" src="logo-hero.png" alt="ConcenMate">
-          <div class="landing-nav-tagline" data-i18n="landing.slogan">Always By Your Side</div>
         </div>
         <div class="landing-nav-actions">
           <button class="btn btn-outline landing-nav-lang-btn" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-language-switcher')" style="padding:6px 10px;"><span class="header-lang-text" id="landing-current-lang-label">繁體中文</span></button>
