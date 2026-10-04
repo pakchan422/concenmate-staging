@@ -511,6 +511,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (typeof window.loadRoomSettingsFromFirestore === 'function') {
           window.loadRoomSettingsFromFirestore();
         }
+        if (typeof window.loadAntiIdleRulesFromFirestore === 'function') {
+          window.loadAntiIdleRulesFromFirestore();
+        }
       } else {
         window.currentUser = null;
         if (suspensionListenerUnsubscribe) { suspensionListenerUnsubscribe(); suspensionListenerUnsubscribe = null; }

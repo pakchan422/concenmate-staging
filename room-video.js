@@ -130,9 +130,18 @@
     }
     window.renderRoomCreateOptions = renderRoomCreateOptions;
 
-    const MIC_OPEN_LIMIT_SECONDS = 3 * 60; // 每次開咪最多連續 3 分鐘，避免學生掛住傾偈唔記得溫習
-    const MIC_COOLDOWN_SECONDS = 5 * 60; // 開咪上限一到，要等 5 分鐘冷卻先可以再開
-    const MIC_IDLE_RESET_SECONDS = 5 * 60; // 學生未撞到 3 分鐘上限、主動關咪之後，如果連續 5 分鐘都冇再開咪，就當佢已經完全休息返，回復返成套 3 分鐘預算（唔使一定撞晒 3 分鐘先可以歸零）
+    // 以下幾個防掛機參數（開咪時限、冷卻、閒置重設、確認間隔、確認回應
+    // 時限）而家可以喺 Admin後台「防掛機參數」分頁調整（見下面
+    // window.applyAntiIdleRules／admin_config/antiIdleRules），所以改成
+    // let 而唔係 const——Firestore 設定一讀到就會覆蓋返呢幾個變數嘅數
+    // 值。呢度嘅數值淨係起步時嘅預設值／Firestore 讀唔到嗰陣嘅後備值。
+    // ⚠️ 同「房間設定」一樣純粹前端生效，冇牽涉 Cloud Function：呢幾個
+    // 機制淨係負責前端「暫停計分」（state.awardingPaused），伺服器端
+    // awardStudyPoints 淨係驗證每次送嚟嘅分數數值啱唔啱（見計分規則），
+    // 唔理會送分嘅頻密程度，所以改呢幾個參數唔影響伺服器驗證邏輯。
+    let MIC_OPEN_LIMIT_SECONDS = 3 * 60; // 每次開咪最多連續 3 分鐘，避免學生掛住傾偈唔記得溫習
+    let MIC_COOLDOWN_SECONDS = 5 * 60; // 開咪上限一到，要等 5 分鐘冷卻先可以再開
+    let MIC_IDLE_RESET_SECONDS = 5 * 60; // 學生未撞到 3 分鐘上限、主動關咪之後，如果連續 5 分鐘都冇再開咪，就當佢已經完全休息返，回復返成套 3 分鐘預算（唔使一定撞晒 3 分鐘先可以歸零）
 
     const ROOM_CAPACITY = 4; // 舊有嘅全域預設人數上限——而家改為「每間房自己揀 2 人房或
     // 4 人房」（見建立房間彈窗嘅 #modal-room-capacity），呢個常數淨係用嚟做冇 capacity
@@ -1810,8 +1819,53 @@
     // 樣嘢），如果淨係憑鏡頭開住就當佢在場、跳過確認，會令人可以一開鏡頭
     // 就掛住唔理攞盡計分，變相冇咗呢個防刷分機制原本嘅意義。所以唔理有冇
     // 開鏡頭，都要定期主動撳一下確認先算數。
-    const ROOM_PRESENCE_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 每 30 分鐘check 一次
-    const ROOM_PRESENCE_RESPONSE_MS = 5 * 60 * 1000;        // 彈窗後 5 分鐘內要確認
+    // 同樣可以喺Admin後台「防掛機參數」分頁調整，見上面 MIC_OPEN_LIMIT_SECONDS
+    // 嗰段註解。
+    let ROOM_PRESENCE_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 每 30 分鐘check 一次
+    let ROOM_PRESENCE_RESPONSE_MS = 5 * 60 * 1000;        // 彈窗後 5 分鐘內要確認
+
+    // 防掛機參數目前生效中嘅數值（分鐘），畀 Admin後台「防掛機參數」分頁
+    // 顯示用。真正生效嘅計時器數值睇返上面 MIC_OPEN_LIMIT_SECONDS 等
+    // let 變數本身——呢個物件淨係畀 UI 顯示「而家生效緊邊組數值」用，
+    // 兩邊會由 applyAntiIdleRules() 同步更新，唔使擔心睇到舊數值。
+    window.ANTI_IDLE_RULES = {
+      presenceCheckIntervalMin: ROOM_PRESENCE_CHECK_INTERVAL_MS / 60000,
+      presenceResponseMin: ROOM_PRESENCE_RESPONSE_MS / 60000,
+      micOpenLimitMin: MIC_OPEN_LIMIT_SECONDS / 60,
+      micCooldownMin: MIC_COOLDOWN_SECONDS / 60,
+      micIdleResetMin: MIC_IDLE_RESET_SECONDS / 60
+    };
+
+    // 由 Firestore（admin_config/antiIdleRules）讀到嘅最新設定，覆蓋返
+    // 以上幾個計時器用緊嘅 let 變數，同時同步更新 window.ANTI_IDLE_RULES
+    // 畀 Admin 後台顯示。⚠️ 已經開始緊嘅計時器（例如用戶已經喺房入面）
+    // 唔會即時被打斷重設，新數值會喺下一次相關計時器重新開始嗰陣（例如
+    // 下次入房、下次開咪）先生效，同「計分規則」嗰套30秒緩存生效時間
+    // 嘅道理類似——唔使擔心手動同步問題。
+    function applyAntiIdleRules(data) {
+      if (!data) return;
+      if (typeof data.presenceCheckIntervalMin === 'number' && data.presenceCheckIntervalMin > 0) {
+        ROOM_PRESENCE_CHECK_INTERVAL_MS = data.presenceCheckIntervalMin * 60 * 1000;
+        window.ANTI_IDLE_RULES.presenceCheckIntervalMin = data.presenceCheckIntervalMin;
+      }
+      if (typeof data.presenceResponseMin === 'number' && data.presenceResponseMin > 0) {
+        ROOM_PRESENCE_RESPONSE_MS = data.presenceResponseMin * 60 * 1000;
+        window.ANTI_IDLE_RULES.presenceResponseMin = data.presenceResponseMin;
+      }
+      if (typeof data.micOpenLimitMin === 'number' && data.micOpenLimitMin > 0) {
+        MIC_OPEN_LIMIT_SECONDS = data.micOpenLimitMin * 60;
+        window.ANTI_IDLE_RULES.micOpenLimitMin = data.micOpenLimitMin;
+      }
+      if (typeof data.micCooldownMin === 'number' && data.micCooldownMin > 0) {
+        MIC_COOLDOWN_SECONDS = data.micCooldownMin * 60;
+        window.ANTI_IDLE_RULES.micCooldownMin = data.micCooldownMin;
+      }
+      if (typeof data.micIdleResetMin === 'number' && data.micIdleResetMin > 0) {
+        MIC_IDLE_RESET_SECONDS = data.micIdleResetMin * 60;
+        window.ANTI_IDLE_RULES.micIdleResetMin = data.micIdleResetMin;
+      }
+    }
+    window.applyAntiIdleRules = applyAntiIdleRules;
 
     function startPresenceCheckLoop() {
       if (state.presenceCheckTimer) clearInterval(state.presenceCheckTimer);

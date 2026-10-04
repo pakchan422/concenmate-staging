@@ -169,6 +169,7 @@
       else if (tab === 'landing') renderAdminLandingTab();
       else if (tab === 'scoring') renderAdminScoringTab();
       else if (tab === 'roomsettings') renderAdminRoomSettingsTab();
+      else if (tab === 'antiidle') renderAdminAntiIdleTab();
     };
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -2168,6 +2169,126 @@
       });
     }
     window.loadRoomSettingsFromFirestore = loadRoomSettingsFromFirestore;
+
+    // ---------- 防掛機參數（開咪時限、確認間隔等）----------
+    // 做法同「計分規則」「房間設定」一致，存喺 Firestore
+    // （admin_config/antiIdleRules 文件），管理員改完撳「儲存」，全站
+    // 即時跟住變（見 room-video.js 嘅 window.applyAntiIdleRules）。
+    //
+    // ⚠️ 呢幾個參數純粹前端生效，冇牽涉 Cloud Function（同「房間設定」
+    // 一樣），因為伺服器端淨係驗證每次送嚟嘅分數數值啱唔啱（見計分
+    // 規則嗰項），唔理會送分頻密程度。但「已經開始緊嘅計時器」（例如
+    // 學生已經喺房入面）唔會即時被打斷重設，新數值要等下一次相關計
+    // 時器重新開始（下次入房、下次開咪）先生效。
+    let adminAntiIdleDraft = null;
+    let antiIdleConfigLoaded = false;
+
+    const ANTI_IDLE_FIELDS = [
+      { key: 'presenceCheckIntervalMin', label: '「仍在溫習緊？」確認彈窗，相隔幾多分鐘出現一次' },
+      { key: 'presenceResponseMin', label: '彈窗出現之後，幾多分鐘內未確認就會暫停計分' },
+      { key: 'micOpenLimitMin', label: '每次開咪，最多可以連續開幾多分鐘' },
+      { key: 'micCooldownMin', label: '開咪撞到上限之後，要冷卻（鎖住咪掣）幾多分鐘先可以再開' },
+      { key: 'micIdleResetMin', label: '主動關咪、未撞到上限嘅情況下，連續幾多分鐘冇再開咪就當完全休息返、重新計過開咪時限' }
+    ];
+
+    function renderAdminAntiIdleTab() {
+      const container = document.getElementById('admin-tab-antiidle');
+      if (!container) return;
+
+      if (!adminAntiIdleDraft) {
+        if (!antiIdleConfigLoaded) {
+          container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中防掛機參數設定...</p>';
+          return; // Firestore 資料一到，loadAntiIdleRulesFromFirestore() 會自動再 render 多次
+        }
+        const r = window.ANTI_IDLE_RULES || {};
+        adminAntiIdleDraft = {
+          presenceCheckIntervalMin: r.presenceCheckIntervalMin || 30,
+          presenceResponseMin: r.presenceResponseMin || 5,
+          micOpenLimitMin: r.micOpenLimitMin || 3,
+          micCooldownMin: r.micCooldownMin || 5,
+          micIdleResetMin: r.micIdleResetMin || 5
+        };
+      }
+
+      const d = adminAntiIdleDraft;
+      container.innerHTML = `
+        <div class="admin-card">
+          <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:14px;">視訊溫習室防掛機參數</h3>
+          <p style="font-size:13px; color:#888; margin-bottom:16px;">呢組數值用嚟防止學生掛機／開住鏡頭唔理攞盡計分。單位全部係「分鐘」，改完記得核實清楚先撳儲存；已經喺房入面嘅學生唔會即時生效，要等佢哋下次入房／下次開咪先跟新數值。</p>
+          ${ANTI_IDLE_FIELDS.map(f => `
+            <div style="margin-bottom:16px;">
+              <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:6px;">${f.label}</label>
+              <input type="number" min="1" step="1" value="${d[f.key]}" style="width:120px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" oninput="adminUpdateAntiIdleDraft('${f.key}', this.value)"> 分鐘
+            </div>
+          `).join('')}
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+          <button type="button" class="btn btn-primary" id="btn-admin-save-antiidle" style="padding:12px 32px; font-size:15px;" onclick="adminSaveAntiIdleRules()">儲存全部改動</button>
+        </div>
+      `;
+    }
+    window.renderAdminAntiIdleTab = renderAdminAntiIdleTab;
+
+    window.adminUpdateAntiIdleDraft = function(key, value) {
+      if (!adminAntiIdleDraft) return;
+      const n = parseInt(value, 10);
+      adminAntiIdleDraft[key] = (Number.isFinite(n) && n > 0) ? n : adminAntiIdleDraft[key];
+    };
+
+    window.adminSaveAntiIdleRules = async function() {
+      if (!adminAntiIdleDraft) return;
+      const d = adminAntiIdleDraft;
+      const allValid = ANTI_IDLE_FIELDS.every(f => d[f.key] > 0);
+      if (!allValid) {
+        window.showToast('所有數值都要大於 0', '⚠️');
+        return;
+      }
+      const payload = {
+        presenceCheckIntervalMin: d.presenceCheckIntervalMin,
+        presenceResponseMin: d.presenceResponseMin,
+        micOpenLimitMin: d.micOpenLimitMin,
+        micCooldownMin: d.micCooldownMin,
+        micIdleResetMin: d.micIdleResetMin,
+        updatedAt: Date.now(),
+        updatedBy: window.currentUser ? window.currentUser.email : null
+      };
+      const btn = document.getElementById('btn-admin-save-antiidle');
+      if (btn) { btn.disabled = true; btn.innerText = '儲存中…'; }
+      try {
+        await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'antiIdleRules'), payload);
+        window.showToast('防掛機參數已儲存，即時對所有用戶生效（已喺房入面嘅學生要下次入房／開咪先會跟新數值）！', '🎉');
+      } catch (err) {
+        window.showToast('儲存失敗：' + (err.message || err), '❌');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '儲存全部改動'; }
+      }
+    };
+
+    let antiIdleConfigUnsubscribe = null;
+    function loadAntiIdleRulesFromFirestore() {
+      if (!window.db || !window.fs) return;
+      if (antiIdleConfigUnsubscribe) antiIdleConfigUnsubscribe();
+      const ref = window.fs.doc(window.db, 'admin_config', 'antiIdleRules');
+      antiIdleConfigUnsubscribe = window.fs.onSnapshot(ref, (snap) => {
+        if (snap.exists() && typeof window.applyAntiIdleRules === 'function') {
+          window.applyAntiIdleRules(snap.data());
+        }
+        antiIdleConfigLoaded = true;
+        if (currentAdminTab === 'antiidle' && !adminAntiIdleDraft) {
+          const adminPanelEl = document.getElementById('admin-panel-container');
+          if (adminPanelEl && adminPanelEl.style.display !== 'none') {
+            renderAdminAntiIdleTab();
+          }
+        }
+      }, (err) => {
+        console.error('讀取防掛機參數設定失敗:', err);
+        antiIdleConfigLoaded = true;
+        if (typeof window.isCurrentUserAdmin === 'function' && window.isCurrentUserAdmin()) {
+          window.showToast('讀取防掛機參數設定失敗（可能是 Firestore 規則未生效）：' + (err.message || err), '⚠️');
+        }
+      });
+    }
+    window.loadAntiIdleRulesFromFirestore = loadAntiIdleRulesFromFirestore;
 
     // 頁面一載入就檢查一次（處理直接開 #admin 網址嘅情況）
     checkAdminHashRoute();
