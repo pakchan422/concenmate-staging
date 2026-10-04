@@ -172,6 +172,7 @@
       else if (tab === 'roomsettings') renderAdminRoomSettingsTab();
       else if (tab === 'antiidle') renderAdminAntiIdleTab();
       else if (tab === 'announcement') renderAdminAnnouncementTab();
+      else if (tab === 'support') renderAdminSupportTab();
     };
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -2607,6 +2608,205 @@
     window.refreshSiteAnnouncementLanguage = function() {
       if (typeof window.SITE_ANNOUNCEMENT_RAW !== 'undefined') {
         renderSiteAnnouncementBanner(window.SITE_ANNOUNCEMENT_RAW);
+      }
+    };
+
+    // ---------- 用戶支援工具 ----------
+    // 第三階段（運營工具）最後一項：處理學生／家長support ticket嘅
+    // 快捷工具——搜尋單一用戶、睇晒佢嘅關鍵資料，再直接喺呢度補發／
+    // 扣減PTS、補發貼紙，唔使好似「用戶管理」分頁咁要喺一大張表格度
+    // 揾（嗰頁仍然保留，做日常批量管理用；呢個分頁專門做「一個一個
+    // 咁處理個別support個案」嘅場景）。
+    //
+    // 做法同「數據總覽」一樣：一次性讀取（唔持續監聽），撳「重新整理
+    // 資料」先再讀多次；搜尋喺本機（瀏覽器）記憶體入面做，唔使每打
+    // 一個字都問一次 Firestore。
+    let adminSupportUsersCache = null;
+    let adminSupportUsersCacheLoading = false;
+    let adminSupportQuery = '';
+    let adminSupportSelectedUid = null;
+    let adminSupportPointsGrantAmount = 0;
+    let adminSupportStickerGrantDraft = { stickerId: null, qty: 1 };
+
+    async function loadAdminSupportUsersCache() {
+      if (!window.db || !window.fs) return;
+      adminSupportUsersCacheLoading = true;
+      renderAdminSupportTab();
+      try {
+        const snap = await window.fs.getDocs(window.fs.collection(window.db, 'users'));
+        adminSupportUsersCache = snap.docs.map(d => ({ uid: d.id, data: d.data() }));
+      } catch (err) {
+        console.error('載入用戶支援資料失敗:', err);
+        adminSupportUsersCache = [];
+      } finally {
+        adminSupportUsersCacheLoading = false;
+        renderAdminSupportTab();
+      }
+    }
+    window.adminRefreshSupportUsers = function() { loadAdminSupportUsersCache(); };
+
+    function renderSupportUserDetailCard(u) {
+      const d = u.data;
+      const uid = u.uid;
+      const suspended = !!d.suspended;
+      const displayEmail = d.contactEmail || d.email || '—';
+      const createdMs = typeof d.createdAt === 'number' ? d.createdAt : (d.createdAt ? new Date(d.createdAt).getTime() : 0);
+      const createdDisplay = createdMs ? new Date(createdMs).toLocaleString('zh-HK') : '—';
+      const lastLoginDisplay = (typeof formatLastLoginDisplay === 'function') ? formatLastLoginDisplay(d.lastLoginAt) : '—';
+
+      const stickerOptions = GACHA_STICKERS.map(s => `<option value="${s.id}" ${adminSupportStickerGrantDraft.stickerId === s.id ? 'selected' : ''}>${escapeHtml(s.name)}（#${s.id}）</option>`).join('');
+
+      return `
+        <div class="admin-card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+            <h3 style="font-size:17px; font-weight:bold; color:var(--brand-800); margin:0;">${escapeHtml(d.username || '—')} ${suspended ? '<span style="color:#c0392b; font-size:13px;">（已停權）</span>' : ''}</h3>
+            <button type="button" class="btn ${suspended ? 'btn-primary' : 'btn-red'}" style="font-size:13px; padding:4px 10px;" onclick="adminToggleSuspendUser('${uid}', ${!suspended})">${suspended ? '解除停權' : '停權'}</button>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; font-size:13px; color:#555; margin-bottom:18px;">
+            <div><b>帳號ID：</b>${escapeHtml(d.loginId || '未設定')}</div>
+            <div><b>Email：</b>${escapeHtml(displayEmail)}</div>
+            <div><b>學校：</b>${escapeHtml(d.school || '—')}</div>
+            <div><b>年級：</b>${escapeHtml(d.grade || '—')}</div>
+            <div><b>身份：</b>${d.accountType === 'tutor' ? '導師' : '學生'}</div>
+            <div><b>現存 PTS：</b>${d.points || 0}</div>
+            <div><b>累積時數：</b>${(parseFloat(d.hours) || 0).toFixed(1)}</div>
+            <div><b>EXP：</b>${d.exp || 0}</div>
+            <div><b>註冊時間：</b>${createdDisplay}</div>
+            <div><b>最後上線：</b>${lastLoginDisplay}</div>
+          </div>
+
+          <div style="border-top:1px solid #F0F0F0; padding-top:14px; margin-bottom:14px;">
+            <h4 style="font-size:14px; font-weight:bold; color:var(--brand-700); margin-bottom:8px;">補發／扣減 PTS</h4>
+            <p style="font-size:13px; color:#999; margin-bottom:8px;">正數係補發，負數係扣減（例如處理爭議或者錯誤發放）。</p>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <input type="number" step="1" value="${adminSupportPointsGrantAmount}" style="width:120px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" oninput="adminUpdateSupportPointsAmount(this.value)">
+              <button type="button" class="btn btn-primary" style="font-size:13px; padding:6px 16px;" onclick="adminGrantSupportPoints('${uid}')">確認</button>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid #F0F0F0; padding-top:14px;">
+            <h4 style="font-size:14px; font-weight:bold; color:var(--brand-700); margin-bottom:8px;">補發貼紙</h4>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <select style="font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px; max-width:240px;" onchange="adminUpdateSupportStickerDraft('stickerId', this.value)">${stickerOptions}</select>
+              <input type="number" min="1" step="1" value="${adminSupportStickerGrantDraft.qty}" style="width:90px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" oninput="adminUpdateSupportStickerDraft('qty', this.value)">
+              <button type="button" class="btn btn-primary" style="font-size:13px; padding:6px 16px;" onclick="adminGrantSupportSticker('${uid}')">確認</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAdminSupportTab() {
+      const container = document.getElementById('admin-tab-support');
+      if (!container) return;
+
+      if (!adminSupportUsersCache && !adminSupportUsersCacheLoading) {
+        loadAdminSupportUsersCache();
+        return;
+      }
+      if (adminSupportUsersCacheLoading && !adminSupportUsersCache) {
+        container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">載入中用戶資料...</p>';
+        return;
+      }
+
+      const q = adminSupportQuery.trim().toLowerCase();
+      const matches = q ? adminSupportUsersCache.filter(u => {
+        const d = u.data;
+        const hay = [d.username, d.loginId, d.contactEmail, d.email].filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(q);
+      }).slice(0, 20) : [];
+
+      const selected = adminSupportSelectedUid ? adminSupportUsersCache.find(u => u.uid === adminSupportSelectedUid) : null;
+
+      container.innerHTML = `
+        <div class="admin-card" style="margin-bottom:16px;">
+          <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">搜尋用戶</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input type="text" placeholder="輸入帳號ID／用戶名／Email（部分符合都得）" value="${escapeHtml(adminSupportQuery)}" style="flex:1; min-width:220px; font-size:15px; padding:8px 10px; border:1px solid #DDE7E9; border-radius:6px;" oninput="adminUpdateSupportQuery(this.value)">
+            <button type="button" class="btn btn-outline" style="font-size:13px; padding:6px 14px;" onclick="window.adminRefreshSupportUsers()">🔄 重新整理資料</button>
+          </div>
+          <p style="font-size:13px; color:#999; margin-top:8px;">資料讀取於你打開／重新整理呢頁嗰一刻，現共 ${adminSupportUsersCache.length} 位用戶。</p>
+          ${q ? `
+            <div style="margin-top:12px; max-height:260px; overflow-y:auto;">
+              ${matches.length === 0 ? '<p style="color:#999; font-size:13px;">搵唔到相關用戶</p>' : matches.map(u => `
+                <div style="padding:8px 10px; border-bottom:1px solid #F0F0F0; cursor:pointer; ${adminSupportSelectedUid === u.uid ? 'background:var(--brand-50);' : ''}" onclick="adminSelectSupportUser('${u.uid}')">
+                  <b>${escapeHtml(u.data.username || '—')}</b>
+                  <span style="color:#888; font-size:13px;"> ／ ${escapeHtml(u.data.loginId || '未設定')} ／ ${escapeHtml(u.data.contactEmail || u.data.email || '—')}</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+        ${selected ? renderSupportUserDetailCard(selected) : ''}
+      `;
+    }
+    window.renderAdminSupportTab = renderAdminSupportTab;
+
+    window.adminUpdateSupportQuery = function(value) {
+      adminSupportQuery = value;
+      renderAdminSupportTab();
+    };
+
+    window.adminSelectSupportUser = function(uid) {
+      adminSupportSelectedUid = uid;
+      adminSupportPointsGrantAmount = 0;
+      adminSupportStickerGrantDraft = { stickerId: (GACHA_STICKERS[0] && GACHA_STICKERS[0].id) || null, qty: 1 };
+      renderAdminSupportTab();
+    };
+
+    window.adminUpdateSupportPointsAmount = function(value) {
+      const n = parseInt(value, 10);
+      adminSupportPointsGrantAmount = Number.isFinite(n) ? n : 0;
+    };
+
+    window.adminGrantSupportPoints = async function(uid) {
+      const amount = adminSupportPointsGrantAmount;
+      if (!amount) {
+        window.showToast('請輸入唔係 0 嘅數值', '⚠️');
+        return;
+      }
+      if (!confirm(`確定要幫呢位用戶${amount > 0 ? '補發' : '扣減'} ${Math.abs(amount)} PTS？`)) return;
+      try {
+        await window.fs.updateDoc(window.fs.doc(window.db, 'users', uid), { points: window.fs.increment(amount) });
+        window.showToast(`已${amount > 0 ? '補發' : '扣減'} ${Math.abs(amount)} PTS`, '✅');
+        adminSupportPointsGrantAmount = 0;
+        // 更新返cache入面嗰份本地資料，等卡片即刻反映新數值，唔使成頁
+        // 重新載入先至見到最新數字
+        const cached = adminSupportUsersCache.find(u => u.uid === uid);
+        if (cached) cached.data.points = (cached.data.points || 0) + amount;
+        renderAdminSupportTab();
+      } catch (err) {
+        window.showToast('操作失敗：' + (err.message || err), '❌');
+      }
+    };
+
+    window.adminUpdateSupportStickerDraft = function(key, value) {
+      if (key === 'stickerId') {
+        const n = parseInt(value, 10);
+        adminSupportStickerGrantDraft.stickerId = Number.isFinite(n) ? n : adminSupportStickerGrantDraft.stickerId;
+      } else if (key === 'qty') {
+        const n = parseInt(value, 10);
+        adminSupportStickerGrantDraft.qty = (Number.isFinite(n) && n > 0) ? n : 1;
+      }
+    };
+
+    window.adminGrantSupportSticker = async function(uid) {
+      const { stickerId, qty } = adminSupportStickerGrantDraft;
+      if (!stickerId || !(qty > 0)) {
+        window.showToast('請揀返貼紙同數量', '⚠️');
+        return;
+      }
+      const sticker = GACHA_STICKERS.find(s => s.id === stickerId);
+      if (!confirm(`確定要幫呢位用戶補發 ${qty} 張「${sticker ? sticker.name : '#' + stickerId}」？`)) return;
+      try {
+        const payload = {};
+        payload['ownedStickers.' + stickerId] = window.fs.increment(qty);
+        await window.fs.updateDoc(window.fs.doc(window.db, 'users', uid), payload);
+        window.showToast(`已補發 ${qty} 張貼紙`, '✅');
+        adminSupportStickerGrantDraft.qty = 1;
+        renderAdminSupportTab();
+      } catch (err) {
+        window.showToast('操作失敗：' + (err.message || err), '❌');
       }
     };
 
