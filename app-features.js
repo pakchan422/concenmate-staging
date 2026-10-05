@@ -2044,8 +2044,8 @@
       setText('myacc-loginid', u.loginId ? ('🆔 ' + u.loginId) : '🆔 未設定');
       setText('myacc-school', u.school || window.t('common.notFilled', '未填寫'));
       setText('myacc-grade', u.grade ? (window.translateGradeName ? window.translateGradeName(u.grade) : u.grade) : window.t('common.notFilled', '未填寫'));
-      setText('myacc-fav', u.favSubjects || window.t('common.notFilled', '未填寫'));
-      setText('myacc-dislike', u.dislikeSubjects || window.t('common.notFilled', '未填寫'));
+      setText('myacc-fav', window.displayOptionalFieldValue ? window.displayOptionalFieldValue(u.favSubjects) : (u.favSubjects || window.t('common.notFilled', '未填寫')));
+      setText('myacc-dislike', window.displayOptionalFieldValue ? window.displayOptionalFieldValue(u.dislikeSubjects) : (u.dislikeSubjects || window.t('common.notFilled', '未填寫')));
       setText('myacc-hours', (parseFloat(u.hours) || 0).toFixed(1) + ' ' + window.t('unit.hours', '小時'));
       setText('myacc-points', (u.points ?? 0) + ' PTS');
 
@@ -3419,8 +3419,8 @@
         document.getElementById('pop-user-verified').innerText = u.loginId ? ('🆔 ' + u.loginId) : '';
         document.getElementById('pop-user-school').innerText = u.school || window.t('common.notFilled', '未填寫');
         document.getElementById('pop-user-grade').innerText = u.grade ? (window.translateGradeName ? window.translateGradeName(u.grade) : u.grade) : window.t('common.notFilled', '未填寫');
-        document.getElementById('pop-user-fav').innerText = u.favSubjects || window.t('common.notFilled', '未填寫');
-        document.getElementById('pop-user-dislike').innerText = u.dislikeSubjects || window.t('common.notFilled', '未填寫');
+        document.getElementById('pop-user-fav').innerText = window.displayOptionalFieldValue ? window.displayOptionalFieldValue(u.favSubjects) : (u.favSubjects || window.t('common.notFilled', '未填寫'));
+        document.getElementById('pop-user-dislike').innerText = window.displayOptionalFieldValue ? window.displayOptionalFieldValue(u.dislikeSubjects) : (u.dislikeSubjects || window.t('common.notFilled', '未填寫'));
         document.getElementById('pop-user-hours').innerText = (parseFloat(u.hours) || 0).toFixed(1) + " " + window.t('unit.hours', '小時');
         const popPhotoCountEl = document.getElementById('pop-photo-count');
         if (popPhotoCountEl) popPhotoCountEl.innerText = u.photoCount || 0;

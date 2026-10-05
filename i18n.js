@@ -109,6 +109,15 @@
     return grade;
   };
 
+  // 「喜愛學科」／「討厭學科」等可留白嘅個人資料欄位，留白嗰陣
+  // app-core.js會存「無」呢個字落資料庫（唔係空字串）；顯示嗰陣淨係
+  // 判斷`值 || 未填寫`係搵唔到「無」呢個情況嘅（因為「無」本身都係
+  // truthy），所以呢度額外將「無」都當做未填寫處理，先會跟語言轉。
+  window.displayOptionalFieldValue = function (val) {
+    if (!val || val === '無') return window.t('common.notFilled', '未填寫');
+    return val;
+  };
+
   // ── 香港十八區英文名（跟政府憲報／區議會官方英文區名）── 同上面
   // 學科英文名系統道理一樣：繁體中文／廣東話一律維持原文，篩選用嘅
   // 資料值（<option value="...">、Firestore 存嘅 district 欄位）繼續係
@@ -786,6 +795,16 @@
 
     // ── 通用：未填寫欄位嘅預設字 ──
     'common.notFilled': { 'zh-Hant': '未填寫', 'en': 'Not filled in', 'yue': '未填' },
+    // 註冊嗰陣「喜愛學科」／「討厭學科」留白嘅話，app-core.js會存落
+    // 資料庫做「無」呢個字（唔係空字串），所以顯示嗰陣淨係靠
+    // `u.favSubjects || fallback`判斷唔到要唔要轉用common.notFilled，
+    // 要額外識別「無」呢個值先得。
+    'common.noneValue': { 'zh-Hant': '無', 'en': 'None', 'yue': '無' },
+
+    // ── 「編輯個人資料」聯絡電郵嗰行嘅已驗證／未驗證徽章（app-core.js
+    // 嘅 updateProfileEmailVerifyUI()）──
+    'profile.emailVerifiedBadge': { 'zh-Hant': '已驗證', 'en': 'Verified', 'yue': '已驗證' },
+    'profile.emailNotVerifiedBadge': { 'zh-Hant': '未驗證', 'en': 'Not Verified', 'yue': '未驗證' },
 
     // ── 註冊表格：分區選單預設提示字 ──
     'reg.chooseDistrictFirst': { 'zh-Hant': '請先選擇地區', 'en': 'Please choose a district first', 'yue': '請先揀地區' },
@@ -1016,6 +1035,10 @@
     // 服務條款／私隱政策內容（admin-panel.js 嘅 window.LEGAL_CONTENT_RAW）
     // 同樣要即時跟住轉語言換文字（第四階段後續第13項，管理員後台可編輯）
     if (typeof window.refreshLegalContentLanguage === 'function') window.refreshLegalContentLanguage();
+    // 「編輯個人資料」聯絡電郵嗰行嘅「已驗證／未驗證」徽章（app-core.js）
+    // 唔係靠data-i18n畫出嚟，而係JS直接set innerText，要喺度額外補一句
+    // 先會即時跟住轉語言（唔使閂咗再開返個人資料頁先見到新語言）。
+    if (typeof window.updateProfileEmailVerifyUI === 'function') window.updateProfileEmailVerifyUI();
   };
 
   // 一開波（未必已登入）都套用一次，等未登入嗰陣如果之前揀過語言，
