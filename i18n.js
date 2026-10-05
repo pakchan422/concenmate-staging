@@ -993,6 +993,32 @@
     'core.profileUpdatedWithVerifyEmail': { 'zh-Hant': '已更新資料，並寄出新的驗證電郵', 'en': 'Profile updated, and a new verification email has been sent', 'yue': '資料更新咗，仲send咗封新嘅驗證電郵' },
     'core.profileUpdatedSynced': { 'zh-Hant': '個人檔案已同步更新至 Firebase！', 'en': 'Profile synced and updated!', 'yue': '個人檔案已經同步更新好喇！' },
     'core.profileUpdateFailedTemplate': { 'zh-Hant': '更新失敗: {error}', 'en': 'Update failed: {error}', 'yue': '更新失敗：{error}' },
+
+    // ── 「申請成為導師」彈窗（modal-tutor-apply，index.html）：學生
+    // 用家都會見到嘅表格，之前一直0%翻譯覆蓋 ──
+    'tutorapply.title': { 'zh-Hant': '申請成為導師', 'en': 'Apply to Become a Tutor', 'yue': '申請做導師' },
+    'tutorapply.subtitle': { 'zh-Hant': '通過審批之後，您就可以在導師後台管理科目、上傳付費筆記給其他同學購買。請填好以下資料交給管理員審批。', 'en': 'Once approved, you can manage your subjects in the tutor dashboard and upload paid notes for other students to purchase. Please fill in the details below for admin review.', 'yue': '通過審批之後，你就可以喺導師後台管理科目、上傳收費筆記俾其他同學買。填好以下資料交俾管理員審批就得' },
+    'tutorapply.displayNameLabel': { 'zh-Hant': '顯示名稱', 'en': 'Display Name', 'yue': '顯示名稱' },
+    'tutorapply.displayNamePlaceholder': { 'zh-Hant': '學生會見到的導師名稱', 'en': 'The tutor name students will see', 'yue': '學生會見到嘅導師名' },
+    'tutorapply.bioLabel': { 'zh-Hant': '自我介紹', 'en': 'Bio', 'yue': '自我介紹' },
+    'tutorapply.bioPlaceholder': { 'zh-Hant': '簡單介紹自己的教學背景、經驗', 'en': 'Briefly introduce your teaching background and experience', 'yue': '簡單講下你嘅教學背景、經驗' },
+    'tutorapply.subjectsLabel': { 'zh-Hant': '想教的科目（可選多科，亦可自行輸入）', 'en': "Subjects you'd like to teach (multiple allowed, or type your own)", 'yue': '想教嘅科目（可以揀多科，都可以自己打）' },
+    'tutorapply.contactLabel': { 'zh-Hant': '聯絡方式（管理員審批用，不會公開）', 'en': 'Contact Info (for admin review only, not shown publicly)', 'yue': '聯絡方式（俾管理員審批用，唔會公開）' },
+    'tutorapply.contactPlaceholder': { 'zh-Hant': '例如電郵或電話', 'en': 'e.g. email or phone number', 'yue': '例如電郵或者電話' },
+    'tutorapply.submitBtn': { 'zh-Hant': '送出申請', 'en': 'Submit Application', 'yue': '送出申請' },
+
+    // ── 導師「管理教材」入面嘅「新增科目」／「編輯教材」彈窗
+    // （modal-tutor-add-subject、modal-tutor-edit-note，index.html）：
+    // 之前一直0%翻譯覆蓋 ──
+    'tutormat.addSubjectTitle': { 'zh-Hant': '新增科目', 'en': 'Add Subject', 'yue': '新增科目' },
+    'tutormat.subjectNameLabel': { 'zh-Hant': '科目名稱', 'en': 'Subject Name', 'yue': '科目名稱' },
+    'tutormat.customSubjectNameLabel': { 'zh-Hant': '自訂科目名稱', 'en': 'Custom Subject Name', 'yue': '自訂科目名' },
+    'tutormat.customSubjectPlaceholder': { 'zh-Hant': '例如：法文', 'en': 'e.g. French', 'yue': '例如：法文' },
+    'tutormat.addBtn': { 'zh-Hant': '新增', 'en': 'Add', 'yue': '新增' },
+    'tutormat.editNoteTitle': { 'zh-Hant': '編輯教材', 'en': 'Edit Material', 'yue': '編輯教材' },
+    'tutormat.noteTitleLabel': { 'zh-Hant': '標題 *', 'en': 'Title *', 'yue': '標題 *' },
+    'tutormat.noteDescLabel': { 'zh-Hant': '簡介', 'en': 'Description', 'yue': '簡介' },
+    'tutormat.notePriceLabel': { 'zh-Hant': '定價（港幣，最低 $10，只能為整數）*', 'en': 'Price (HKD, minimum $10, whole numbers only) *', 'yue': '定價（港幣，最低$10，淨係可以係整數）*' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置
