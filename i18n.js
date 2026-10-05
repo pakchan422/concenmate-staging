@@ -162,7 +162,7 @@
     'nav.home': { 'zh-Hant': '主頁', 'en': 'Home', 'yue': '主頁' },
     'nav.room': { 'zh-Hant': '視訊溫習室', 'en': 'Video Study Room', 'yue': '視訊溫習室' },
     'nav.qa': { 'zh-Hant': '疑難解答區', 'en': 'Q&A', 'yue': '疑難解答區' },
-    'nav.vip': { 'zh-Hant': '溫習資源', 'en': 'Study Resources', 'yue': '溫習資源' },
+    'nav.vip': { 'zh-Hant': '教材中心', 'en': 'Materials Hub', 'yue': '教材中心' },
     'nav.store': { 'zh-Hant': '時數扭蛋機', 'en': 'Gashapon', 'yue': '時數扭蛋機' },
     'nav.leaderboard': { 'zh-Hant': '溫習排行榜', 'en': 'Leaderboard', 'yue': '溫習排行榜' },
     'nav.social': { 'zh-Hant': '書伴廣場', 'en': 'Study Buddy Plaza', 'yue': '書伴廣場' },
@@ -461,7 +461,7 @@
     //    草稿睇待）。包括導師名錄（tab-vip）同導師專頁（tab-tutor-view）
     //    呢兩個分頁——淨係學生瀏覽導師嘅呢一邊，導師自己嘅「管理教材」
     //    後台（tab-tutor-materials）未轉，留返下一階段。 ──
-    'vip.heading': { 'zh-Hant': '溫習資源', 'en': 'Study Resources', 'yue': '溫習資源' },
+    'vip.heading': { 'zh-Hant': '教材中心', 'en': 'Materials Hub', 'yue': '教材中心' },
     'vip.subheading': { 'zh-Hant': '瀏覽已上架的導師，點擊卡片可以查看資料並追蹤，接收最新消息', 'en': 'Browse listed tutors — tap a card to view their profile, follow them, and get updates', 'yue': '睇吓有邊啲導師，撳張卡可以睇資料同追蹤，第一時間收到最新消息' },
     'vip.loadingDirectory': { 'zh-Hant': '載入導師名錄中…', 'en': 'Loading tutor directory…', 'yue': 'Load緊導師名單…' },
     // {msg} 係佔位符，塞入錯誤訊息本身。
@@ -469,7 +469,7 @@
     'vip.noTutorsForSubjectTemplate': { 'zh-Hant': '暫時未有教授「{subject}」的已上架導師', 'en': 'No listed tutors teaching "{subject}" yet', 'yue': '暫時未有導師教緊「{subject}」' },
     'vip.noTutorsYet': { 'zh-Hant': '目前尚未有已上架的導師', 'en': 'No listed tutors yet', 'yue': '而家仲未有已上架嘅導師' },
     'vip.viewLabel': { 'zh-Hant': '查看 ›', 'en': 'View ›', 'yue': '睇吓 ›' },
-    'tutorview.backButton': { 'zh-Hant': '← 返回溫習資源', 'en': '← Back to Study Resources', 'yue': '← 返去溫習資源' },
+    'tutorview.backButton': { 'zh-Hant': '← 返回教材中心', 'en': '← Back to Materials Hub', 'yue': '← 返去教材中心' },
     'tutorview.followers': { 'zh-Hant': '粉絲', 'en': 'Followers', 'yue': '粉絲' },
     'tutorview.materialsHeading': { 'zh-Hant': '已上架教材', 'en': 'Published Materials', 'yue': '已上架教材' },
     'tutorview.defaultName': { 'zh-Hant': '導師', 'en': 'Tutor', 'yue': '導師' },

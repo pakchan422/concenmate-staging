@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.196.7"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.196.8"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1722,7 +1722,7 @@
              會自動跟住轉，其餘畫面文字暫時未轉，仍然顯示繁體中文。 -->
         <button class="nav-btn student-only-nav" id="nav-btn-room" type="button" onclick="switchTab('room', this)"><span class="nav-icon" id="nav-icon-room"></span> <span class="nav-text" data-i18n="nav.room">視訊溫習室</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-qa" type="button" onclick="switchTab('qa', this)"><span class="nav-icon" id="nav-icon-qa"></span> <span class="nav-text" data-i18n="nav.qa">疑難解答區</span></button>
-        <button class="nav-btn student-only-nav" id="nav-btn-vip" type="button" onclick="switchTab('vip', this)"><span class="nav-icon" id="nav-icon-vip"></span> <span class="nav-text" data-i18n="nav.vip">溫習資源</span></button>
+        <button class="nav-btn student-only-nav" id="nav-btn-vip" type="button" onclick="switchTab('vip', this)"><span class="nav-icon" id="nav-icon-vip"></span> <span class="nav-text" data-i18n="nav.vip">教材中心</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-store" type="button" onclick="switchTab('store', this)"><span class="nav-icon" id="nav-icon-store"></span> <span class="nav-text" data-i18n="nav.store">時數扭蛋機</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-leaderboard" type="button" onclick="switchTab('leaderboard', this)"><span class="nav-icon" id="nav-icon-leaderboard"></span> <span class="nav-text" data-i18n="nav.leaderboard">溫習排行榜</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-social" type="button" onclick="switchTab('social', this)"><span class="nav-icon" id="nav-icon-social"></span> <span class="nav-text" data-i18n="nav.social">書伴廣場</span> <span class="home-sec-badge" id="nav-social-badge" style="display:none; margin-left:auto;"></span></button>
@@ -2465,7 +2465,7 @@
              tutor-panel.js 嘅 renderTutorDirectoryTab() 產生。 -->
         <section id="tab-vip" class="tab-content">
           <div class="card" style="background: linear-gradient(135deg, #D9EBEF, #D9C9B5); color:#1E4550;">
-            <h2 style="font-size:18px; font-weight:bold;" data-i18n="vip.heading">溫習資源</h2>
+            <h2 style="font-size:18px; font-weight:bold;" data-i18n="vip.heading">教材中心</h2>
             <p style="font-size:13px; color:#3E5A63; margin-top:4px;" data-i18n="vip.subheading">瀏覽已上架的導師，點擊卡片可以查看資料並追蹤，接收最新消息</p>
           </div>
           <div id="tutor-directory-tabs" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;"></div>
@@ -2809,7 +2809,7 @@
         <section id="tab-tutor-view" class="tab-content">
 
           <div style="margin-bottom:10px;">
-            <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="switchTab('vip')" data-i18n="tutorview.backButton">← 返回溫習資源</button>
+            <button class="btn btn-outline" type="button" style="width:100%; justify-content:center; font-size:13px;" onclick="switchTab('vip')" data-i18n="tutorview.backButton">← 返回教材中心</button>
           </div>
 
           <div class="card" style="text-align:center;">
