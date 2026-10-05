@@ -206,7 +206,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           </div>
 
           <div style="display:flex; gap:6px; margin-top:12px;">
-            <button class="btn btn-primary" style="flex:1; justify-content:center; font-size:13px; padding:6px;" onclick="joinPublicRoom('${roomId}', '${room.name.replace(/'/g, "\\'")}', '${room.subject}', ${room.duration}, '${room.hostName}', ${isMyRoom}, ${createdAtMs}, '${room.hostUid || ''}', this)">
+            <button class="btn btn-primary" style="flex:1; justify-content:center; font-size:13px; padding:6px;" onclick="joinPublicRoom(${window.jsArg(roomId)}, ${window.jsArg(room.name)}, ${window.jsArg(room.subject)}, ${Number(room.duration) || 0}, ${window.jsArg(room.hostName)}, ${isMyRoom ? 'true' : 'false'}, ${Number(createdAtMs) || 0}, ${window.jsArg(room.hostUid || '')}, this)">
               ${window.t('room.joinRoom', '加入房間')}
             </button>
             ${isMyRoom ? `<button class="btn btn-red" style="font-size:13px; padding:6px;" onclick="deleteRoomQuick('${roomId}')">${window.t('room.deleteRoom', '刪除')}</button>` : ''}
@@ -762,10 +762,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (btn) { btn.disabled = true; btn.innerText = '處理中...'; }
 
       try {
-        const result = await window.callCloudFunction('requestPasswordReset', { loginId });
-        if (result && result.contactEmail && result.token) {
-          await window.sendPasswordResetEmail(result.contactEmail, result.username, result.token);
-        }
+        // v1.198.0：重設密碼電郵而家由 Cloud Function 喺伺服器直接寄出，
+        // token 唔會再傳返前端（之前傳返嚟會俾人攞嚟盜用任何帳戶）。
+        await window.callCloudFunction('requestPasswordReset', { loginId });
         // 唔理呢個帳號 ID 實際存唔存在、有冇登記電郵，都顯示返一樣嘅
         // 提示——避免俾人攞嚟逐個帳號 ID 咁試，反過嚟推斷邊個 ID 已經
         // 有人用咗（呢個 app 嘅 usernames collection 本身雖然已經可以
