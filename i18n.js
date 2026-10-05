@@ -845,7 +845,7 @@
     // ── Landing page（未登入主頁）──
     'landing.navLogin': { 'zh-Hant': '登入', 'en': 'Log In', 'yue': '登入' },
     'landing.registerBtn': { 'zh-Hant': '註冊帳號', 'en': 'Sign Up', 'yue': '註冊帳號' },
-    'landing.slogan': { 'zh-Hant': 'Always By Your Side', 'en': 'Always By Your Side', 'yue': 'Always By Your Side' },
+    'landing.slogan': { 'zh-Hant': 'Concentrate with a Mate.', 'en': 'Concentrate with a Mate.', 'yue': 'Concentrate with a Mate.' },
     'landing.eyebrow': { 'zh-Hant': '認識 ConcenMate 書伴', 'en': 'Meet ConcenMate', 'yue': '認識吓 ConcenMate 書伴' },
     'landing.heroH1Line1': { 'zh-Hant': '相遇你的書伴，陪你走過', 'en': 'Meet your study companion, by your side through', 'yue': '遇到你嘅書伴，陪你行過' },
     'landing.heroH1Line2': { 'zh-Hant': '每一段溫習時光', 'en': 'every moment of studying', 'yue': '每一段溫書時光' },
