@@ -5060,7 +5060,9 @@
       window._activeRoomInvite = invite;
       const textEl = document.getElementById('invite-popup-text');
       if (textEl) {
-        textEl.innerText = `${invite.fromUsername || '朋友'} 邀請你加入「${invite.roomName || '溫習房'}」`;
+        const fromName = invite.fromUsername || window.t('room.inviteFromFallback', '朋友');
+        const roomName = invite.roomName || window.t('room.inviteRoomFallback', '溫習房');
+        textEl.innerText = window.t('room.inviteReceivedTemplate', `${fromName} 邀請你加入「${roomName}」`).replace('{from}', fromName).replace('{room}', roomName);
       }
       openModal('modal-room-invite-popup');
     }
