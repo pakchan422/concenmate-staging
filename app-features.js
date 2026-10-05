@@ -764,7 +764,7 @@
     window.handleAvatarFileSelected = function(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
-      if (!window.currentUser) { window.showToast('請先登入會員', '⚠️'); return; }
+      if (!window.currentUser) { window.showToast(window.t('diary.loginFirstMember', '請先登入會員'), '⚠️'); return; }
       openAvatarCropModal(URL.createObjectURL(file));
     };
 
@@ -793,7 +793,7 @@
       };
       img.onerror = () => {
         URL.revokeObjectURL(objectUrl);
-        window.showToast('圖片載入失敗，請更換其他相片', '🚫');
+        window.showToast(window.t('features.imageLoadFailedRetry', '圖片載入失敗，請更換其他相片'), '🚫');
       };
       img.src = objectUrl;
     }
@@ -942,15 +942,15 @@
         await window.callCloudFunction('uploadAvatar', { image: dataUrl });
         window.currentUser.avatarBase64 = dataUrl;
         renderUserAvatar();
-        window.showToast('頭像已成功更新！', '🎉');
+        window.showToast(window.t('features.avatarUpdateSuccess', '頭像已成功更新！'), '🎉');
       } catch (err) {
         const code = err && (err.code || '');
         if (typeof code === 'string' && code.indexOf('resource-exhausted') !== -1) {
-          window.showToast(err.message || '上傳次數過多，請稍後再試', '⏳');
+          window.showToast(err.message || window.t('features.uploadTooManyRetryLater', '上傳次數過多，請稍後再試'), '⏳');
         } else if (typeof code === 'string' && code.indexOf('invalid-argument') !== -1) {
-          window.showToast(err.message || '相片不符合要求，請更換其他相片', '🚫');
+          window.showToast(err.message || window.t('features.photoInvalidRetry', '相片不符合要求，請更換其他相片'), '🚫');
         } else {
-          window.showToast('上傳頭像失敗：' + (err.message || err), '❌');
+          window.showToast(window.t('features.avatarUploadFailedTemplate', '上傳頭像失敗：{msg}').replace('{msg}', (err.message || err)), '❌');
         }
         renderUserAvatar();
       } finally {
@@ -1558,7 +1558,7 @@
     const OTTER_NAME_MAX_LEN = 12;
 
     window.openOtterRenameModal = function() {
-      if (!window.currentUser) { window.showToast('請先登入', '🔒'); return; }
+      if (!window.currentUser) { window.showToast(window.t('common.loginFirst', '請先登入'), '🔒'); return; }
       const input = document.getElementById('otter-rename-input');
       if (input) input.value = window.currentUser.otterName || 'Ottiee';
       const err = document.getElementById('otter-rename-error');
@@ -1641,7 +1641,7 @@
         updateOtterNameDisplay();
         updateOtterDisplay();
         closeModal('modal-otter-rename');
-        window.showToast('儲存成功！', '🦦');
+        window.showToast(window.t('features.saveSuccessGeneric', '儲存成功！'), '🦦');
       } catch (e) {
         if (errEl) { errEl.innerText = '儲存失敗，請再試：' + (e.message || e); errEl.style.display = 'block'; }
       }
@@ -2162,16 +2162,16 @@
       const contactInfo = (document.getElementById('tutor-apply-contact').value || '').trim();
       const subjectsIntended = subjectsRaw.split(/[,，、]/).map(s => s.trim()).filter(Boolean);
 
-      if (!displayName) { window.showToast('請填寫顯示名稱', '⚠️'); return; }
-      if (subjectsIntended.length === 0) { window.showToast('請至少填寫一個想教的科目', '⚠️'); return; }
+      if (!displayName) { window.showToast(window.t('features.fillDisplayNameRequired', '請填寫顯示名稱'), '⚠️'); return; }
+      if (subjectsIntended.length === 0) { window.showToast(window.t('core.selectAtLeastOneTeachSubject', '請至少填寫一個想教的科目'), '⚠️'); return; }
 
       if (btn) { btn.disabled = true; btn.innerText = '送出中…'; }
       try {
         await window.callCloudFunction('applyTutorRole', { displayName, bio, subjectsIntended, contactInfo });
         closeModal('modal-tutor-apply');
-        window.showToast('已送出導師申請，請等候管理員審批', '✅');
+        window.showToast(window.t('features.tutorApplySubmittedSuccess', '已送出導師申請，請等候管理員審批'), '✅');
       } catch (err) {
-        window.showToast('送出申請失敗：' + (err.message || err), '❌');
+        window.showToast(window.t('features.tutorApplySubmitFailedTemplate', '送出申請失敗：{msg}').replace('{msg}', (err.message || err)), '❌');
       } finally {
         if (btn) { btn.disabled = false; btn.innerText = '送出申請'; }
       }
@@ -4576,7 +4576,7 @@
         console.error('載入對話清單失敗:', err);
         const dockDebugEl = document.getElementById('chat-dock-debug');
         if (dockDebugEl) { dockDebugEl.style.color = '#ff8080'; dockDebugEl.innerText = '監聽失敗：' + (err.message || err); }
-        window.showToast('對話清單監聽失敗：' + (err.message || err), '❌');
+        window.showToast(window.t('features.chatListListenFailedTemplate', '對話清單監聽失敗：{msg}').replace('{msg}', (err.message || err)), '❌');
       });
     };
 
@@ -4595,7 +4595,7 @@
         console.error('強制重新整理對話清單失敗:', e);
         const dockDebugEl = document.getElementById('chat-dock-debug');
         if (dockDebugEl) { dockDebugEl.style.color = '#ff8080'; dockDebugEl.innerText = '強制重整失敗：' + (e.message || e); }
-        window.showToast('對話清單強制重整失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('features.chatListForceRefreshFailedTemplate', '對話清單強制重整失敗：{msg}').replace('{msg}', (e.message || e)), '❌');
       }
     };
 
@@ -4799,7 +4799,7 @@
           fromUid: myUid, toUid: friendUid, text, createdAt: now
         });
       } catch (e) {
-        window.showToast('訊息傳送失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('features.sendMessageFailedTemplate', '訊息傳送失敗：{msg}').replace('{msg}', (e.message || e)), '❌');
         input.value = text; // 送失敗就將打好嘅字放返入輸入框，唔使使用者重打
         return;
       }
@@ -4834,7 +4834,7 @@
           await window.fs.setDoc(chatRef, chatSummaryPayload, { merge: true });
         } catch (e2) {
           console.error('更新對話摘要失敗（重試都失敗）:', e2);
-          window.showToast('對話摘要未同步給對方（' + (e2.message || e2) + '），訊息本身已送出', '⚠️');
+          window.showToast(window.t('features.chatSummarySyncFailedTemplate', '對話摘要未同步給對方（{msg}），訊息本身已送出').replace('{msg}', (e2.message || e2)), '⚠️');
         }
       }
 
@@ -4858,7 +4858,7 @@
     // 嘅所有訊息（唔係淨係自己隱藏），撳之前會 confirm 一次先，避免手震撳錯
     window.clearChatHistory = async function(chatId) {
       if (!window.currentUser || !window.db || !window.fs) return;
-      if (!confirm('確定要刪除這個對話的全部訊息記錄？這個動作會影響雙方，刪除後將無法復原。')) return;
+      if (!confirm(window.t('features.confirmDeleteChatHistory', '確定要刪除這個對話的全部訊息記錄？這個動作會影響雙方，刪除後將無法復原。'))) return;
       try {
         const msgsSnap = await window.fs.getDocs(window.fs.collection(window.db, 'directChats', chatId, 'messages'));
         await Promise.all(msgsSnap.docs.map(d => window.fs.deleteDoc(d.ref)));
@@ -4880,9 +4880,9 @@
           if (totalUnreadAfterDelete > 0) { badgeAfterDelete.style.display = 'flex'; badgeAfterDelete.innerText = totalUnreadAfterDelete > 99 ? '99+' : totalUnreadAfterDelete; }
           else { badgeAfterDelete.style.display = 'none'; }
         }
-        window.showToast('已刪除對話記錄', '🗑️');
+        window.showToast(window.t('features.chatHistoryDeletedSuccess', '已刪除對話記錄'), '🗑️');
       } catch (e) {
-        window.showToast('刪除失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('features.deleteFailedTemplate', '刪除失敗：{msg}').replace('{msg}', (e.message || e)), '❌');
       }
     };
 
@@ -4914,7 +4914,7 @@
     // 「📤 分享連結」：優先叫出裝置本身嘅分享選單（手機上會見到 WhatsApp、
     // Instagram 等已安裝嘅社交 App），冇支援先跌落去自動複製。
     window.shareRoomInviteLink = async function() {
-      if (!state.currentRoomId) { window.showToast('請先進入溫習室，方可分享連結', '⚠️'); return; }
+      if (!state.currentRoomId) { window.showToast(window.t('features.needEnterRoomToShare', '請先進入溫習室，方可分享連結'), '⚠️'); return; }
       const { link, text } = buildRoomInviteShareData();
 
       // 手機瀏覽器（同部分電腦瀏覽器）支援 navigator.share，會彈出裝置本身
@@ -4933,7 +4933,7 @@
     // 「📋 複製連結」：唔理裝置支唔支援分享選單，一律直接複製到剪貼簿，
     // 保證撳一下就實實在在複製咗，畀用家自己貼去邊個 App 都得。
     window.copyRoomInviteLink = async function() {
-      if (!state.currentRoomId) { window.showToast('請先進入溫習室，方可複製連結', '⚠️'); return; }
+      if (!state.currentRoomId) { window.showToast(window.t('features.needEnterRoomToCopy', '請先進入溫習室，方可複製連結'), '⚠️'); return; }
       const { link, text } = buildRoomInviteShareData();
       await copyLinkToClipboard(link, text);
     };
@@ -5009,13 +5009,13 @@
       if (!window.currentUser || !window.db || !window.fs || !state.currentRoomId) return;
       try {
         const roomSnap = await window.fs.getDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId));
-        if (!roomSnap.exists()) { window.showToast('房間已經不存在了', '🚫'); return; }
+        if (!roomSnap.exists()) { window.showToast(window.t('features.roomNoLongerExistsShort', '房間已經不存在了'), '🚫'); return; }
         const room = roomSnap.data();
 
         const roomCap = (typeof window.resolveRoomCapacity === 'function') ? window.resolveRoomCapacity(room) : (window.ROOM_CAPACITY || 4);
         const participantsSnap = await window.fs.getDocs(window.fs.collection(window.db, 'rooms', state.currentRoomId, 'participants'));
         if (participantsSnap.size >= roomCap) {
-          window.showToast(`房間已滿（${roomCap}/${roomCap}），暫時無法邀請`, '🚫');
+          window.showToast(window.t('features.roomFullCannotInviteTemplate', '房間已滿（{cap}/{cap}），暫時無法邀請').replace(/\{cap\}/g, roomCap), '🚫');
           return;
         }
 
@@ -5046,10 +5046,10 @@
           invitedAt: now,
           fromUid: window.currentUser.uid
         });
-        window.showToast(`已經邀請 ${friendUsername} 入房，等待他回應`, '📨');
+        window.showToast(window.t('features.invitedWaitingResponseTemplate', '已經邀請 {name} 入房，等待他回應').replace('{name}', friendUsername), '📨');
         window.closeModal('modal-invite-friend');
       } catch (e) {
-        window.showToast('邀請失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('features.inviteFailedTemplate', '邀請失敗：{msg}').replace('{msg}', (e.message || e)), '❌');
       }
     };
 
@@ -5092,14 +5092,14 @@
         try {
           await window.fs.updateDoc(window.fs.doc(window.db, 'roomInvites', invite.id), { status: 'declined', respondedAt: Date.now() });
         } catch (e) { /* 拒絕失敗都唔緊要，唔阻住用家 */ }
-        window.showToast('已拒絕邀請', 'ℹ️');
+        window.showToast(window.t('features.inviteDeclinedSuccess', '已拒絕邀請'), 'ℹ️');
         showNextRoomInvitePopup();
         return;
       }
 
       // 就算已經彈咗出嚟，都要重新核對一次有冇過期先真正放行入房
       if (invite.expiresAt && Date.now() > invite.expiresAt) {
-        window.showToast('這個邀請已經過期，請朋友重新發送邀請', '⌛');
+        window.showToast(window.t('features.inviteExpiredAskResend', '這個邀請已經過期，請朋友重新發送邀請'), '⌛');
         try { await window.fs.updateDoc(window.fs.doc(window.db, 'roomInvites', invite.id), { status: 'expired' }); } catch (e) {}
         showNextRoomInvitePopup();
         return;
@@ -5108,7 +5108,7 @@
       try {
         const roomSnap = await window.fs.getDoc(window.fs.doc(window.db, 'rooms', invite.roomId));
         if (!roomSnap.exists()) {
-          window.showToast('這個房間已經不存在了', '🚫');
+          window.showToast(window.t('features.roomNoLongerExistsAlt', '這個房間已經不存在了'), '🚫');
           try { await window.fs.updateDoc(window.fs.doc(window.db, 'roomInvites', invite.id), { status: 'expired' }); } catch (e) {}
           showNextRoomInvitePopup();
           return;
@@ -5118,7 +5118,7 @@
         const isMyRoom = !!(window.currentUser && room.hostUid === window.currentUser.uid);
         await window.joinPublicRoom(invite.roomId, room.name, room.subject, room.duration, room.hostName, isMyRoom, room.createdAt, room.hostUid);
       } catch (e) {
-        window.showToast('加入房間失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('features.joinRoomFailedTemplate', '加入房間失敗：{msg}').replace('{msg}', (e.message || e)), '❌');
       }
       showNextRoomInvitePopup();
     };
