@@ -87,6 +87,28 @@
     return name;
   };
 
+  // 將「現時年級」嘅原文值（中一 (S1)／中六 (S6 DSE)／大專/大學／
+  // 其他自修生等，同登記／個人資料表格嗰個<select>嘅value一致）按目前
+  // 語言轉做顯示文字。同科目名道理一樣：底層存落資料庫嘅值永遠維持
+  // 原文（因為leaderboard「自修生/大專大學不適用」等邏輯要靠精確
+  // 比對呢個字串，改咗會累壞判斷），淨係顯示文字跟語言轉；揾唔到
+  // 對應key（例如舊資料或者未填寫）就自動退返原文，唔會開天窗。
+  window.GRADE_VALUE_TO_I18N_KEY = {
+    '中一 (S1)': 'profile.gradeS1',
+    '中二 (S2)': 'profile.gradeS2',
+    '中三 (S3)': 'profile.gradeS3',
+    '中四 (S4)': 'profile.gradeS4',
+    '中五 (S5)': 'profile.gradeS5',
+    '中六 (S6 DSE)': 'profile.gradeS6',
+    '大專/大學': 'profile.gradeTertiary',
+    '其他自修生': 'profile.gradeOther',
+  };
+  window.translateGradeName = function (grade) {
+    const key = window.GRADE_VALUE_TO_I18N_KEY[grade];
+    if (key) return window.t(key, grade);
+    return grade;
+  };
+
   // ── 香港十八區英文名（跟政府憲報／區議會官方英文區名）── 同上面
   // 學科英文名系統道理一樣：繁體中文／廣東話一律維持原文，篩選用嘅
   // 資料值（<option value="...">、Firestore 存嘅 district 欄位）繼續係

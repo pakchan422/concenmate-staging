@@ -2043,7 +2043,7 @@
       setText('myacc-username', u.username || '同學');
       setText('myacc-loginid', u.loginId ? ('🆔 ' + u.loginId) : '🆔 未設定');
       setText('myacc-school', u.school || window.t('common.notFilled', '未填寫'));
-      setText('myacc-grade', u.grade || window.t('common.notFilled', '未填寫'));
+      setText('myacc-grade', u.grade ? (window.translateGradeName ? window.translateGradeName(u.grade) : u.grade) : window.t('common.notFilled', '未填寫'));
       setText('myacc-fav', u.favSubjects || window.t('common.notFilled', '未填寫'));
       setText('myacc-dislike', u.dislikeSubjects || window.t('common.notFilled', '未填寫'));
       setText('myacc-hours', (parseFloat(u.hours) || 0).toFixed(1) + ' ' + window.t('unit.hours', '小時'));
@@ -3418,7 +3418,7 @@
         if (nameEl) nameEl.innerText = u.username || window.t('lb.defaultUsername', '同學');
         document.getElementById('pop-user-verified').innerText = u.loginId ? ('🆔 ' + u.loginId) : '';
         document.getElementById('pop-user-school').innerText = u.school || window.t('common.notFilled', '未填寫');
-        document.getElementById('pop-user-grade').innerText = u.grade || window.t('common.notFilled', '未填寫');
+        document.getElementById('pop-user-grade').innerText = u.grade ? (window.translateGradeName ? window.translateGradeName(u.grade) : u.grade) : window.t('common.notFilled', '未填寫');
         document.getElementById('pop-user-fav').innerText = u.favSubjects || window.t('common.notFilled', '未填寫');
         document.getElementById('pop-user-dislike').innerText = u.dislikeSubjects || window.t('common.notFilled', '未填寫');
         document.getElementById('pop-user-hours').innerText = (parseFloat(u.hours) || 0).toFixed(1) + " " + window.t('unit.hours', '小時');
@@ -4004,7 +4004,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <div style="text-align:right; font-size:13px; color:#888; line-height:1.5;">
-                <div>${escapeHtml(u.grade || window.t('common.notFilled', '未填寫'))}</div>
+                <div>${escapeHtml(u.grade ? (window.translateGradeName ? window.translateGradeName(u.grade) : u.grade) : window.t('common.notFilled', '未填寫'))}</div>
                 <div style="color:${rank.color};">Lv.${levelInfo.level} ${escapeHtml(rank.title)}</div>
                 <div>累積溫習 ${(parseFloat(u.hours) || 0).toFixed(1)} 小時</div>
               </div>
