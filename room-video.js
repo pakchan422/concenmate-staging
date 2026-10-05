@@ -538,14 +538,14 @@
     // 同一間房都會俾 enterRoomSetup 擋返出去，直到呢間房執咗為止。
     window.kickParticipant = async function(targetUid, targetName) {
       if (!state.isHost || !state.currentRoomId || !window.db || !window.fs) return;
-      if (!confirm(`確定要將「${targetName}」移出這個溫習房？他之後都不可以再加入這間房。`)) return;
+      if (!confirm(window.t('room.kickConfirmTemplate', `確定要將「${targetName}」移出這個溫習房？他之後都不可以再加入這間房。`).replace('{name}', targetName))) return;
       try {
         await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId), {
           bannedUids: window.fs.arrayUnion(targetUid)
         });
-        window.showToast(`已將「${targetName}」移出房間，他不可以再加入這間房`, '🚫');
+        window.showToast(window.t('room.kickSuccessTemplate', `已將「${targetName}」移出房間，他不可以再加入這間房`).replace('{name}', targetName), '🚫');
       } catch (e) {
-        window.showToast('踢走失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('room.kickFailedTemplate', '踢走失敗：{error}').replace('{error}', e.message || e), '❌');
       }
     };
 
@@ -558,15 +558,15 @@
     // 選項，唔使額外寫多一套同步邏輯。
     window.transferHostTo = async function(targetUid, targetName) {
       if (!state.isHost || !state.currentRoomId || !window.db || !window.fs) return;
-      if (!confirm(`確定要將房主身份轉移給「${targetName}」？轉移之後你會變回普通成員，不會再有踢人／轉移房主的權限。`)) return;
+      if (!confirm(window.t('room.transferHostConfirmTemplate', `確定要將房主身份轉移給「${targetName}」？轉移之後你會變回普通成員，不會再有踢人／轉移房主的權限。`).replace('{name}', targetName))) return;
       try {
         await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId), {
           hostUid: targetUid,
           hostName: targetName
         });
-        window.showToast(`已將房主身份轉移給「${targetName}」`, '👑');
+        window.showToast(window.t('room.transferHostSuccessTemplate', `已將房主身份轉移給「${targetName}」`).replace('{name}', targetName), '👑');
       } catch (e) {
-        window.showToast('轉移房主失敗：' + (e.message || e), '❌');
+        window.showToast(window.t('room.transferHostFailedTemplate', '轉移房主失敗：{error}').replace('{error}', e.message || e), '❌');
       }
     };
 
@@ -1387,7 +1387,18 @@
       state.currentRoomHostUid = isMyRoom ? window.currentUser.uid : (hostUid || null);
 
       document.getElementById('active-room-title').innerText = roomName;
-      document.getElementById('active-room-subject').innerText = subject;
+      // 科目名要跟翻譯系統轉返做英文／廣東話官方名，唔可以淨係塞返
+      // 原文（同大廳房間卡片、QA帖子等其他顯示科目名嘅地方做法一致，
+      // 見 window.translateSubjectName，i18n.js）——之前漏咗呢個位，
+      // 導致房入面個科目標籤（例如「中國語文」）無論揀咩UI語言都
+      // keep住顯示中文（Alvis截圖發現）。額外set埋data-subject屬性，
+      // 等用家入咗房之後先切換語言，applyAppLanguage()嘅
+      // [data-subject]querySelectorAll邏輯都執到呢個位，即時跟住轉。
+      const activeRoomSubjectEl = document.getElementById('active-room-subject');
+      if (activeRoomSubjectEl) {
+        activeRoomSubjectEl.setAttribute('data-subject', subject);
+        activeRoomSubjectEl.innerText = window.translateSubjectName ? window.translateSubjectName(subject) : subject;
+      }
       updateHostBadge();
 
       // 番茄鐘（專注／小休自動循環）呢個功能已經整個移除——房入面而家

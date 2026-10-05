@@ -4937,9 +4937,9 @@
     async function copyLinkToClipboard(link, text) {
       try {
         await navigator.clipboard.writeText(`${text}\n${link}`);
-        window.showToast('連結已複製，請貼上 WhatsApp、Instagram 等傳送予朋友', '📋');
+        window.showToast(window.t('room.copyLinkSuccess', '連結已複製，請貼上 WhatsApp、Instagram 等傳送予朋友'), '📋');
       } catch (e) {
-        window.showToast('複製失敗，連結：' + link, '⚠️');
+        window.showToast(window.t('room.copyLinkFailedTemplate', '複製失敗，連結：{link}').replace('{link}', link), '⚠️');
       }
     }
 
@@ -4955,7 +4955,7 @@
       const listEl = document.getElementById('invite-friend-list');
       if (!listEl) return;
       if (inviteFriendListCache.length === 0) {
-        listEl.innerHTML = '<p style="font-size:13px; color:#999; text-align:center; padding:10px 0;">目前並無可邀請之朋友（可能對方已在房內，或閣下尚未加入任何朋友）</p>';
+        listEl.innerHTML = `<p style="font-size:13px; color:#999; text-align:center; padding:10px 0;">${window.t('room.inviteNoFriendsAvailable', '目前並無可邀請之朋友（可能對方已在房內，或閣下尚未加入任何朋友）')}</p>`;
         return;
       }
       const presenceMap = window.friendPresenceMap || {};
@@ -4969,11 +4969,11 @@
               <span class="presence-dot ${online ? 'online' : ''}"></span>
             </div>
             <div>
-              <div style="font-weight:bold; color:var(--brand-800); font-size:13px;">${escapeHtml(f.username||'同學')} <span style="font-weight:normal; font-size:13px; color:${online ? '#4CAF50' : '#999'};">${online ? '● 在線' : ''}</span></div>
+              <div style="font-weight:bold; color:var(--brand-800); font-size:13px;">${escapeHtml(f.username||window.t('lb.defaultUsername', '同學'))} <span style="font-weight:normal; font-size:13px; color:${online ? '#4CAF50' : '#999'};">${online ? window.t('room.onlineIndicator', '● 在線') : ''}</span></div>
               <div style="font-size:13px; color:#888;">${escapeHtml(f.loginId||'')}</div>
             </div>
           </div>
-          <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="inviteFriendToRoom('${f.uid}', '${escapeHtml((f.username||'同學')).replace(/'/g, "\\'")}')">邀請</button>
+          <button class="btn btn-primary" type="button" style="font-size:13px; padding:5px 10px;" onclick="inviteFriendToRoom('${f.uid}', '${escapeHtml((f.username||window.t('lb.defaultUsername', '同學'))).replace(/'/g, "\\'")}')">${window.t('room.inviteBtnShort', '邀請')}</button>
         </div>
       `;
       }).join('');
@@ -4981,11 +4981,11 @@
     window.renderInviteFriendListUI = renderInviteFriendListUI;
 
     window.openInviteFriendModal = async function() {
-      if (!window.currentUser || !window.db || !window.fs) { window.showToast('請先登入', '⚠️'); return; }
-      if (!state.currentRoomId) { window.showToast('要在房間入面先可以邀請朋友', '⚠️'); return; }
+      if (!window.currentUser || !window.db || !window.fs) { window.showToast(window.t('room.needLoginToInvite', '請先登入'), '⚠️'); return; }
+      if (!state.currentRoomId) { window.showToast(window.t('room.needInRoomToInvite', '要在房間入面先可以邀請朋友'), '⚠️'); return; }
       const listEl = document.getElementById('invite-friend-list');
       if (!listEl) return;
-      listEl.innerHTML = '<p style="font-size:13px; color:#999; text-align:center;">載入中好友名單...</p>';
+      listEl.innerHTML = `<p style="font-size:13px; color:#999; text-align:center;">${window.t('room.loadingFriendList', '載入中好友名單...')}</p>`;
       openModal('modal-invite-friend');
       try {
         const snap = await window.fs.getDocs(window.fs.collection(window.db, 'users', window.currentUser.uid, 'friends'));
@@ -4995,7 +4995,7 @@
         renderInviteFriendListUI();
       } catch (e) {
         console.error('載入好友名單失敗:', e);
-        listEl.innerHTML = '<p style="font-size:13px; color:#D9764A; text-align:center;">載入失敗，請再試一次</p>';
+        listEl.innerHTML = `<p style="font-size:13px; color:#D9764A; text-align:center;">${window.t('room.loadFriendListFailed', '載入失敗，請再試一次')}</p>`;
       }
     };
 

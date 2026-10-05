@@ -304,6 +304,22 @@
     'avatar.cropHint': { 'zh-Hant': '拖曳相片調整位置，並使用滑桿調整縮放', 'en': 'Drag the photo to reposition it, and use the slider to zoom', 'yue': '拖吓張相調位置，再用滑桿調縮放' },
     'avatar.cropConfirmBtn': { 'zh-Hant': '確認上傳', 'en': 'Confirm Upload', 'yue': '確認上傳' },
 
+    // ── 「邀請朋友入房」彈窗嘅好友列表（app-features.js
+    // renderInviteFriendListUI／openInviteFriendModal）：呢幾句之前
+    // 漏咗，Alvis截圖發現English／廣東話版仍然顯示緊繁體中文嘅
+    // 「目前並無可邀請之朋友」。另外房間入面個科目標籤（room-video.js
+    // 嘅#active-room-subject）之前冇跟window.translateSubjectName，
+    // 同一輪一齊補鑊。 ──
+    'room.inviteNoFriendsAvailable': { 'zh-Hant': '目前並無可邀請之朋友（可能對方已在房內，或閣下尚未加入任何朋友）', 'en': 'No friends available to invite right now (they may already be in the room, or you have no friends added yet)', 'yue': '而家冇朋友可以邀請（可能佢哋已經喺房入面，或者你仲未加任何朋友）' },
+    'room.onlineIndicator': { 'zh-Hant': '● 在線', 'en': '● Online', 'yue': '● 在線' },
+    'room.inviteBtnShort': { 'zh-Hant': '邀請', 'en': 'Invite', 'yue': '邀請' },
+    'room.loadingFriendList': { 'zh-Hant': '載入中好友名單...', 'en': 'Loading friend list...', 'yue': 'Load緊好友名單...' },
+    'room.loadFriendListFailed': { 'zh-Hant': '載入失敗，請再試一次', 'en': 'Failed to load, please try again', 'yue': 'Load唔到，試多次啦' },
+    'room.needLoginToInvite': { 'zh-Hant': '請先登入', 'en': 'Please log in first', 'yue': '要登入先得㗎' },
+    'room.needInRoomToInvite': { 'zh-Hant': '要在房間入面先可以邀請朋友', 'en': 'You need to be in a room to invite friends', 'yue': '要喺房入面先可以邀請朋友' },
+    'room.copyLinkSuccess': { 'zh-Hant': '連結已複製，請貼上 WhatsApp、Instagram 等傳送予朋友', 'en': 'Link copied — paste it into WhatsApp, Instagram, etc. to send to friends', 'yue': '連結已複製，貼去WhatsApp、Instagram呢啲send俾朋友啦' },
+    'room.copyLinkFailedTemplate': { 'zh-Hant': '複製失敗，連結：{link}', 'en': 'Copy failed. Link: {link}', 'yue': '複製唔到，連結：{link}' },
+
     // ── 疑難解答區（第四階段：English 由 Claude 翻譯、廣東話口語由
     //    Claude 起草，兩者都仲要 Alvis 過目先算數，未過目之前先當
     //    草稿睇待）。分類 Tab（全部／必修科目／選修科目／其他）重用
