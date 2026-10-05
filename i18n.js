@@ -331,6 +331,14 @@
     'room.pdfPreviewNextPage': { 'zh-Hant': '下一頁 ›', 'en': 'Next Page ›', 'yue': '下一頁 ›' },
     'level.infoTitle': { 'zh-Hant': '等級與段位詳情', 'en': 'Level & Tier Details', 'yue': '等級與段位詳情' },
     'level.infoCloseBtn': { 'zh-Hant': '關閉', 'en': 'Close', 'yue': '閂返' },
+
+    // ── EXP／升級進度文字（app-features.js嘅updateLevelDisplay()、
+    // openLevelInfoModal()、「我的帳戶」彈窗——全部都係JS直接組template
+    // literal，之前一直漏咗冇入翻譯系統）──
+    'level.expShortTemplate': { 'zh-Hant': '{into} / {needed} EXP · 仍欠 {remaining} EXP 升級', 'en': '{into} / {needed} EXP · {remaining} EXP to go until you level up', 'yue': '{into} / {needed} EXP · 重差 {remaining} EXP 就升級' },
+    'level.expWithNextLvTemplate': { 'zh-Hant': '{into} / {needed} EXP · 仍欠 {remaining} EXP 就升到 Lv.{nextLevel}', 'en': '{into} / {needed} EXP · {remaining} EXP to go until Lv.{nextLevel}', 'yue': '{into} / {needed} EXP · 重差 {remaining} EXP 就到 Lv.{nextLevel}' },
+    'level.expWithNextLvTotalTemplate': { 'zh-Hant': '{into} / {needed} EXP · 仍欠 {remaining} EXP 就升到 Lv.{nextLevel}（總計 {total} EXP）', 'en': '{into} / {needed} EXP · {remaining} EXP to go until Lv.{nextLevel} (total {total} EXP)', 'yue': '{into} / {needed} EXP · 重差 {remaining} EXP 就到 Lv.{nextLevel}（總共 {total} EXP）' },
+    'level.headerBadgeTooltipTemplate': { 'zh-Hant': '{title}（{titleEn}）｜仍欠 {remaining} EXP 就升到 Lv.{nextLevel}', 'en': '{title} ({titleEn}) | {remaining} EXP to go until Lv.{nextLevel}', 'yue': '{title}（{titleEn}）｜重差 {remaining} EXP 就到 Lv.{nextLevel}' },
     'avatar.cropTitle': { 'zh-Hant': '調整頭像位置', 'en': 'Adjust Avatar Position', 'yue': '調整頭像位置' },
     'avatar.cropHint': { 'zh-Hant': '拖曳相片調整位置，並使用滑桿調整縮放', 'en': 'Drag the photo to reposition it, and use the slider to zoom', 'yue': '拖吓張相調位置，再用滑桿調縮放' },
     'avatar.cropConfirmBtn': { 'zh-Hant': '確認上傳', 'en': 'Confirm Upload', 'yue': '確認上傳' },

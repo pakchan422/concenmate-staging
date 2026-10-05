@@ -633,7 +633,8 @@
       const headerBadge = document.getElementById('header-level-badge');
       if (headerBadge) {
         headerBadge.innerText = `Lv.${info.level}`;
-        headerBadge.title = `${rank.title}（${rank.titleEn}）｜仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}`;
+        headerBadge.title = window.t('level.headerBadgeTooltipTemplate', `${rank.title}（${rank.titleEn}）｜仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}`)
+          .replace('{title}', rank.title).replace('{titleEn}', rank.titleEn).replace('{remaining}', info.expRemaining).replace('{nextLevel}', info.level + 1);
       }
 
       const globalLevelBadge = document.getElementById('global-level-badge');
@@ -650,7 +651,8 @@
         profRankTitle.innerText = `${rank.title} (${rank.titleEn})`;
         profRankTitle.style.color = rank.color;
       }
-      if (profExpText) profExpText.innerText = `${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}（總計 ${info.exp} EXP）`;
+      if (profExpText) profExpText.innerText = window.t('level.expWithNextLvTotalTemplate', `${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}（總計 ${info.exp} EXP）`)
+        .replace('{into}', info.expIntoLevel).replace('{needed}', info.expNeededForNext).replace('{remaining}', info.expRemaining).replace('{nextLevel}', info.level + 1).replace('{total}', info.exp);
       if (profExpBar) profExpBar.style.width = info.pctToNext + '%';
 
       // 主頁「我的水獺」卡嘅等級／升級所需 EXP 都係跟呢份 info 嚟，
@@ -671,7 +673,8 @@
       if (currentEl) {
         currentEl.innerHTML = `
           <div style="font-size:15px; font-weight:bold; color:${rank.color || 'var(--brand-800)'};">Lv.${info.level} ${escapeHtml(rank.title || '')}（${escapeHtml(rank.titleEn || '')}）</div>
-          <div style="font-size:13px; color:#888; margin-top:4px;">${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}</div>
+          <div style="font-size:13px; color:#888; margin-top:4px;">${window.t('level.expWithNextLvTemplate', `${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 就升到 Lv.${info.level + 1}`)
+            .replace('{into}', info.expIntoLevel).replace('{needed}', info.expNeededForNext).replace('{remaining}', info.expRemaining).replace('{nextLevel}', info.level + 1)}</div>
           ${rank.desc ? `<div style="font-size:13px; color:#555; margin-top:6px; line-height:1.5;">${escapeHtml(rank.desc)}</div>` : ''}
         `;
       }
@@ -2058,7 +2061,8 @@
       }
       const expBar = document.getElementById('myacc-exp-bar');
       if (expBar) expBar.style.width = info.pctToNext + '%';
-      setText('myacc-exp-text', `${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 升級`);
+      setText('myacc-exp-text', window.t('level.expShortTemplate', `${info.expIntoLevel} / ${info.expNeededForNext} EXP · 仍欠 ${info.expRemaining} EXP 升級`)
+        .replace('{into}', info.expIntoLevel).replace('{needed}', info.expNeededForNext).replace('{remaining}', info.expRemaining));
 
       // 「溫習日記」獨立做咗一個分頁（tab-diary），呢度資料卡淨係顯示
       // 簡要數字（相片／粉絲／追蹤中），撳「查看溫習日記」先真正載入
