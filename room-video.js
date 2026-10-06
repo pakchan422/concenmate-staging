@@ -754,6 +754,26 @@
     }
 
     // 用家離開房間時，釋放其佔用的格子
+    // v1.199.3：有人離開房間之後，刪走自己送畀佢嘅 offer／answer 文件，同埋
+    // 清走同佢有關嘅去重記錄，等佢之後再入返嚟時係由零開始重新連線，唔會
+    // 執到上一次留低嘅舊訊號（之前會令重新入房嘅人見唔到房主鏡頭）。
+    function forgetDepartedPeer(roomId, uid) {
+      if (!window.currentUser || !window.db || !roomId) return;
+      delete state.lastProcessedOfferTs[uid];
+      delete state.lastProcessedAnswerTs[uid];
+      delete state.pendingCandidates[uid];
+      if (state.connectingTo && state.connectingTo.delete) state.connectingTo.delete(uid);
+      window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "signals", window.currentUser.uid + "_to_" + uid)).catch(() => {});
+    }
+
+    // v1.199.3：判斷一份 offer 係咪「我今次入房之後」先送出——早過我今次
+    // 入房（預留 5 秒時鐘誤差）嘅一定係上一次留低嘅舊 offer，處理咗只會令
+    // 新連線撞車。
+    function isFreshOfferForThisSession(data) {
+      if (!state.mySessionStartTs) return true;
+      return typeof data.timestamp === 'number' && data.timestamp >= state.mySessionStartTs - 5000;
+    }
+
     function releaseRemoteSlot(uid) {
       const slotNum = state.slotAssignments[uid];
       if (!slotNum) return;
@@ -949,7 +969,10 @@
 
         // 釋放已離開的用家所佔用的格子
         Object.keys(state.slotAssignments).forEach(uid => {
-          if (!currentUids.includes(uid)) releaseRemoteSlot(uid);
+          if (!currentUids.includes(uid)) {
+            releaseRemoteSlot(uid);
+            forgetDepartedPeer(roomId, uid);
+          }
         });
 
         // 為在場但尚未分配格子的用家安排格子（僅顯示佔位，鏡頭畫面待 WebRTC 連線後填入）
@@ -2105,16 +2128,22 @@
       state.lastProcessedOfferTs = {};
       state.lastProcessedAnswerTs = {};
       state.connectingTo = new Set();
+      state.mySessionStartTs = null;
 
       // 主動清走自己嘅 presence 同已經送出嘅 offer/answer 文件，
       // 等其他人之後重新入返嚟嗰陣，唔會執到自己呢次留低嘅舊訊號資料
+      // v1.199.3：一定要「等」呢啲刪除完成先離開 participants——Firestore
+      // 規則要求仲係房內參與者先刪得 signals，之前冇等，好多時 participants
+      // 紀錄已經刪咗、signals 先送到伺服器，結果被拒絕，舊 offer／上線文件
+      // 一直留喺房入面，下次有人入房就執到呢啲舊資料，連線卡喺「連線中...」。
       if (state.currentRoomId && window.currentUser) {
         const myUid = window.currentUser.uid;
         const roomId = state.currentRoomId;
-        Object.keys(state.peerConnections).forEach(remoteUid => {
-          window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "signals", myUid + "_to_" + remoteUid)).catch(() => {});
-        });
-        window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "signals", myUid)).catch(() => {});
+        const deletions = Object.keys(state.peerConnections).map(remoteUid =>
+          window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "signals", myUid + "_to_" + remoteUid)).catch(() => {})
+        );
+        deletions.push(window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "signals", myUid)).catch(() => {}));
+        await Promise.all(deletions);
       }
 
       Object.values(state.peerConnections).forEach(pc => pc.close());
@@ -2715,7 +2744,8 @@
       if (!window.currentUser || !state.currentRoomId || !window.db) return;
       const myUid = window.currentUser.uid;
       const presenceRef = window.fs.doc(window.db, "rooms", state.currentRoomId, "signals", myUid);
-      
+      if (!state.mySessionStartTs) state.mySessionStartTs = Date.now();
+
       await window.fs.setDoc(presenceRef, {
         uid: myUid,
         name: window.currentUser.username || '同學',
@@ -2752,7 +2782,7 @@
           }
 
           // (b) 指名給我、但之前鏡頭未開而被略過的 Offer → 現在補上 Answer
-          if (data.to === myUid && data.offer && state.lastProcessedOfferTs[data.from] !== data.timestamp) {
+          if (data.to === myUid && data.offer && state.lastProcessedOfferTs[data.from] !== data.timestamp && isFreshOfferForThisSession(data)) {
             wrtcLog(`發現一份之前錯過的 Offer ← ${data.from}，補上處理`);
             state.lastProcessedOfferTs[data.from] = data.timestamp;
             await handleIncomingOffer(roomId, data.from, data.offer);
@@ -2810,6 +2840,7 @@
           // (b) 收到指名給自己的 Offer → 建立連線並回覆 Answer
           if (data.to === myUid && data.offer) {
             if (state.lastProcessedOfferTs[data.from] === data.timestamp) return;
+            if (!isFreshOfferForThisSession(data)) return;
             state.lastProcessedOfferTs[data.from] = data.timestamp;
             await handleIncomingOffer(roomId, data.from, data.offer);
             return;
