@@ -2412,6 +2412,21 @@
     // 唔使去到秒秒都即時更新，呢種做法對 Firestore 讀取量更溫和。
     // 「待處理舉報」「待審批導師申請」用 getCountFromServer 直接喺伺服
     // 器端計數，唔使下載晒成批文件，比較慳。
+    // v1.200.0：為所有現有用戶補建 publicProfiles（其他用戶睇資料卡用）。
+    window.adminBackfillPublicProfiles = async function(btn) {
+      if (!confirm('確定要為所有用戶同步公開資料卡？用戶較多時可能需要一至兩分鐘。')) return;
+      const original = btn ? btn.innerText : '';
+      if (btn) { btn.disabled = true; btn.innerText = '同步中…'; }
+      try {
+        const result = await window.callCloudFunction('backfillPublicProfiles', {});
+        window.showToast(`已同步 ${result && result.count != null ? result.count : 0} 位用戶的公開資料`, '✅');
+      } catch (e) {
+        window.showToast('同步失敗：' + (e.message || e), '❌');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = original; }
+      }
+    };
+
     let adminDashboardStats = null;
     let adminDashboardLoading = false;
     let adminDashboardLoadedAt = null;
@@ -2512,6 +2527,7 @@
         <div class="admin-card" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
           <p style="font-size:13px; color:#888; margin:0;">數據截至：${lastUpdateText}（讀取當刻嘅快照，唔會自動即時更新，想攞最新數字就撳右邊個掣）</p>
           <button type="button" class="btn btn-outline" style="font-size:13px; padding:6px 14px;" ${refreshingNow ? 'disabled' : ''} onclick="window.adminRefreshDashboard()">${refreshingNow ? '更新中…' : '🔄 重新整理'}</button>
+          <button type="button" class="btn btn-outline" style="font-size:13px; padding:6px 14px;" onclick="window.adminBackfillPublicProfiles(this)" title="為所有用戶建立／更新公開資料卡（用戶名、頭像、學校等）。系統更新後執行一次即可，重複執行亦無影響。">🪪 同步公開資料</button>
         </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px;">
           ${cards.map(c => `
