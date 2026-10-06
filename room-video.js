@@ -271,6 +271,7 @@
       // 全螢幕嗰陣鎖住背景頁面唔畀捲動，唔係嘅話手指喺黑色空隙度拖到
       // 都會意外拉動咗底下嗰版，畀人覺得畫面甩晒版
       document.body.style.overflow = willBeFullscreen ? 'hidden' : '';
+      document.body.classList.toggle('room-fullscreen-active', willBeFullscreen);
       if (willBeFullscreen) {
         // 等 class 切換完、CSS 已經套用、room-bar 都已經收埋咗多餘
         // 按鈕之後，先量度可用空間嚟計格仔大細，唔係就會量到轉換前
@@ -295,6 +296,7 @@
       if (roomActive) roomActive.classList.remove('video-fullscreen-mode');
       if (fsBtn) fsBtn.innerHTML = window.t('room.fullscreen', '全螢幕');
       document.body.style.overflow = '';
+      document.body.classList.remove('room-fullscreen-active');
       // 清返 inline style，唔係就會用返呢啲 px 數值蓋晒返正常（非全
       // 螢幕）嗰個 CSS 版面規則
       const grid = document.getElementById('video-grid-container');
@@ -2773,6 +2775,18 @@
         snapshot.docChanges().forEach(async (change) => {
           const data = change.doc.data();
 
+          // v1.199.1：有人離開房間時，佢個「上線」訊令文件會被刪除——之前
+          // 呢度連「刪除」呢種變化都當成「有人上線」處理，即刻幫已經走咗嘅
+          // 人重新開返一格，令畫面一直顯示「連線中...」。而家任何「刪除」
+          // 變化都唔再當新訊令處理；如果嗰個人已經唔喺 participants 名單，
+          // 就順手釋放佢嗰格。
+          if (change.type === 'removed') {
+            if (data.uid && data.uid !== myUid && !state.knownParticipantUids.has(data.uid)) {
+              releaseRemoteSlot(data.uid);
+            }
+            return;
+          }
+
           // (a) 用家上線通知（presence）：發現房內其他人，並安排到四格視窗其中一格
           if (data.uid && data.uid !== myUid) {
             const remoteUid = data.uid;
@@ -3114,6 +3128,11 @@
     async function attemptPeerReconnect(remoteUid, pc) {
       if (state.peerConnections[remoteUid] !== pc) return; // 已經俾第二條新連線取代咗，唔使處理
       if (!state.currentRoomId || !window.currentUser) return;
+      // v1.199.1：對方已經離開咗房（唔喺 participants 名單），唔使重連，清走嗰格就得
+      if (!state.knownParticipantUids.has(remoteUid)) {
+        await cleanupDeadPeerConnection(remoteUid, pc);
+        return;
+      }
       await cleanupDeadPeerConnection(remoteUid, pc);
       const remoteName = state.peerNames[remoteUid] || '同學';
       getOrCreateRemoteSlot(remoteUid, remoteName);
