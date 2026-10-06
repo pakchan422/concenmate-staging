@@ -2903,6 +2903,18 @@
       const pc = createPeerConnection(remoteUid, remoteName);
       state.peerConnections[remoteUid] = pc;
 
+      // v1.199.5（自動化測試捉到）：自己未開鏡頭時，條連線入面一條媒體
+      // 通道（m-line）都冇，WebRTC 根本唔會開始連線，所以兩邊都冇開鏡頭
+      // 時會一直卡喺「連線中...」，要等有人開鏡頭先臨時協商，經常出事。
+      // 而家發起連線嗰邊一定預留「只收」嘅影像同聲音通道，入房即刻連通；
+      // 之後開鏡頭，renegotiateWithPeers() 會重用呢兩條通道（replaceTrack）。
+      if (pc.getTransceivers().length === 0) {
+        try {
+          pc.addTransceiver('video', { direction: 'recvonly' });
+          pc.addTransceiver('audio', { direction: 'recvonly' });
+        } catch (e) { console.warn('預留媒體通道失敗:', e); }
+      }
+
       try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
