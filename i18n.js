@@ -1035,7 +1035,7 @@
     'features.chatListForceRefreshFailedTemplate': { 'zh-Hant': '對話清單強制重整失敗：{msg}', 'en': 'Failed to force-refresh chat list: {msg}', 'yue': '強制重整對話清單失敗：{msg}' },
     'features.sendMessageFailedTemplate': { 'zh-Hant': '訊息傳送失敗：{msg}', 'en': 'Failed to send message: {msg}', 'yue': '訊息送唔到：{msg}' },
     'features.chatSummarySyncFailedTemplate': { 'zh-Hant': '對話摘要未同步給對方（{msg}），訊息本身已送出', 'en': 'Chat summary did not sync to the other person ({msg}), but the message itself was sent', 'yue': '對話摘要未同步到對方（{msg}），但訊息本身已經送咗' },
-    'features.chatHistoryDeletedSuccess': { 'zh-Hant': '已刪除對話記錄', 'en': 'Chat history deleted', 'yue': '對話記錄刪咗喇' },
+    'features.chatHistoryDeletedSuccess': { 'zh-Hant': '已清除對話記錄', 'en': 'Conversation cleared', 'yue': '對話記錄清咗喇' },
     'features.deleteFailedTemplate': { 'zh-Hant': '刪除失敗：{msg}', 'en': 'Delete failed: {msg}', 'yue': '刪除唔到：{msg}' },
     'features.needEnterRoomToShare': { 'zh-Hant': '請先進入溫習室，方可分享連結', 'en': 'Please enter the study room first before sharing the link', 'yue': '要先入到溫習室先可以分享連結' },
     'features.needEnterRoomToCopy': { 'zh-Hant': '請先進入溫習室，方可複製連結', 'en': 'Please enter the study room first before copying the link', 'yue': '要先入到溫習室先可以複製連結' },
@@ -1047,7 +1047,7 @@
     'features.inviteExpiredAskResend': { 'zh-Hant': '這個邀請已經過期，請朋友重新發送邀請', 'en': 'This invitation has expired, please ask your friend to send a new one', 'yue': '呢個邀請已經過期喇，叫朋友再send一次啦' },
     'features.roomNoLongerExistsAlt': { 'zh-Hant': '這個房間已經不存在了', 'en': 'This room no longer exists', 'yue': '呢間房已經唔存在喇' },
     'features.joinRoomFailedTemplate': { 'zh-Hant': '加入房間失敗：{msg}', 'en': 'Failed to join room: {msg}', 'yue': '入唔到房間：{msg}' },
-    'features.confirmDeleteChatHistory': { 'zh-Hant': '確定要刪除這個對話的全部訊息記錄？這個動作會影響雙方，刪除後將無法復原。', 'en': 'Are you sure you want to delete all messages in this conversation? This affects both people and cannot be undone.', 'yue': '真係要刪除呢個對話嘅全部訊息記錄？呢個動作會影響雙方，刪除咗就冇得返轉頭。' },
+    'features.confirmDeleteChatHistory': { 'zh-Hant': '確定要清除這個對話的訊息記錄？只會清除你這邊的顯示，對方仍然可以看到。', 'en': 'Clear this conversation? Messages will only be hidden on your side; the other person can still see them.', 'yue': '確定要清走呢個對話嘅訊息？只會喺你呢邊清走，對方仍然睇到。' },
   };
 
   // 目前語言：已登入用戶存喺 users/{uid} 文件嘅 language 欄位（跨裝置

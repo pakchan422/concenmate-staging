@@ -999,6 +999,22 @@
       });
     }
 
+    // v1.199.0：離開房間＝刪自己 participants 紀錄＋房間人數 -1，用同一個
+    // batch 原子寫入（Firestore 規則而家會核對「人數 -1 嘅人真係啱啱離開
+    // 咗間房」，防止外人亂改人數）。如果房間文件已經唔存在（例如房主啱啱
+    // 刪咗房），batch 會失敗，就退返淨係刪自己紀錄。
+    async function leaveRoomBatch(roomId, myUid) {
+      const participantRef = window.fs.doc(window.db, "rooms", roomId, "participants", myUid);
+      try {
+        const batch = window.fs.writeBatch(window.db);
+        batch.delete(participantRef);
+        batch.update(window.fs.doc(window.db, "rooms", roomId), { participantCount: window.fs.increment(-1) });
+        await batch.commit();
+      } catch (e) {
+        await window.fs.deleteDoc(participantRef).catch(() => {});
+      }
+    }
+
     // 離開房間時，移除自己的 participants 紀錄並停止監聽
     async function leaveRoomParticipants() {
       if (state.participantsUnsubscribe) {
@@ -1008,17 +1024,13 @@
       if (state.currentRoomId && window.currentUser && window.db && window.fs) {
         const roomId = state.currentRoomId;
         try {
-          await window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "participants", window.currentUser.uid));
+          await leaveRoomBatch(roomId, window.currentUser.uid);
 
           // 檢查係咪最後一個人走：如果房入面已經冇任何人，就連房間本身都一拼
           // 刪走，唔好留低一間「0/4 人但仲顯示直播中」嘅幽靈房喺大廳。
           const remainingSnap = await window.fs.getDocs(window.fs.collection(window.db, "rooms", roomId, "participants"));
           if (remainingSnap.empty) {
             await window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
-          } else {
-            await window.fs.updateDoc(window.fs.doc(window.db, "rooms", roomId), {
-              participantCount: window.fs.increment(-1)
-            });
           }
         } catch (e) {
           console.error("移除房間人數紀錄失敗:", e);
@@ -1026,35 +1038,18 @@
       }
     }
 
-    // 分頁關閉 / 重新整理時盡量清理自己的 participants 紀錄。
-    // 呢個 handler 盡量重現 leaveRoomParticipants()（正式退房流程）嘅邏輯：
-    // 刪走自己個 participant 紀錄之後，check 埋房入面係咪已經冇晒人，如果
-    // 自己啱啱好係最後一個，就連房間文件本身都一拼刪走，唔好留低一間
-    // 「0/4 人但仲顯示🟢直播中」嘅幽靈房喺大廳（見用家反映嘅問題）。
-    // ⚠️ 注意：beforeunload 入面嘅 async 操作，瀏覽器唔保證一定會俾佢行
-    // 完先關閉分頁（尤其係要兩個來回嘅 getDocs→deleteDoc），所以呢度只
-    // 係盡做，唔可以完全倚賴——大廳嗰邊嘅 gcStaleRooms 快速清理（見上面
-    // EMPTY_ROOM_GRACE_MS）同埋原本嘅 5 分鐘冇心跳清理機制會做埋後備。
+    // 分頁關閉 / 重新整理時盡量清理自己的 participants 紀錄（同上面一樣用
+    // batch）。beforeunload 入面嘅 async 操作瀏覽器唔保證行得完，所以只係
+    // 盡做，大廳嘅 gcStaleRooms 同 5 分鐘冇心跳清理機制會做後備。
     window.addEventListener('beforeunload', () => {
       if (state.currentRoomId && window.currentUser && window.db && window.fs) {
         const roomId = state.currentRoomId;
         const myUid = window.currentUser.uid;
-        window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "participants", myUid)).catch(() => {});
-        window.fs.getDocs(window.fs.collection(window.db, "rooms", roomId, "participants")).then(snap => {
-          const remaining = snap.docs.filter(d => d.id !== myUid);
-          if (remaining.length === 0) {
-            window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
-          } else {
-            window.fs.updateDoc(window.fs.doc(window.db, "rooms", roomId), {
-              participantCount: window.fs.increment(-1)
-            }).catch(() => {});
-          }
-        }).catch(() => {
-          // 連讀取都失敗嘅話，至少退返舊做法扣返個人數
-          window.fs.updateDoc(window.fs.doc(window.db, "rooms", roomId), {
-            participantCount: window.fs.increment(-1)
-          }).catch(() => {});
-        });
+        leaveRoomBatch(roomId, myUid).then(() => {
+          return window.fs.getDocs(window.fs.collection(window.db, "rooms", roomId, "participants")).then(snap => {
+            if (snap.empty) window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
+          });
+        }).catch(() => {});
       }
     });
 
@@ -1670,6 +1665,12 @@
     // 就補返差額嗰種「追落後」，所以一定要保住每一次冇寫成功嘅請求本身，
     // 逐個重試，先至真係追得返（唔係淨係等「下次」新嗰次順利就當數）。
     let awardSyncQueue = [];
+    // 伺服器嘅 failed-precondition／invalid-argument 代表「呢次唔會再成功」，
+    // 同網絡斷線（可以重試）分開處理。
+    function isAwardRejectedError(e) {
+      const code = (e && e.code) ? String(e.code) : '';
+      return code.indexOf('failed-precondition') !== -1 || code.indexOf('invalid-argument') !== -1;
+    }
     let awardSyncInFlight = false;
     let awardSyncRetryTimer = null;
 
@@ -1683,6 +1684,9 @@
             await window.callCloudFunction('awardStudyPoints', payload);
             awardSyncQueue.shift();
           } catch (e) {
+            // v1.199.0：伺服器明確拒絕（例如已經離開咗間房、派分太密），
+            // 重試都冇用，直接放棄呢次，唔好塞住成條隊。
+            if (isAwardRejectedError(e)) { awardSyncQueue.shift(); continue; }
             console.warn('積分／時數補寫仍然失敗，遲啲再試（畫面已經顯示緊最新狀態，唔影響使用）:', e);
             break; // 呢次都仲係唔得，唔使再逐個試落去，等下個重試週期先再嚟
           }
@@ -1786,6 +1790,7 @@
       const payload = {
         points: pointsAmount,
         hoursIncrement,
+        roomId: state.currentRoomId || '',
         isNewDay,
         todayDateStr: hoursIncrement > 0 ? getTodayDateStr() : undefined
       };
@@ -1793,6 +1798,7 @@
         await flushAwardSyncQueue(); // 先追返之前排隊緊嘅（保住次序），先寄呢次新嘅
         await window.callCloudFunction('awardStudyPoints', payload);
       } catch (e) {
+        if (isAwardRejectedError(e)) { console.warn('伺服器拒絕今次積分（唔會重試）:', e && e.message); return; }
         console.warn("積分同步到 Firestore 失敗，已排隊等遲啲重試（畫面已經即時更新，唔影響使用）:", e);
         awardSyncQueue.push(payload);
       }
