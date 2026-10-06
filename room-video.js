@@ -475,7 +475,7 @@
           <div class="video-header">
             <span class="video-tag" style="cursor:pointer;" onclick="viewUserProfile('${uid}')" title="${window.t('room.viewProfile', '點擊查看資料／加好友')}">${window.escapeHtml(name || window.t('room.otherUser', '其他用家'))}</span>
             <span class="video-tag" id="remote-host-badge-${slotNum}" style="background:#D9EBEF; color:#1E4550; display:none;">${window.t('room.hostBadge', '房主')}</span>
-            <span class="video-tag" id="stream-status-${uid}" style="background:#3E7A8A; color:#fff;">${window.t('room.remoteWaitStream', '連線中...')}</span>
+            <span class="video-tag" id="stream-status-${uid}" data-conn="connecting" style="background:#3E7A8A; color:#fff;">${window.t('room.remoteWaitStream', '連線中...')}</span>
             <div class="video-more-menu-wrap">
               <span class="video-tag video-more-menu-toggle" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}')" title="${window.t('room.moreOptions', '更多選項')}">⋮</span>
               <div class="video-more-menu-dropdown" id="video-more-menu-${uid}" style="display:none;">
@@ -745,12 +745,35 @@
     }
 
     // 收到對方實際的視訊畫面（track）後，把狀態標籤改成「即時串流」
-    function markSlotLive(uid) {
+    // v1.199.3：連線狀態標籤改為反映「真正」嘅連線狀態——之前一收到對方
+    // 嘅 video track（只係完成咗協商，未必真係有畫面傳到）就顯示「即時
+    // 串流」，而對方冇開鏡頭時就一直顯示「連線中...」，兩樣都會誤導。
+    // 而家：WebRTC 真正連通（connectionState === 'connected'）先會轉，
+    // 有對方畫面就「即時串流」，未有畫面就「已連線」。data-conn 屬性
+    // 畀自動化測試（Playwright）讀取用。
+    function updateSlotConnStatus(uid) {
       const statusTag = document.getElementById('stream-status-' + uid);
-      if (statusTag) {
+      if (!statusTag) return;
+      const pc = state.peerConnections[uid];
+      const connected = !!(pc && pc.connectionState === 'connected');
+      if (!connected) {
+        statusTag.style.background = '#3E7A8A';
+        statusTag.innerText = window.t('room.remoteWaitStream', '連線中...');
+        statusTag.setAttribute('data-conn', 'connecting');
+      } else if (state.peerHasVideo && state.peerHasVideo[uid]) {
         statusTag.style.background = '#D2C4AD';
         statusTag.innerText = window.t('room.remoteLiveStream', '即時串流');
+        statusTag.setAttribute('data-conn', 'live');
+      } else {
+        statusTag.style.background = '#5E8F6E';
+        statusTag.innerText = window.t('room.remoteConnected', '已連線');
+        statusTag.setAttribute('data-conn', 'connected');
       }
+    }
+    function markSlotLive(uid) {
+      if (!state.peerHasVideo) state.peerHasVideo = {};
+      state.peerHasVideo[uid] = true;
+      updateSlotConnStatus(uid);
     }
 
     // 用家離開房間時，釋放其佔用的格子
@@ -775,6 +798,7 @@
     }
 
     function releaseRemoteSlot(uid) {
+      if (state.peerHasVideo) delete state.peerHasVideo[uid];
       const slotNum = state.slotAssignments[uid];
       if (!slotNum) return;
       delete state.slotAssignments[uid];
@@ -3100,6 +3124,7 @@
         if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
           console.warn(`與 ${remoteUid} 的連線狀態變為 ${pc.connectionState}`);
         }
+        if (state.peerConnections[remoteUid] === pc) updateSlotConnStatus(remoteUid);
 
         if (pc.connectionState === 'connected') {
           // 連線好返（或者本身就一路穩定），取消任何仲排緊隊嘅自動重連

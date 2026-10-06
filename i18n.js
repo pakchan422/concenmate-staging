@@ -252,6 +252,7 @@
     'room.waitingUser': { 'zh-Hant': '等待用家加入...', 'en': 'Waiting for someone to join...', 'yue': '等緊人加入...' },
     'room.inviteFriend': { 'zh-Hant': '邀請朋友', 'en': 'Invite Friend', 'yue': '叫朋友嚟' },
     'room.remoteWaitStream': { 'zh-Hant': '連線中...', 'en': 'Connecting...', 'yue': '連緊線...' },
+    'room.remoteConnected': { 'zh-Hant': '已連線', 'en': 'Connected', 'yue': '連咗線' },
     'room.remoteLiveStream': { 'zh-Hant': '即時串流', 'en': 'Live', 'yue': '直播緊' },
     'room.remoteCameraOff': { 'zh-Hant': '對方鏡頭已關閉', 'en': "Their camera is off", 'yue': '對方閂咗鏡頭' },
     'room.otherUser': { 'zh-Hant': '其他用家', 'en': 'Other User', 'yue': '其他用家' },
