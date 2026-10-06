@@ -284,7 +284,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (adminToggleBtn) adminToggleBtn.style.display = isAdmin ? 'inline-block' : 'none';
       if (!titleEl) return;
       const isSecondary = getLobbyViewPool() === 'secondary';
-      let title = isSecondary ? window.t('room.lobbyTitleSecondary', '公開溫習大廳（中學溫習室）') : window.t('room.lobbyTitlePublic', '公開溫習大廳（公開溫習室）');
+      let title = isSecondary ? window.t('room.lobbyTitleSecondary', '公開溫習大廳（中學生專用）') : window.t('room.lobbyTitlePublic', '公開溫習大廳（公開溫習室）');
       if (isAdmin && adminRoomPoolOverride) title += window.t('room.adminViewSuffix', '（管理員檢視）');
       titleEl.innerText = title;
     };

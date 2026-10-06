@@ -710,7 +710,7 @@
     'room.loadErrorTitle': { 'zh-Hant': '暫時未能載入公開溫習房列表', 'en': 'Unable to load the public study room list right now', 'yue': '暫時 Load 唔到公開溫習房列表' },
     'room.loadErrorHint': { 'zh-Hant': '請檢查網絡連線，或稍後再試。', 'en': 'Please check your network connection, or try again later.', 'yue': '睇下網絡得唔得，或者遲啲再試吓' },
     'room.reload': { 'zh-Hant': '重新載入', 'en': 'Reload', 'yue': '重新 Load 過' },
-    'room.lobbyTitleSecondary': { 'zh-Hant': '公開溫習大廳（中學溫習室）', 'en': 'Public Study Lobby (Secondary School Room)', 'yue': '公開溫習大廳（中學溫習室）' },
+    'room.lobbyTitleSecondary': { 'zh-Hant': '公開溫習大廳（中學生專用）', 'en': 'Public Study Lobby (Secondary Students Only)', 'yue': '公開溫習大廳（中學生專用）' },
     'room.lobbyTitlePublic': { 'zh-Hant': '公開溫習大廳（公開溫習室）', 'en': 'Public Study Lobby (Public Room)', 'yue': '公開溫習大廳（公開溫習室）' },
     'room.adminViewSuffix': { 'zh-Hant': '（管理員檢視）', 'en': ' (Admin View)', 'yue': '（管理員檢視）' },
     'room.youAreInSecondary': { 'zh-Hant': '你目前屬於：中學溫習室', 'en': 'You currently belong to: Secondary School Room', 'yue': '你而家屬於：中學溫習室' },
@@ -1169,6 +1169,9 @@
     // 唔係靠data-i18n畫出嚟，而係JS直接set innerText，要喺度額外補一句
     // 先會即時跟住轉語言（唔使閂咗再開返個人資料頁先見到新語言）。
     if (typeof window.updateProfileEmailVerifyUI === 'function') window.updateProfileEmailVerifyUI();
+    // v1.199.2：大廳標題（中學生專用／公開溫習室）跟語言即時轉；個 h2 已經
+    // 冇再用 data-i18n，避免切換語言時被蓋返做冇後綴嘅「公開溫習大廳」
+    if (typeof window.updateRoomLobbyTitle === 'function') window.updateRoomLobbyTitle();
     // v1.198.2：段位名稱（溫習新手／Novice）跟語言即時轉
     if (typeof window.updateLevelDisplay === 'function' && window.currentUser) window.updateLevelDisplay();
   };
