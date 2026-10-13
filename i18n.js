@@ -1124,6 +1124,8 @@
   // 喺登入狀態改變／揀完新語言之後都要叫一次。
   window.applyAppLanguage = function () {
     const lang = window.getAppLanguage();
+    // v1.203.1：記低而家嘅語言，等 CSS 可以按語言調整排版（例如英文標題要自動換行）
+    document.documentElement.setAttribute('lang', lang === 'en' ? 'en' : (lang === 'yue' ? 'zh-HK' : 'zh-Hant'));
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n');
       el.textContent = window.t(key, el.textContent);

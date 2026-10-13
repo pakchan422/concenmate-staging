@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.203.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.203.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1346,6 +1346,8 @@
     .landing-hero-text { flex: 1 1 480px; min-width: 0; }
     .landing-hero-h1 { font-size: 44px; line-height: 1.32; font-weight: 800; color: var(--brand-800); letter-spacing: -.01em; margin: 0 0 22px; }
     .landing-hero-h1 span { display: block; white-space: nowrap; }
+    html[lang="en"] .landing-hero-h1 { font-size: 40px; }
+    html[lang="en"] .landing-hero-h1 span { white-space: normal; }
     .landing-hero-sub { font-size: 20px; line-height: 1.75; color: var(--brand-700); max-width: 520px; margin: 0 0 36px; }
     .landing-hero-ctas { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 
@@ -1384,6 +1386,7 @@
       .landing-hero-sub { margin-left: auto; margin-right: auto; font-size: 18px; }
       .landing-hero-ctas { justify-content: center; }
       .landing-hero-h1 { font-size: 32px; }
+      html[lang="en"] .landing-hero-h1 { font-size: 30px; }
       .landing-hero-h1 span { white-space: normal; }
       .landing-hero-art-visual { width: 280px; height: 280px; }
       .landing-hero-art-blob { width: 260px; height: 260px; }
