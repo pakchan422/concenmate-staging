@@ -3482,6 +3482,7 @@
             <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px;">
               <button type="button" class="btn btn-primary" id="room-snapshot-share-btn" style="display:none;"></button>
               <button type="button" class="btn btn-primary" id="room-snapshot-save-btn"></button>
+              <button type="button" class="btn btn-primary" id="room-snapshot-diary-btn"></button>
               <button type="button" class="btn btn-outline" id="room-snapshot-retake-btn"></button>
               <button type="button" class="btn btn-outline" id="room-snapshot-close-btn"></button>
             </div>
@@ -3491,6 +3492,7 @@
         m.querySelector('#room-snapshot-close-btn').onclick = closeModal;
         m.querySelector('#room-snapshot-retake-btn').onclick = () => window.openRoomSnapshot();
         m.querySelector('#room-snapshot-save-btn').onclick = saveImage;
+        m.querySelector('#room-snapshot-diary-btn').onclick = postToDiary;
         m.querySelector('#room-snapshot-share-btn').onclick = shareImage;
         return m;
       }
@@ -3515,6 +3517,55 @@
           if (e && e.name !== 'AbortError') saveImage();
         }
       }
+      // v1.205.2：將合照直接發佈到「溫習日記」——沿用 postStudyPhoto（同一套
+      // 每日一張、溫夠 15 分鐘、SafeSearch 內容檢查），唔使另外整新規則。
+      function refreshDiaryButton() {
+        const btn = document.getElementById('room-snapshot-diary-btn');
+        if (!btn) return;
+        const gate = typeof window.getStudyPhotoGateState === 'function' ? window.getStudyPhotoGateState() : { ok: true };
+        btn.textContent = tt('snapshot.diaryBtn', '發佈到溫習日記');
+        btn.style.opacity = gate.ok ? '1' : '0.5';
+        btn.style.cursor = gate.ok ? 'pointer' : 'not-allowed';
+        btn.title = gate.ok ? '' : (gate.reason || '');
+      }
+      function blobToDiaryDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = () => {
+            const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
+            const c = document.createElement('canvas');
+            c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            URL.revokeObjectURL(url);
+            resolve(c.toDataURL('image/jpeg', 0.85));
+          };
+          img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(tt('snapshot.failed', '未能製作合照，請稍後再試'))); };
+          img.src = url;
+        });
+      }
+      let postingDiary = false;
+      async function postToDiary() {
+        if (!currentBlob || postingDiary) return;
+        const gate = typeof window.getStudyPhotoGateState === 'function' ? window.getStudyPhotoGateState() : { ok: true };
+        if (!gate.ok) { window.showToast(gate.reason, ''); return; }
+        postingDiary = true;
+        try {
+          const dataUrl = await blobToDiaryDataUrl(currentBlob);
+          await window.callCloudFunction('postStudyPhoto', { image: dataUrl });
+          const p = hkParts();
+          window.currentUser.photoCount = (window.currentUser.photoCount || 0) + 1;
+          window.currentUser.lastPhotoPostDate = p.iso;
+          if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
+          window.showToast(tt('snapshot.diaryPosted', '已發佈到溫習日記'), '');
+        } catch (err) {
+          window.showToast((err && err.message) || tt('snapshot.diaryFailed', '發佈失敗，請稍後再試'), '');
+        } finally {
+          postingDiary = false;
+          refreshDiaryButton();
+        }
+      }
+
       async function setAllowGroupPhoto(on) {
         if (!window.currentUser || !window.db || !window.fs) return;
         try {
@@ -3537,6 +3588,7 @@
         const m = ensureModal();
         m.querySelector('#room-snapshot-title').textContent = tt('snapshot.title', '溫習室合照');
         m.querySelector('#room-snapshot-save-btn').textContent = tt('snapshot.saveBtn', '儲存圖片');
+        refreshDiaryButton();
         m.querySelector('#room-snapshot-share-btn').textContent = tt('snapshot.shareBtn', '分享');
         m.querySelector('#room-snapshot-retake-btn').textContent = tt('snapshot.retakeBtn', '重新拍攝');
         m.querySelector('#room-snapshot-close-btn').textContent = tt('snapshot.closeBtn', '關閉');

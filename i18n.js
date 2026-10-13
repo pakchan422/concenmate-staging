@@ -847,6 +847,9 @@
     // ── 溫習室合照（v1.204.0）──
     'room.snapshotBtn': { 'zh-Hant': '合照', 'en': 'Snapshot', 'yue': '合照' },
     'snapshot.title': { 'zh-Hant': '溫習室合照', 'en': 'Study Room Snapshot', 'yue': '溫習室合照' },
+    'snapshot.diaryBtn': { 'zh-Hant': '發佈到溫習日記', 'en': 'Post to Study Diary', 'yue': '發佈去溫習日記' },
+    'snapshot.diaryPosted': { 'zh-Hant': '已發佈到溫習日記', 'en': 'Posted to your Study Diary', 'yue': '已發佈去溫習日記' },
+    'snapshot.diaryFailed': { 'zh-Hant': '發佈失敗，請稍後再試', 'en': 'Could not post, please try again', 'yue': '發佈唔到，請遲啲再試' },
     'snapshot.studiedLine': { 'zh-Hant': '今日溫習 {t}', 'en': 'Studied {t} today', 'yue': '今日溫咗 {t}' },
     'snapshot.todayStudied': { 'zh-Hant': '今日溫習', 'en': 'Studied today', 'yue': '今日溫咗' },
     'snapshot.saveBtn': { 'zh-Hant': '儲存圖片', 'en': 'Save image', 'yue': '儲存圖片' },
