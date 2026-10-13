@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.203.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.203.2"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -265,6 +265,7 @@
       .header-auth-text { display: none; }   /* 只保留 🔑 emoji */
       .header-admin-text { display: none; }  /* 只保留 ⚙️ emoji */
       .header-lang-text { display: none; }   /* 只保留 🌐 emoji */
+      .header-lang-icon { margin-right: 0; }
       main { padding: 8px; }
       .card { padding: 10px; border-radius: 12px; }
       .home-feature-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -1346,6 +1347,7 @@
     .landing-hero-text { flex: 1 1 480px; min-width: 0; }
     .landing-hero-h1 { font-size: 44px; line-height: 1.32; font-weight: 800; color: var(--brand-800); letter-spacing: -.01em; margin: 0 0 22px; }
     .landing-hero-h1 span { display: block; white-space: nowrap; }
+    .header-lang-icon { margin-right: 4px; }
     html[lang="en"] .landing-hero-h1 { font-size: 40px; }
     html[lang="en"] .landing-hero-h1 span { white-space: normal; }
     .landing-hero-sub { font-size: 20px; line-height: 1.75; color: var(--brand-700); max-width: 520px; margin: 0 0 36px; }
@@ -1380,14 +1382,15 @@
     @media (max-width: 860px) {
       .landing-container, .landing-nav-inner { padding-left: 22px; padding-right: 22px; }
       .landing-hero { padding: 20px 0 60px; }
-      .landing-hero-inner { flex-direction: column-reverse; gap: 44px; text-align: center; }
+      .landing-hero-inner { flex-direction: column-reverse; gap: 20px; text-align: center; }
+      .landing-hero-art, .landing-hero-text { flex: 0 0 auto; width: 100%; }
       .landing-hero-text { max-width: 100%; }
       .landing-hero-logo { margin-left: auto; margin-right: auto; }
       .landing-hero-sub { margin-left: auto; margin-right: auto; font-size: 18px; }
       .landing-hero-ctas { justify-content: center; }
       .landing-hero-h1 { font-size: 32px; }
       html[lang="en"] .landing-hero-h1 { font-size: 30px; }
-      .landing-hero-h1 span { white-space: normal; }
+      .landing-hero-h1 span { white-space: normal; word-break: keep-all; text-wrap: balance; }
       .landing-hero-art-visual { width: 280px; height: 280px; }
       .landing-hero-art-blob { width: 260px; height: 260px; }
       .landing-hero-art img { width: 375px; max-width: 114%; }
@@ -1410,7 +1413,7 @@
          登入前主頁完全冇入口去登入畫面，只剩返「免費開始使用」（註冊），
          而家改為縮細字體＋去除白位，保留於畫面上，確保語言切換、登入
          同註冊三個按鈕喺窄畫面都能夠並排顯示晒。 */
-      .landing-nav-lang-btn { padding: 6px 7px !important; font-size: 12px; }
+      .landing-nav-lang-btn { padding: 6px 9px !important; font-size: 15px; }
       .landing-nav-login-header { font-size: 13px; padding: 6px 12px; }
       .landing-nav-actions .landing-btn { padding: 10px 14px; font-size: 13px; }
     }
@@ -1486,7 +1489,7 @@
     <nav class="landing-nav">
       <div class="landing-nav-inner" style="justify-content:flex-end;">
         <div class="landing-nav-actions">
-          <button class="btn btn-outline landing-nav-lang-btn" type="button" onclick="typeof window.openModal==='function' && window.openModal('modal-language-switcher')" style="padding:6px 10px;"><span class="header-lang-text" id="landing-current-lang-label">繁體中文</span></button>
+          <button class="btn btn-outline landing-nav-lang-btn" type="button" aria-label="Language / 語言" onclick="typeof window.openModal==='function' && window.openModal('modal-language-switcher')" style="padding:6px 10px;"><span class="header-lang-icon" aria-hidden="true">🌐</span><span class="header-lang-text" id="landing-current-lang-label">繁體中文</span></button>
           <button type="button" class="landing-nav-login landing-nav-login-header" data-i18n="landing.navLogin" onclick="typeof window.openModal==='function' && window.openModal('modal-login')">登入</button>
           <button type="button" class="landing-btn landing-btn-primary" style="padding:11px 22px; font-size:15px;" data-i18n="landing.registerBtn" onclick="typeof window.openModal==='function' && window.openModal('modal-register')">註冊帳號</button>
         </div>
@@ -1630,7 +1633,7 @@
            名，等用戶一眼睇到而家揀緊邊種；窄螢幕淨係見到 🌐 呢個圖示
            （同 header 其他掣一致嘅收窄方式，見 .header-auth-text 呢類
            class 嘅做法）。 -->
-      <button class="btn btn-outline" id="header-lang-btn" type="button" onclick="openModal('modal-language-switcher')" style="padding:6px 10px;"><span class="header-lang-text" id="current-lang-label">繁體中文</span></button>
+      <button class="btn btn-outline" id="header-lang-btn" type="button" aria-label="Language / 語言" onclick="openModal('modal-language-switcher')" style="padding:6px 10px;"><span class="header-lang-icon" aria-hidden="true">🌐</span><span class="header-lang-text" id="current-lang-label">繁體中文</span></button>
       <button class="btn btn-outline" id="header-admin-btn" type="button" onclick="window.location.hash='admin'" style="padding:6px 10px; display:none;"><span class="header-admin-text">管理後台</span></button>
       <button class="btn btn-primary" id="header-auth-btn" type="button" onclick="handleHeaderUserClick()" style="padding:6px 10px;">
         <span class="header-auth-text">登入</span>
