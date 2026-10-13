@@ -3289,6 +3289,21 @@
         ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
         ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
       }
+      // 合照背景（admin_config/snapshotBg1～4，data URL）；每次開合照視窗最多讀一次
+      const bgCache = {};
+      async function loadSnapshotBg(n) {
+        if (!window.db || !window.fs || !n) return null;
+        const c = bgCache[n];
+        if (c && Date.now() - c.at < 5 * 60 * 1000) return c.img;
+        let img = null;
+        try {
+          const snap = await window.fs.getDoc(window.fs.doc(window.db, 'admin_config', 'snapshotBg' + n));
+          const data = snap.exists() ? snap.data().image : null;
+          if (typeof data === 'string' && data.startsWith('data:image/')) img = await loadImg(data);
+        } catch (e) { /* 讀唔到就用預設背景 */ }
+        bgCache[n] = { img, at: Date.now() };
+        return img;
+      }
       function videoReady(v) { return v && v.videoWidth > 0 && v.readyState >= 2; }
       // 「cover」方式畫影片：填滿格仔、保持比例、多出嘅部分裁走
       // mirror：左右反轉；rot180：轉 180 度。溫習室畫面上所有鏡頭（自己同其他同學）
@@ -3393,7 +3408,8 @@
         const tiles = collectTiles();
         const availW = W - MARGIN * 2;
         const layout = bestLayout(tiles, availW, MAX_H - HEADER - FOOTER);
-        const H2 = Math.round(Math.min(MAX_H, Math.max(MIN_H, HEADER + layout.height + FOOTER)));
+        // v1.205.0：固定 1080×1350，方便設計師按同一尺寸設計背景
+        const H2 = MAX_H;
         const canvas = document.createElement('canvas');
         canvas.width = W; canvas.height = H2;
         const ctx = canvas.getContext('2d');
@@ -3401,6 +3417,12 @@
         // 背景
         // v1.204.4：「人生四格」相紙風格——米白底、細圓角、底部一條細資料列
         ctx.fillStyle = '#F7F4EE'; ctx.fillRect(0, 0, W, H2);
+        // v1.205.0：管理後台按人數設定嘅背景圖（冇設定就用米白底）
+        const bgImg = await loadSnapshotBg(tiles.length);
+        if (bgImg) {
+          const sc = Math.max(W / bgImg.width, H2 / bgImg.height);
+          ctx.drawImage(bgImg, (W - bgImg.width * sc) / 2, (H2 - bgImg.height * sc) / 2, bgImg.width * sc, bgImg.height * sc);
+        }
 
         // 鏡頭格仔（喺可用範圍入面垂直置中）
         const gridTop = HEADER + Math.max(0, (H2 - HEADER - FOOTER - layout.height) / 2);
@@ -3434,8 +3456,8 @@
         ctx.textAlign = 'left';
         ctx.fillStyle = '#5E6E73';
         ctx.font = `600 28px ${font}`;
-        ctx.fillText(tt('snapshot.todayStudied', '今日溫習') + ' ' + formatMinutes(todayMinutes()), MARGIN + 4, fy);
-        const logo = await loadImg('logo-hero.png');
+        ctx.fillText(tt('snapshot.studiedLine', '今日溫習 {t}').replace('{t}', formatMinutes(todayMinutes())), MARGIN + 4, fy);
+        const logo = await loadImg('logo-snapshot.png');
         ctx.textAlign = 'right';
         ctx.fillStyle = '#4A8FA0';
         ctx.font = `700 24px ${font}`;
@@ -3443,7 +3465,7 @@
         const urlW = ctx.measureText(urlText).width;
         ctx.fillText(urlText, W - MARGIN, fy);
         if (logo) {
-          const lh = 52, lgw = logo.width * (lh / logo.height);
+          const lh = 56, lgw = logo.width * (lh / logo.height);
           ctx.drawImage(logo, W - MARGIN - urlW - 12 - lgw, fy - lh / 2, lgw, lh);
         }
         return canvas;

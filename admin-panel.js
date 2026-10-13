@@ -105,7 +105,7 @@
     const SUPER_ADMIN_ONLY_TABS = [
       'gacha', 'level', 'icons', 'landing', 'scoring', 'roomsettings',
       'antiidle', 'announcement', 'adminlist', 'auditlog',
-      'subjects', 'districts', 'schools', 'legal'
+      'subjects', 'districts', 'schools', 'legal', 'snapshotbg'
     ];
 
     // 操作紀錄（第四階段第10項）：將重要嘅管治／高風險操作（停權、
@@ -273,6 +273,7 @@
       else if (tab === 'districts') renderAdminDistrictsTab();
       else if (tab === 'schools') renderAdminSchoolsTab();
       else if (tab === 'legal') renderAdminLegalTab();
+      else if (tab === 'snapshotbg') renderAdminSnapshotBgTab();
     };
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -3859,3 +3860,108 @@
 
     // 頁面一載入就檢查一次（處理直接開 #admin 網址嘅情況）
     checkAdminHashRoute();
+
+
+    // ===================== 合照背景（v1.205.0） =====================
+    // 溫習室「合照」可以按人數（1／2／3／4 人）各自設定一張背景圖。
+    // 圖片會壓縮成 1080×1350 JPEG，存喺 admin_config/snapshotBg1～4
+    // （data URL，唔經 Firebase Storage，避免跨域讀取限制令合照畫唔到）。
+    // 冇上載嘅人數就用預設米白相紙底。
+    const SNAPSHOT_BG_W = 1080, SNAPSHOT_BG_H = 1350;
+
+    async function renderAdminSnapshotBgTab() {
+      const panel = document.getElementById('admin-tab-snapshotbg');
+      if (!panel) return;
+      panel.innerHTML = `
+        <div class="card" style="padding:16px;">
+          <h3 style="margin:0 0 6px;">合照背景</h3>
+          <p style="font-size:13px; color:#666; line-height:1.7; margin:0 0 14px;">
+            溫習室「合照」可按人數使用不同背景。冇上載的人數會使用預設米白相紙背景。<br>
+            給設計師的規格：尺寸 <b>1080 × 1350 像素</b>（直身 4:5）；底部 120 像素會顯示「今日溫習時數」及 ConcenMate 標誌，請保留空位；
+            中間範圍會放置鏡頭畫面（左右各留 48 像素邊）。上載後會自動裁切及壓縮。
+          </p>
+          <div id="admin-snapshotbg-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:14px;"></div>
+        </div>`;
+      const grid = document.getElementById('admin-snapshotbg-grid');
+      for (let n = 1; n <= 4; n++) {
+        const card = document.createElement('div');
+        card.style.cssText = 'border:1px solid #D9EBEF; border-radius:12px; padding:10px; text-align:center; background:#fff;';
+        card.innerHTML = `
+          <div style="font-weight:bold; color:#1E4550; margin-bottom:8px;">${n} 人合照背景</div>
+          <div id="admin-snapshotbg-preview-${n}" style="aspect-ratio:4/5; border-radius:8px; background:#F7F4EE; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px; overflow:hidden;">載入中…</div>
+          <div style="display:flex; gap:6px; justify-content:center; margin-top:8px; flex-wrap:wrap;">
+            <label class="btn btn-primary" style="font-size:13px; padding:5px 10px; cursor:pointer;">上載圖片
+              <input type="file" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="window.adminUploadSnapshotBg(${n}, this)">
+            </label>
+            <button type="button" class="btn btn-outline" style="font-size:13px; padding:5px 10px;" onclick="window.adminDeleteSnapshotBg(${n})">移除</button>
+          </div>`;
+        grid.appendChild(card);
+        loadAdminSnapshotBgPreview(n);
+      }
+    }
+
+    async function loadAdminSnapshotBgPreview(n) {
+      const el = document.getElementById('admin-snapshotbg-preview-' + n);
+      if (!el) return;
+      try {
+        const snap = await window.fs.getDoc(window.fs.doc(window.db, 'admin_config', 'snapshotBg' + n));
+        const img = snap.exists() ? snap.data().image : null;
+        el.innerHTML = img ? `<img src="${img}" alt="" style="width:100%; height:100%; object-fit:cover;">` : '使用預設背景';
+      } catch (e) {
+        el.innerText = '讀取失敗';
+      }
+    }
+
+    function fileToSnapshotBgDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = SNAPSHOT_BG_W; canvas.height = SNAPSHOT_BG_H;
+          const ctx = canvas.getContext('2d');
+          const scale = Math.max(SNAPSHOT_BG_W / img.width, SNAPSHOT_BG_H / img.height);
+          const dw = img.width * scale, dh = img.height * scale;
+          ctx.drawImage(img, (SNAPSHOT_BG_W - dw) / 2, (SNAPSHOT_BG_H - dh) / 2, dw, dh);
+          URL.revokeObjectURL(url);
+          // Firestore 單一文件上限 1MB，壓到大約 850KB 以下
+          let q = 0.88, data = canvas.toDataURL('image/jpeg', q);
+          while (data.length > 850000 && q > 0.4) { q -= 0.08; data = canvas.toDataURL('image/jpeg', q); }
+          if (data.length > 850000) reject(new Error('圖片太複雜，壓縮後仍然太大，請提供較簡單的設計'));
+          else resolve(data);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('無法讀取此圖片檔案')); };
+        img.src = url;
+      });
+    }
+
+    window.adminUploadSnapshotBg = async function(n, input) {
+      const file = input && input.files && input.files[0];
+      if (input) input.value = '';
+      if (!file) return;
+      if (file.size > 15 * 1024 * 1024) { window.showToast('圖片不可以超過 15MB', ''); return; }
+      try {
+        if (window.showLoading) window.showLoading('正在上載背景…');
+        const data = await fileToSnapshotBgDataUrl(file);
+        await window.fs.setDoc(window.fs.doc(window.db, 'admin_config', 'snapshotBg' + n), {
+          image: data, updatedAt: Date.now(), updatedBy: window.currentUser ? window.currentUser.email : null
+        });
+        window.showToast(`已更新 ${n} 人合照背景`, '');
+        loadAdminSnapshotBgPreview(n);
+      } catch (e) {
+        window.showToast('上載失敗：' + (e.message || e), '');
+      } finally {
+        if (window.hideLoading) window.hideLoading();
+      }
+    };
+
+    window.adminDeleteSnapshotBg = async function(n) {
+      if (!confirm(`確定移除 ${n} 人合照背景？移除後會使用預設背景。`)) return;
+      try {
+        await window.fs.deleteDoc(window.fs.doc(window.db, 'admin_config', 'snapshotBg' + n));
+        window.showToast(`已移除 ${n} 人合照背景`, '');
+        loadAdminSnapshotBgPreview(n);
+      } catch (e) {
+        window.showToast('移除失敗：' + (e.message || e), '');
+      }
+    };

@@ -847,6 +847,7 @@
     // ── 溫習室合照（v1.204.0）──
     'room.snapshotBtn': { 'zh-Hant': '合照', 'en': 'Snapshot', 'yue': '合照' },
     'snapshot.title': { 'zh-Hant': '溫習室合照', 'en': 'Study Room Snapshot', 'yue': '溫習室合照' },
+    'snapshot.studiedLine': { 'zh-Hant': '今日溫習 {t}', 'en': 'Studied {t} today', 'yue': '今日溫咗 {t}' },
     'snapshot.todayStudied': { 'zh-Hant': '今日溫習', 'en': 'Studied today', 'yue': '今日溫咗' },
     'snapshot.saveBtn': { 'zh-Hant': '儲存圖片', 'en': 'Save image', 'yue': '儲存圖片' },
     'snapshot.shareBtn': { 'zh-Hant': '分享', 'en': 'Share', 'yue': '分享' },
