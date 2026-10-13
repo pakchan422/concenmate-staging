@@ -1984,6 +1984,8 @@
         document.getElementById('prof-grade').value = window.currentUser.grade || '中六 (S6 DSE)';
         document.getElementById('prof-fav').value = window.currentUser.favSubjects || '';
         document.getElementById('prof-dislike').value = window.currentUser.dislikeSubjects || '';
+        const allowPhotoCb = document.getElementById('prof-allow-group-photo');
+        if (allowPhotoCb) allowPhotoCb.checked = window.currentUser.allowGroupPhoto === true;
         if (typeof window.setSecondaryStudentToggle === 'function') {
           window.setSecondaryStudentToggle('prof', window.currentUser.isSecondaryStudent ? 'yes' : 'no');
         }

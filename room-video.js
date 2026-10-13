@@ -3338,52 +3338,93 @@
         return tiles.slice(0, 4);
       }
 
+      // v1.204.1：每格按影片本身嘅比例排版，完整顯示整個鏡頭畫面（唔裁走）；
+      // 圖片高度按內容自動調整（1080×1080 至 1080×1350）。
+      const MARGIN = 40, HEADER = 200, FOOTER = 110, GAP = 18, MAX_H = 1350, MIN_H = 1080;
+      function tileAspect(t) {
+        return (t.video && t.video.videoWidth && t.video.videoHeight) ? t.video.videoWidth / t.video.videoHeight : 4 / 3;
+      }
+      // rows：每行有幾格，例如 [2, 1]；同一行嘅格高度一樣，闊度按比例
+      function layoutRows(tiles, rows, availW, availH) {
+        const placed = [];
+        let idx = 0, totalH = 0;
+        const rowInfo = rows.map((count) => {
+          const items = tiles.slice(idx, idx + count); idx += count;
+          const sumA = items.reduce((s, t) => s + tileAspect(t), 0);
+          const h = (availW - GAP * (count - 1)) / sumA;
+          totalH += h;
+          return { items, h };
+        });
+        totalH += GAP * (rows.length - 1);
+        const scale = Math.min(1, availH / totalH);
+        let y = 0;
+        rowInfo.forEach((r) => {
+          const h = r.h * scale;
+          const rowW = r.items.reduce((s, t) => s + tileAspect(t) * h, 0) + GAP * (r.items.length - 1);
+          let x = (availW - rowW) / 2;
+          r.items.forEach((t) => {
+            const w = tileAspect(t) * h;
+            placed.push({ t, x, y, w, h });
+            x += w + GAP;
+          });
+          y += h + GAP;
+        });
+        const area = placed.reduce((s, p) => s + p.w * p.h, 0);
+        return { placed, height: y - GAP, area };
+      }
+      function bestLayout(tiles, availW, availH) {
+        const n = tiles.length;
+        const options = n === 1 ? [[1]] : n === 2 ? [[1, 1], [2]] : n === 3 ? [[2, 1], [1, 2], [1, 1, 1], [3]] : [[2, 2], [1, 1, 1, 1], [4]];
+        return options.map((rows) => layoutRows(tiles, rows, availW, availH)).sort((a, b) => b.area - a.area)[0];
+      }
+
       async function renderSnapshot() {
-        const canvas = document.createElement('canvas');
-        canvas.width = W; canvas.height = H;
-        const ctx = canvas.getContext('2d');
         const font = getComputedStyle(document.body).fontFamily || 'sans-serif';
+        const tiles = collectTiles();
+        const availW = W - MARGIN * 2;
+        const layout = bestLayout(tiles, availW, MAX_H - HEADER - FOOTER);
+        const H2 = Math.round(Math.min(MAX_H, Math.max(MIN_H, HEADER + layout.height + FOOTER)));
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H2;
+        const ctx = canvas.getContext('2d');
 
         // 背景
-        const bg = ctx.createLinearGradient(0, 0, 0, H);
+        const bg = ctx.createLinearGradient(0, 0, 0, H2);
         bg.addColorStop(0, '#F3F9FA'); bg.addColorStop(1, '#DCEDF1');
-        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H2);
 
-        // 大字：日期＋今日溫習時數
-        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        // 日期＋「今日溫習 X」（同一行）
+        ctx.textBaseline = 'alphabetic';
+        ctx.textAlign = 'center';
         ctx.fillStyle = '#2F6070';
-        ctx.font = `700 54px ${font}`;
-        ctx.fillText(formatDate(), W / 2, 112);
-        ctx.fillStyle = '#4A8FA0';
+        ctx.font = `700 46px ${font}`;
+        ctx.fillText(formatDate(), W / 2, 92);
+        const label = tt('snapshot.todayStudied', '今日溫習') + ' ';
+        const value = formatMinutes(todayMinutes());
         ctx.font = `700 40px ${font}`;
-        ctx.fillText(tt('snapshot.todayStudied', '今日溫習'), W / 2, 186);
-        ctx.fillStyle = '#1E4550';
-        ctx.font = `800 104px ${font}`;
-        ctx.fillText(formatMinutes(todayMinutes()), W / 2, 296);
+        const lw = ctx.measureText(label).width;
+        ctx.font = `800 64px ${font}`;
+        const vw = ctx.measureText(value).width;
+        const startX = (W - lw - vw) / 2;
+        ctx.textAlign = 'left';
+        ctx.font = `700 40px ${font}`; ctx.fillStyle = '#4A8FA0';
+        ctx.fillText(label, startX, 170);
+        ctx.font = `800 64px ${font}`; ctx.fillStyle = '#1E4550';
+        ctx.fillText(value, startX + lw, 170);
 
-        // 鏡頭格仔
-        const tiles = collectTiles();
-        const gx = 48, gy = 348, gw = W - 96, gh = 832, gap = 20;
-        let rects = [];
-        if (tiles.length === 1) rects = [[gx, gy + 60, gw, gh - 120]];
-        else if (tiles.length === 2) rects = [[gx, gy, gw, (gh - gap) / 2], [gx, gy + (gh + gap) / 2, gw, (gh - gap) / 2]];
-        else {
-          const cw = (gw - gap) / 2, ch = (gh - gap) / 2;
-          rects = [[gx, gy, cw, ch], [gx + cw + gap, gy, cw, ch], [gx, gy + ch + gap, cw, ch], [gx + cw + gap, gy + ch + gap, cw, ch]];
-          if (tiles.length === 3) rects[2] = [gx + (gw - cw) / 2, gy + ch + gap, cw, ch];
-        }
-        for (let i = 0; i < tiles.length; i++) {
-          const [x, y, w, h] = rects[i];
-          const t = tiles[i];
+        // 鏡頭格仔（喺可用範圍入面垂直置中）
+        const gridTop = HEADER + Math.max(0, (H2 - HEADER - FOOTER - layout.height) / 2);
+        for (const p of layout.placed) {
+          const x = MARGIN + p.x, y = gridTop + p.y, w = p.w, h = p.h, t = p.t;
           ctx.save();
-          roundRectPath(ctx, x, y, w, h, 28);
+          roundRectPath(ctx, x, y, w, h, 24);
           ctx.clip();
           if (!t.video) await drawPlaceholder(ctx, x, y, w, h);
           else if (t.clear) drawCover(ctx, t.video, t.video.videoWidth, t.video.videoHeight, x, y, w, h, t.mirror);
           else drawPixelated(ctx, t.video, x, y, w, h);
           ctx.restore();
           ctx.save();
-          roundRectPath(ctx, x, y, w, h, 28);
+          roundRectPath(ctx, x, y, w, h, 24);
           ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke();
           ctx.restore();
         }
@@ -3395,10 +3436,11 @@
         ctx.font = `700 30px ${font}`;
         const urlText = 'concenmate.com';
         const urlW = ctx.measureText(urlText).width;
-        ctx.fillText(urlText, W - 48, H - 80);
+        const fy = H2 - 56;
+        ctx.fillText(urlText, W - MARGIN, fy);
         if (logo) {
-          const lh = 72, lw = logo.width * (lh / logo.height);
-          ctx.drawImage(logo, W - 48 - urlW - 18 - lw, H - 80 - lh / 2, lw, lh);
+          const lh = 64, lgw = logo.width * (lh / logo.height);
+          ctx.drawImage(logo, W - MARGIN - urlW - 16 - lgw, fy - lh / 2, lgw, lh);
         }
         return canvas;
       }
@@ -3417,18 +3459,18 @@
         m.innerHTML = `
           <div style="background:#fff; border-radius:18px; padding:18px; width:420px; max-width:100%; max-height:100%; overflow-y:auto; box-shadow:0 14px 40px rgba(0,0,0,.3); text-align:center;">
             <div style="font-size:18px; font-weight:800; color:#1E4550; margin-bottom:10px;" id="room-snapshot-title"></div>
-            <img id="room-snapshot-preview" alt="" style="width:100%; border-radius:12px; border:1px solid #D9EBEF; display:block; background:#F3F9FA; aspect-ratio:1080/1350;">
+            <img id="room-snapshot-preview" alt="" style="width:100%; max-height:56vh; object-fit:contain; border-radius:12px; display:block; background:#F3F9FA;">
             <p id="room-snapshot-hint" style="font-size:12px; color:#7a8b90; margin:8px 0 0;"></p>
+            <label style="display:flex; gap:8px; align-items:flex-start; text-align:left; margin-top:10px; padding:10px 12px; background:#F5F7F8; border-radius:10px; font-size:13px; color:#2F6070; cursor:pointer;">
+              <input type="checkbox" id="room-snapshot-allow-cb" style="margin-top:2px; width:18px; height:18px; flex-shrink:0;">
+              <span id="room-snapshot-allow-label"></span>
+            </label>
             <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px;">
               <button type="button" class="btn btn-primary" id="room-snapshot-share-btn" style="display:none;"></button>
               <button type="button" class="btn btn-primary" id="room-snapshot-save-btn"></button>
               <button type="button" class="btn btn-outline" id="room-snapshot-retake-btn"></button>
               <button type="button" class="btn btn-outline" id="room-snapshot-close-btn"></button>
             </div>
-            <label style="display:flex; gap:8px; align-items:flex-start; text-align:left; margin-top:14px; padding-top:12px; border-top:1px solid #E5EEF0; font-size:13px; color:#2F6070; cursor:pointer;">
-              <input type="checkbox" id="room-snapshot-allow-cb" style="margin-top:2px; width:18px; height:18px; flex-shrink:0;">
-              <span id="room-snapshot-allow-label"></span>
-            </label>
           </div>`;
         document.body.appendChild(m);
         m.addEventListener('click', (e) => { if (e.target === m) closeModal(); });
@@ -3449,13 +3491,13 @@
         const a = document.createElement('a');
         a.href = currentUrl; a.download = fileName();
         document.body.appendChild(a); a.click(); a.remove();
-        window.showToast(tt('snapshot.saved', '已儲存圖片'), '📸');
+        window.showToast(tt('snapshot.saved', '已儲存圖片'), '');
       }
       async function shareImage() {
         if (!currentBlob) return;
         try {
           const file = new File([currentBlob], fileName(), { type: 'image/png' });
-          await navigator.share({ files: [file], text: tt('snapshot.shareText', '同書伴一齊溫書 📚 concenmate.com') });
+          await navigator.share({ files: [file], text: tt('snapshot.shareText', '與書伴一起溫習 concenmate.com') });
         } catch (e) {
           if (e && e.name !== 'AbortError') saveImage();
         }
@@ -3465,25 +3507,28 @@
         try {
           await window.fs.updateDoc(window.fs.doc(window.db, 'users', window.currentUser.uid), { allowGroupPhoto: !!on });
           window.currentUser.allowGroupPhoto = !!on;
+          ['prof-allow-group-photo', 'room-snapshot-allow-cb'].forEach((id) => { const cb = document.getElementById(id); if (cb) cb.checked = !!on; });
           if (state.currentRoomId) {
             await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId, 'participants', window.currentUser.uid), { allowPhoto: !!on }).catch(() => {});
           }
-          window.showToast(on ? tt('snapshot.allowOnToast', '其他同學拍攝合照時，會清楚顯示你的鏡頭') : tt('snapshot.allowOffToast', '其他同學拍攝合照時，你的鏡頭會以格仔遮蓋'), '📸');
+          window.showToast(on ? tt('snapshot.allowOnToast', '其他同學拍攝合照時，會清楚顯示你的鏡頭') : tt('snapshot.allowOffToast', '其他同學拍攝合照時，你的鏡頭會以馬賽克遮蓋'), '');
         } catch (e) {
-          window.showToast(tt('snapshot.settingFailed', '設定未能儲存，請稍後再試'), '❌');
+          ['prof-allow-group-photo', 'room-snapshot-allow-cb'].forEach((id) => { const cb = document.getElementById(id); if (cb) cb.checked = window.currentUser.allowGroupPhoto === true; });
+          window.showToast(tt('snapshot.settingFailed', '設定未能儲存，請稍後再試'), '');
         }
       }
+      window.setAllowGroupPhoto = setAllowGroupPhoto;
 
       window.openRoomSnapshot = async function () {
         if (!state.currentRoomId) return;
         const m = ensureModal();
-        m.querySelector('#room-snapshot-title').textContent = tt('snapshot.title', '📸 溫習室合照');
+        m.querySelector('#room-snapshot-title').textContent = tt('snapshot.title', '溫習室合照');
         m.querySelector('#room-snapshot-save-btn').textContent = tt('snapshot.saveBtn', '儲存圖片');
         m.querySelector('#room-snapshot-share-btn').textContent = tt('snapshot.shareBtn', '分享');
         m.querySelector('#room-snapshot-retake-btn').textContent = tt('snapshot.retakeBtn', '重新拍攝');
         m.querySelector('#room-snapshot-close-btn').textContent = tt('snapshot.closeBtn', '關閉');
-        m.querySelector('#room-snapshot-hint').textContent = tt('snapshot.hint', '未開啟「容許被合照」的同學會以格仔遮蓋。手機亦可長按圖片儲存。');
-        m.querySelector('#room-snapshot-allow-label').textContent = tt('snapshot.allowLabel', '容許其他同學拍攝合照時清楚顯示我的鏡頭（未勾選時會以格仔遮蓋）');
+        m.querySelector('#room-snapshot-hint').textContent = tt('snapshot.hint', '未開啟「容許被合照」的同學會以馬賽克遮蓋。手機亦可長按圖片儲存。');
+        m.querySelector('#room-snapshot-allow-label').textContent = tt('snapshot.allowLabel', '容許其他同學拍攝合照時清楚顯示我的鏡頭（未勾選時會以馬賽克遮蓋）');
         m.querySelector('#room-snapshot-allow-cb').checked = !!(window.currentUser && window.currentUser.allowGroupPhoto === true);
         try {
           if (window.showLoading) window.showLoading(tt('snapshot.making', '正在製作合照…'));
@@ -3498,7 +3543,7 @@
           m.style.display = 'flex';
         } catch (e) {
           console.error('製作合照失敗:', e);
-          window.showToast(tt('snapshot.failed', '未能製作合照，請稍後再試'), '❌');
+          window.showToast(tt('snapshot.failed', '未能製作合照，請稍後再試'), '');
         } finally {
           if (window.hideLoading) window.hideLoading();
         }
