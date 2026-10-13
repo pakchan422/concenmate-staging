@@ -3878,7 +3878,7 @@
           <p style="font-size:13px; color:#666; line-height:1.7; margin:0 0 14px;">
             溫習室「合照」可按人數使用不同背景。冇上載的人數會使用預設米白相紙背景。<br>
             給設計師的規格：尺寸 <b>1080 × 1350 像素</b>（直身 4:5）；底部 120 像素會顯示「今日溫習時數」及 ConcenMate 標誌，請保留空位；
-            中間範圍會放置鏡頭畫面（左右各留 48 像素邊）。上載後會自動裁切及壓縮。
+            每個人數的相片位置是固定的，請先下載對應的「設計範本」：灰色方框是相片位置（會被遮蓋），斜線範圍是文字及標誌位置，其餘地方可以自由設計。上載後會自動裁切及壓縮。
           </p>
           <div id="admin-snapshotbg-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:14px;"></div>
         </div>`;
@@ -3893,6 +3893,7 @@
             <label class="btn btn-primary" style="font-size:13px; padding:5px 10px; cursor:pointer;">上載圖片
               <input type="file" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="window.adminUploadSnapshotBg(${n}, this)">
             </label>
+            <button type="button" class="btn btn-outline" style="font-size:13px; padding:5px 10px;" onclick="window.adminDownloadSnapshotTemplate(${n})">下載設計範本</button>
             <button type="button" class="btn btn-outline" style="font-size:13px; padding:5px 10px;" onclick="window.adminDeleteSnapshotBg(${n})">移除</button>
           </div>`;
         grid.appendChild(card);
@@ -3964,4 +3965,47 @@
       } catch (e) {
         window.showToast('移除失敗：' + (e.message || e), '');
       }
+    };
+
+
+    // v1.205.1：設計範本——按實際合照排版畫出相片位置同文字位置，俾設計師
+    // 直接喺上面設計（PNG，1080×1350）。
+    window.adminDownloadSnapshotTemplate = function(n) {
+      if (typeof window.getSnapshotLayout !== 'function') { window.showToast('範本未能產生，請重新整理頁面再試', ''); return; }
+      const L = window.getSnapshotLayout(n);
+      const c = document.createElement('canvas');
+      c.width = L.width; c.height = L.height;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, c.width, c.height);
+      // 底部文字範圍（斜線）
+      const fy = c.height - L.footerHeight;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, fy, c.width, L.footerHeight); ctx.clip();
+      ctx.fillStyle = '#FFF4E5'; ctx.fillRect(0, fy, c.width, L.footerHeight);
+      ctx.strokeStyle = '#F0B27A'; ctx.lineWidth = 2;
+      for (let x = -L.footerHeight; x < c.width; x += 18) { ctx.beginPath(); ctx.moveTo(x, c.height); ctx.lineTo(x + L.footerHeight, fy); ctx.stroke(); }
+      ctx.restore();
+      ctx.fillStyle = '#B9682B'; ctx.font = 'bold 26px sans-serif'; ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left'; ctx.fillText('今日溫習時數（文字）', 52, fy + L.footerHeight / 2);
+      ctx.textAlign = 'right'; ctx.fillText('ConcenMate 標誌＋網址', c.width - 52, fy + L.footerHeight / 2);
+      // 相片位置
+      L.slots.forEach((r, i) => {
+        ctx.fillStyle = '#C9CED3'; ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.strokeStyle = '#7A848C'; ctx.lineWidth = 3; ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3);
+        ctx.fillStyle = '#4F5961'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `bold ${Math.round(Math.min(48, r.h / 6))}px sans-serif`;
+        ctx.fillText(`相片 ${i + 1}`, r.x + r.w / 2, r.y + r.h / 2 - 18);
+        ctx.font = `${Math.round(Math.min(26, r.h / 10))}px sans-serif`;
+        ctx.fillText(`${r.w} × ${r.h} px（左上角 ${r.x}, ${r.y}）`, r.x + r.w / 2, r.y + r.h / 2 + 26);
+      });
+      ctx.fillStyle = '#9AA3AA'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = '22px sans-serif';
+      ctx.fillText(`ConcenMate ${n} 人合照背景範本　1080 × 1350 px`, c.width / 2, 12);
+      c.toBlob((b) => {
+        if (!b) return;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = `ConcenMate-合照背景範本-${n}人.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      }, 'image/png');
     };

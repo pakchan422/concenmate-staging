@@ -3362,83 +3362,75 @@
         return tiles.slice(0, 4);
       }
 
-      // v1.204.1：每格按影片本身嘅比例排版，完整顯示整個鏡頭畫面（唔裁走）；
-      // 圖片高度按內容自動調整（1080×1080 至 1080×1350）。
-      const MARGIN = 48, HEADER = 48, FOOTER = 120, GAP = 16, MAX_H = 1350, MIN_H = 1080;
-      function tileAspect(t) {
-        return (t.video && t.video.videoWidth && t.video.videoHeight) ? t.video.videoWidth / t.video.videoHeight : 4 / 3;
+      // v1.205.1：相片位置固定（每個人數一個固定排版），等設計師一早知道
+      // 背景邊度會被相片遮住。每格都係 4:3；鏡頭比例唔同（例如手機直向）
+      // 時，完整顯示原畫面，空位用同一畫面模糊放大填滿，唔會裁走任何人。
+      const MARGIN = 48, HEADER = 48, FOOTER = 120, GAP = 16, MAX_H = 1350;
+      function fixedSlots(n) {
+        const availW = W - MARGIN * 2, availH = MAX_H - HEADER - FOOTER;
+        let rects = [];
+        const col = (count, w) => {
+          const h = w * 3 / 4, total = h * count + GAP * (count - 1);
+          const top = HEADER + (availH - total) / 2, left = (W - w) / 2;
+          return Array.from({ length: count }, (_, i) => ({ x: left, y: top + i * (h + GAP), w, h }));
+        };
+        if (n <= 1) rects = col(1, availW);
+        else if (n === 2) rects = col(2, ((availH - GAP) / 2) * 4 / 3);
+        else if (n === 3) rects = col(3, ((availH - GAP * 2) / 3) * 4 / 3);
+        else {
+          const w = (availW - GAP) / 2, h = w * 3 / 4, total = h * 2 + GAP;
+          const top = HEADER + (availH - total) / 2;
+          rects = [0, 1, 2, 3].map((i) => ({ x: MARGIN + (i % 2) * (w + GAP), y: top + Math.floor(i / 2) * (h + GAP), w, h }));
+        }
+        return rects.map((r) => ({ x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) }));
       }
-      // rows：每行有幾格，例如 [2, 1]；同一行嘅格高度一樣，闊度按比例
-      function layoutRows(tiles, rows, availW, availH) {
-        const placed = [];
-        let idx = 0, totalH = 0;
-        const rowInfo = rows.map((count) => {
-          const items = tiles.slice(idx, idx + count); idx += count;
-          const sumA = items.reduce((s, t) => s + tileAspect(t), 0);
-          return { items, h: (availW - GAP * (count - 1)) / sumA };
-        });
-        // v1.204.2：所有格用同一個高度（唔會有人特別大張），行數少嘅行置中
-        const uniformH = Math.min(...rowInfo.map((r) => r.h));
-        rowInfo.forEach((r) => { r.h = uniformH; });
-        totalH = uniformH * rowInfo.length + GAP * (rows.length - 1);
-        const scale = Math.min(1, availH / totalH);
-        let y = 0;
-        rowInfo.forEach((r) => {
-          const h = r.h * scale;
-          const rowW = r.items.reduce((s, t) => s + tileAspect(t) * h, 0) + GAP * (r.items.length - 1);
-          let x = (availW - rowW) / 2;
-          r.items.forEach((t) => {
-            const w = tileAspect(t) * h;
-            placed.push({ t, x, y, w, h });
-            x += w + GAP;
-          });
-          y += h + GAP;
-        });
-        const area = placed.reduce((s, p) => s + p.w * p.h, 0);
-        return { placed, height: y - GAP, area };
-      }
-      function bestLayout(tiles, availW, availH) {
-        const n = tiles.length;
-        const options = n === 1 ? [[1]] : n === 2 ? [[1, 1], [2]] : n === 3 ? [[2, 1], [1, 2], [1, 1, 1], [3]] : [[2, 2], [1, 1, 1, 1], [4]];
-        return options.map((rows) => layoutRows(tiles, rows, availW, availH)).sort((a, b) => b.area - a.area)[0];
+      // 俾管理後台「下載設計範本」用
+      window.getSnapshotLayout = function (n) {
+        return { width: W, height: MAX_H, footerHeight: FOOTER, slots: fixedSlots(n) };
+      };
+      // 完整顯示（contain），空位用同一畫面模糊放大填滿
+      function drawContainBlur(ctx, v, x, y, w, h, mirror, rot180) {
+        const sw = v.videoWidth, sh = v.videoHeight;
+        ctx.save();
+        ctx.filter = 'blur(24px) brightness(0.85)';
+        drawCover(ctx, v, sw, sh, x - 30, y - 30, w + 60, h + 60, mirror, rot180);
+        ctx.restore();
+        const scale = Math.min(w / sw, h / sh);
+        const dw = sw * scale, dh = sh * scale;
+        drawCover(ctx, v, sw, sh, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh, mirror, rot180);
       }
 
       async function renderSnapshot() {
         const font = getComputedStyle(document.body).fontFamily || 'sans-serif';
         const tiles = collectTiles();
-        const availW = W - MARGIN * 2;
-        const layout = bestLayout(tiles, availW, MAX_H - HEADER - FOOTER);
-        // v1.205.0：固定 1080×1350，方便設計師按同一尺寸設計背景
+        const slots = fixedSlots(tiles.length);
         const H2 = MAX_H;
         const canvas = document.createElement('canvas');
         canvas.width = W; canvas.height = H2;
         const ctx = canvas.getContext('2d');
 
-        // 背景
-        // v1.204.4：「人生四格」相紙風格——米白底、細圓角、底部一條細資料列
+        // 背景：預設米白相紙；管理後台有按人數設定背景圖就用嗰張
         ctx.fillStyle = '#F7F4EE'; ctx.fillRect(0, 0, W, H2);
-        // v1.205.0：管理後台按人數設定嘅背景圖（冇設定就用米白底）
         const bgImg = await loadSnapshotBg(tiles.length);
         if (bgImg) {
           const sc = Math.max(W / bgImg.width, H2 / bgImg.height);
           ctx.drawImage(bgImg, (W - bgImg.width * sc) / 2, (H2 - bgImg.height * sc) / 2, bgImg.width * sc, bgImg.height * sc);
         }
 
-        // 鏡頭格仔（喺可用範圍入面垂直置中）
-        const gridTop = HEADER + Math.max(0, (H2 - HEADER - FOOTER - layout.height) / 2);
-        for (const p of layout.placed) {
-          const x = MARGIN + p.x, y = gridTop + p.y, w = p.w, h = p.h, t = p.t;
+        for (let i = 0; i < tiles.length; i++) {
+          const { x, y, w, h } = slots[i];
+          const t = tiles[i];
           ctx.save();
           roundRectPath(ctx, x, y, w, h, 10);
           ctx.clip();
           if (!t.video) await drawPlaceholder(ctx, x, y, w, h);
-          else if (t.clear) drawCover(ctx, t.video, t.video.videoWidth, t.video.videoHeight, x, y, w, h, t.mirror, t.rot180);
+          else if (t.clear) drawContainBlur(ctx, t.video, x, y, w, h, t.mirror, t.rot180);
           else drawPixelated(ctx, t.video, x, y, w, h, t.mirror, t.rot180);
           ctx.restore();
         }
         // 菲林相機風格日期印：橙色數字印喺最後一格右下角（唔遮住塊面）
-        if (layout.placed.length) {
-          const last = layout.placed[layout.placed.length - 1];
+        if (tiles.length) {
+          const last = slots[tiles.length - 1];
           const p = hkParts();
           const stamp = `'${String(p.y).slice(-2)} ${String(p.m).padStart(2, '0')} ${String(p.d).padStart(2, '0')}`;
           ctx.save();
@@ -3446,7 +3438,7 @@
           ctx.font = `700 ${Math.round(Math.max(24, Math.min(40, last.h * 0.075)))}px "Courier New", ui-monospace, monospace`;
           ctx.fillStyle = 'rgba(255, 150, 60, 0.92)';
           ctx.shadowColor = 'rgba(255, 110, 20, 0.85)'; ctx.shadowBlur = 10;
-          ctx.fillText(stamp, MARGIN + last.x + last.w - 22, gridTop + last.y + last.h - 20);
+          ctx.fillText(stamp, last.x + last.w - 22, last.y + last.h - 20);
           ctx.restore();
         }
 
