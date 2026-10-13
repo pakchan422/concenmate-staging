@@ -3349,7 +3349,7 @@
 
       // v1.204.1：每格按影片本身嘅比例排版，完整顯示整個鏡頭畫面（唔裁走）；
       // 圖片高度按內容自動調整（1080×1080 至 1080×1350）。
-      const MARGIN = 40, HEADER = 40, FOOTER = 100, GAP = 18, MAX_H = 1350, MIN_H = 1080;
+      const MARGIN = 48, HEADER = 48, FOOTER = 120, GAP = 16, MAX_H = 1350, MIN_H = 1080;
       function tileAspect(t) {
         return (t.video && t.video.videoWidth && t.video.videoHeight) ? t.video.videoWidth / t.video.videoHeight : 4 / 3;
       }
@@ -3399,60 +3399,52 @@
         const ctx = canvas.getContext('2d');
 
         // 背景
-        const bg = ctx.createLinearGradient(0, 0, 0, H2);
-        bg.addColorStop(0, '#F3F9FA'); bg.addColorStop(1, '#DCEDF1');
-        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H2);
+        // v1.204.4：「人生四格」相紙風格——米白底、細圓角、底部一條細資料列
+        ctx.fillStyle = '#F7F4EE'; ctx.fillRect(0, 0, W, H2);
 
         // 鏡頭格仔（喺可用範圍入面垂直置中）
         const gridTop = HEADER + Math.max(0, (H2 - HEADER - FOOTER - layout.height) / 2);
         for (const p of layout.placed) {
           const x = MARGIN + p.x, y = gridTop + p.y, w = p.w, h = p.h, t = p.t;
           ctx.save();
-          roundRectPath(ctx, x, y, w, h, 24);
+          roundRectPath(ctx, x, y, w, h, 10);
           ctx.clip();
           if (!t.video) await drawPlaceholder(ctx, x, y, w, h);
           else if (t.clear) drawCover(ctx, t.video, t.video.videoWidth, t.video.videoHeight, x, y, w, h, t.mirror, t.rot180);
           else drawPixelated(ctx, t.video, x, y, w, h, t.mirror, t.rot180);
           ctx.restore();
+        }
+        // 菲林相機風格日期印：橙色數字印喺最後一格右下角（唔遮住塊面）
+        if (layout.placed.length) {
+          const last = layout.placed[layout.placed.length - 1];
+          const p = hkParts();
+          const stamp = `'${String(p.y).slice(-2)} ${String(p.m).padStart(2, '0')} ${String(p.d).padStart(2, '0')}`;
           ctx.save();
-          roundRectPath(ctx, x, y, w, h, 24);
-          ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke();
+          ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+          ctx.font = `700 ${Math.round(Math.max(24, Math.min(40, last.h * 0.075)))}px "Courier New", ui-monospace, monospace`;
+          ctx.fillStyle = 'rgba(255, 150, 60, 0.92)';
+          ctx.shadowColor = 'rgba(255, 110, 20, 0.85)'; ctx.shadowBlur = 10;
+          ctx.fillText(stamp, MARGIN + last.x + last.w - 22, gridTop + last.y + last.h - 20);
           ctx.restore();
         }
 
-        // v1.204.3：日期同今日溫習時數，同一大小、半透明，放喺成張相正中間
-        const line1 = formatDate();
-        const line2 = tt('snapshot.todayStudied', '今日溫習') + ' ' + formatMinutes(todayMinutes());
-        ctx.font = `700 34px ${font}`;
-        const boxW = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width) + 72;
-        const boxH = 124;
-        const cx = W / 2, cy = H2 / 2;
-        ctx.save();
-        roundRectPath(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, 28);
-        ctx.fillStyle = 'rgba(20, 45, 55, 0.32)';
-        ctx.fill();
-        ctx.restore();
-        ctx.save();
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)'; ctx.shadowBlur = 6;
-        ctx.font = `700 34px ${font}`;
-        ctx.fillText(line1, cx, cy - 24);
-        ctx.fillText(line2, cx, cy + 24);
-        ctx.restore();
-
-        // 右下角細 logo＋網址
+        // 底部資料列：左邊細字今日溫習時數，右邊細 logo＋網址
+        const fy = H2 - FOOTER / 2;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#5E6E73';
+        ctx.font = `600 28px ${font}`;
+        ctx.fillText(tt('snapshot.todayStudied', '今日溫習') + ' ' + formatMinutes(todayMinutes()), MARGIN + 4, fy);
         const logo = await loadImg('logo-hero.png');
-        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.textAlign = 'right';
         ctx.fillStyle = '#4A8FA0';
-        ctx.font = `700 30px ${font}`;
+        ctx.font = `700 24px ${font}`;
         const urlText = 'concenmate.com';
         const urlW = ctx.measureText(urlText).width;
-        const fy = H2 - 56;
         ctx.fillText(urlText, W - MARGIN, fy);
         if (logo) {
-          const lh = 64, lgw = logo.width * (lh / logo.height);
-          ctx.drawImage(logo, W - MARGIN - urlW - 16 - lgw, fy - lh / 2, lgw, lh);
+          const lh = 52, lgw = logo.width * (lh / logo.height);
+          ctx.drawImage(logo, W - MARGIN - urlW - 12 - lgw, fy - lh / 2, lgw, lh);
         }
         return canvas;
       }
