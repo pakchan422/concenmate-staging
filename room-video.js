@@ -981,6 +981,8 @@
         // v1.204.0：記低每位同學「容許被合照」嘅設定，影合照時用
         state.photoAllowed = {};
         others.forEach(p => { state.photoAllowed[p.uid] = p.allowPhoto === true; });
+        const allowCb = document.getElementById('room-allow-photo-cb');
+        if (allowCb && window.currentUser) allowCb.checked = window.currentUser.allowGroupPhoto === true;
 
         // 有朋友加入房間嘅提示音／彈窗：淨係比較「呢次快照」同「上次已知名單」，
         // 揾出新出現嘅 uid。特登跳過入房嗰一刻嘅第一個快照——唔係嘅話一入
@@ -3320,7 +3322,7 @@
         ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
         const otter = await loadImg('ottie-wave.png');
         if (otter) {
-          const size = Math.min(w, h) * 0.62;
+          const size = Math.min(w, h) * 1.05; // ottie-wave.png 本身四邊有透明留白，要畫大啲先夠大隻
           ctx.drawImage(otter, x + (w - size) / 2, y + (h - size) / 2, size, size);
         }
       }
@@ -3347,7 +3349,7 @@
 
       // v1.204.1：每格按影片本身嘅比例排版，完整顯示整個鏡頭畫面（唔裁走）；
       // 圖片高度按內容自動調整（1080×1080 至 1080×1350）。
-      const MARGIN = 40, HEADER = 200, FOOTER = 110, GAP = 18, MAX_H = 1350, MIN_H = 1080;
+      const MARGIN = 40, HEADER = 40, FOOTER = 100, GAP = 18, MAX_H = 1350, MIN_H = 1080;
       function tileAspect(t) {
         return (t.video && t.video.videoWidth && t.video.videoHeight) ? t.video.videoWidth / t.video.videoHeight : 4 / 3;
       }
@@ -3401,25 +3403,6 @@
         bg.addColorStop(0, '#F3F9FA'); bg.addColorStop(1, '#DCEDF1');
         ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H2);
 
-        // 日期＋「今日溫習 X」（同一行）
-        ctx.textBaseline = 'alphabetic';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#2F6070';
-        ctx.font = `700 46px ${font}`;
-        ctx.fillText(formatDate(), W / 2, 92);
-        const label = tt('snapshot.todayStudied', '今日溫習') + ' ';
-        const value = formatMinutes(todayMinutes());
-        ctx.font = `700 40px ${font}`;
-        const lw = ctx.measureText(label).width;
-        ctx.font = `800 64px ${font}`;
-        const vw = ctx.measureText(value).width;
-        const startX = (W - lw - vw) / 2;
-        ctx.textAlign = 'left';
-        ctx.font = `700 40px ${font}`; ctx.fillStyle = '#4A8FA0';
-        ctx.fillText(label, startX, 170);
-        ctx.font = `800 64px ${font}`; ctx.fillStyle = '#1E4550';
-        ctx.fillText(value, startX + lw, 170);
-
         // 鏡頭格仔（喺可用範圍入面垂直置中）
         const gridTop = HEADER + Math.max(0, (H2 - HEADER - FOOTER - layout.height) / 2);
         for (const p of layout.placed) {
@@ -3436,6 +3419,27 @@
           ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke();
           ctx.restore();
         }
+
+        // v1.204.3：日期同今日溫習時數，同一大小、半透明，放喺成張相正中間
+        const line1 = formatDate();
+        const line2 = tt('snapshot.todayStudied', '今日溫習') + ' ' + formatMinutes(todayMinutes());
+        ctx.font = `700 34px ${font}`;
+        const boxW = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width) + 72;
+        const boxH = 124;
+        const cx = W / 2, cy = H2 / 2;
+        ctx.save();
+        roundRectPath(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, 28);
+        ctx.fillStyle = 'rgba(20, 45, 55, 0.32)';
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)'; ctx.shadowBlur = 6;
+        ctx.font = `700 34px ${font}`;
+        ctx.fillText(line1, cx, cy - 24);
+        ctx.fillText(line2, cx, cy + 24);
+        ctx.restore();
 
         // 右下角細 logo＋網址
         const logo = await loadImg('logo-hero.png');
@@ -3469,10 +3473,6 @@
             <div style="font-size:18px; font-weight:800; color:#1E4550; margin-bottom:10px;" id="room-snapshot-title"></div>
             <img id="room-snapshot-preview" alt="" style="width:100%; max-height:56vh; object-fit:contain; border-radius:12px; display:block; background:#F3F9FA;">
             <p id="room-snapshot-hint" style="font-size:12px; color:#7a8b90; margin:8px 0 0;"></p>
-            <label style="display:flex; gap:8px; align-items:flex-start; text-align:left; margin-top:10px; padding:10px 12px; background:#F5F7F8; border-radius:10px; font-size:13px; color:#2F6070; cursor:pointer;">
-              <input type="checkbox" id="room-snapshot-allow-cb" style="margin-top:2px; width:18px; height:18px; flex-shrink:0;">
-              <span id="room-snapshot-allow-label"></span>
-            </label>
             <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px;">
               <button type="button" class="btn btn-primary" id="room-snapshot-share-btn" style="display:none;"></button>
               <button type="button" class="btn btn-primary" id="room-snapshot-save-btn"></button>
@@ -3486,7 +3486,6 @@
         m.querySelector('#room-snapshot-retake-btn').onclick = () => window.openRoomSnapshot();
         m.querySelector('#room-snapshot-save-btn').onclick = saveImage;
         m.querySelector('#room-snapshot-share-btn').onclick = shareImage;
-        m.querySelector('#room-snapshot-allow-cb').onchange = (e) => setAllowGroupPhoto(e.target.checked);
         return m;
       }
       let currentBlob = null, currentUrl = null;
@@ -3515,13 +3514,13 @@
         try {
           await window.fs.updateDoc(window.fs.doc(window.db, 'users', window.currentUser.uid), { allowGroupPhoto: !!on });
           window.currentUser.allowGroupPhoto = !!on;
-          ['prof-allow-group-photo', 'room-snapshot-allow-cb'].forEach((id) => { const cb = document.getElementById(id); if (cb) cb.checked = !!on; });
+          ['prof-allow-group-photo', 'room-allow-photo-cb'].forEach((id) => { const cb = document.getElementById(id); if (cb) cb.checked = !!on; });
           if (state.currentRoomId) {
             await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId, 'participants', window.currentUser.uid), { allowPhoto: !!on }).catch(() => {});
           }
           window.showToast(on ? tt('snapshot.allowOnToast', '其他同學拍攝合照時，會清楚顯示你的鏡頭') : tt('snapshot.allowOffToast', '其他同學拍攝合照時，你的鏡頭會以馬賽克遮蓋'), '');
         } catch (e) {
-          ['prof-allow-group-photo', 'room-snapshot-allow-cb'].forEach((id) => { const cb = document.getElementById(id); if (cb) cb.checked = window.currentUser.allowGroupPhoto === true; });
+          ['prof-allow-group-photo', 'room-allow-photo-cb'].forEach((id) => { const cb = document.getElementById(id); if (cb) cb.checked = window.currentUser.allowGroupPhoto === true; });
           window.showToast(tt('snapshot.settingFailed', '設定未能儲存，請稍後再試'), '');
         }
       }
@@ -3535,9 +3534,7 @@
         m.querySelector('#room-snapshot-share-btn').textContent = tt('snapshot.shareBtn', '分享');
         m.querySelector('#room-snapshot-retake-btn').textContent = tt('snapshot.retakeBtn', '重新拍攝');
         m.querySelector('#room-snapshot-close-btn').textContent = tt('snapshot.closeBtn', '關閉');
-        m.querySelector('#room-snapshot-hint').textContent = tt('snapshot.hint', '未開啟「容許被合照」的同學會以馬賽克遮蓋。手機亦可長按圖片儲存。');
-        m.querySelector('#room-snapshot-allow-label').textContent = tt('snapshot.allowLabel', '容許其他同學拍攝合照時清楚顯示我的鏡頭（未勾選時會以馬賽克遮蓋）');
-        m.querySelector('#room-snapshot-allow-cb').checked = !!(window.currentUser && window.currentUser.allowGroupPhoto === true);
+        m.querySelector('#room-snapshot-hint').textContent = tt('snapshot.hint', '未勾選「容許合照」的同學會以馬賽克遮蓋。手機亦可長按圖片儲存。');
         try {
           if (window.showLoading) window.showLoading(tt('snapshot.making', '正在製作合照…'));
           const canvas = await renderSnapshot();

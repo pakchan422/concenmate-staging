@@ -852,7 +852,7 @@
     'snapshot.shareBtn': { 'zh-Hant': '分享', 'en': 'Share', 'yue': '分享' },
     'snapshot.retakeBtn': { 'zh-Hant': '重新拍攝', 'en': 'Retake', 'yue': '再影一張' },
     'snapshot.closeBtn': { 'zh-Hant': '關閉', 'en': 'Close', 'yue': '關閉' },
-    'snapshot.hint': { 'zh-Hant': '未開啟「容許被合照」的同學會以馬賽克遮蓋。手機亦可長按圖片儲存。', 'en': 'Classmates who have not allowed snapshots are pixelated. On phones you can also long-press the image to save it.', 'yue': '未開「容許被合照」嘅同學會打格仔。手機都可以長按圖片儲存。' },
+    'snapshot.hint': { 'zh-Hant': '未勾選「容許合照」的同學會以馬賽克遮蓋。手機亦可長按圖片儲存。', 'en': 'Classmates who have not ticked "Allow snapshots" are pixelated. On phones you can also long-press the image to save it.', 'yue': '未剔「容許合照」嘅同學會打格仔。手機都可以長按圖片儲存。' },
     'snapshot.allowLabel': { 'zh-Hant': '容許其他同學拍攝合照時清楚顯示我的鏡頭（未勾選時會以馬賽克遮蓋）', 'en': 'Show my camera clearly when classmates take a snapshot (pixelated if unchecked)', 'yue': '容許其他同學影合照時清楚顯示我嘅鏡頭（唔剔就會打格仔）' },
     'snapshot.allowOnToast': { 'zh-Hant': '其他同學拍攝合照時，會清楚顯示你的鏡頭', 'en': 'Your camera will be shown clearly in classmates\' snapshots', 'yue': '其他同學影合照時，會清楚見到你嘅鏡頭' },
     'snapshot.allowOffToast': { 'zh-Hant': '其他同學拍攝合照時，你的鏡頭會以馬賽克遮蓋', 'en': 'Your camera will be pixelated in classmates\' snapshots', 'yue': '其他同學影合照時，你嘅鏡頭會打格仔' },
@@ -862,8 +862,10 @@
     'snapshot.saved': { 'zh-Hant': '已儲存圖片', 'en': 'Image saved', 'yue': '已儲存圖片' },
     'snapshot.shareText': { 'zh-Hant': '與書伴一起溫習 concenmate.com', 'en': 'Studying together with my study mates concenmate.com', 'yue': '同書伴一齊溫書 concenmate.com' },
 
-    'profile.allowPhotoTitle': { 'zh-Hant': '容許被合照', 'en': 'Allow me in snapshots', 'yue': '容許被合照' },
+    'profile.allowPhotoTitle': { 'zh-Hant': '容許合照', 'en': 'Allow snapshots', 'yue': '容許合照' },
     'profile.allowPhotoHint': { 'zh-Hant': '其他同學在溫習室拍攝合照時，清楚顯示我的鏡頭畫面。未勾選時，我的鏡頭會以馬賽克遮蓋。此設定即時生效。', 'en': 'Show my camera clearly when classmates take a study room snapshot. If unchecked, my camera is pixelated. Takes effect immediately.', 'yue': '其他同學喺溫習室影合照時，清楚顯示我嘅鏡頭。唔剔就會打格仔。即時生效。' },
+
+    'room.allowPhotoShort': { 'zh-Hant': '容許合照', 'en': 'Allow snapshots', 'yue': '容許合照' },
 
     // ── 載入中提示（v1.203.0）──
     'loading.default': { 'zh-Hant': '處理中，請稍候…', 'en': 'Working on it…', 'yue': '處理緊，請等等…' },
