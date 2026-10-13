@@ -1,0 +1,902 @@
+rules_version = '2';
+// ⚠️ 呢份係根據 index.html 成個程式碼入面實際用到嘅所有 Firestore collection
+// 重新砌返出嚟嘅「完整」規則檔，唔係直接由 Firebase Console 讀出嚟嘅原檔
+// （呢個 session 冇辦法直接連去你個 Firebase 專案）。如果你喺 Console 度仲有
+// 手動加過其他呢個 app 冇用到嘅 collection／規則，記得抄埋落嚟，唔好淨係
+// 覆蓋晒。如果你由開台到而家冇特登加過其他嘢，咁呢份應該已經涵蓋晒全部功能。
+//
+// 管理員名單（Phase 3 起）已經集中存喺 admin_config/adminIds 呢份文件
+// 度（欄位 ids，一個字串陣列），唔再喺呢份 rules 檔同 index.html 兩邊
+// 分別寫死一次。想加/減管理員，淨係去 Firebase Console 改嗰份文件就
+// 得，兩邊（前端顯示入口、呢度嘅真正權限判斷）會自動同步，唔會再有
+// 「淨係改咗一邊、漏咗另一邊」嘅風險。
+// 呢度特登用「帳號 ID」而唔係「登入電郵」嚟判斷邊個係管理員，因為帳號 ID
+// 先係用戶自己揀、自己睇到嘅嘢，唔使理個帳號實際登入用嗰個（可能係合成、
+// 亦可能係好耐之前註冊嗰個舊）電郵地址係咩。
+//
+// 用 get() 讀返請求者自己嘅 users/{uid} 文件嚟攞佢個 loginId、同埋讀返
+// admin_config/adminIds 攞返成份名單：兩個都係 rules 入面內部嘅讀取，
+// 唔使受返各自 collection 嘅 allow read 規則限制。
+// ⚠️ 呢個 function 本身淨係要求「已登入」就試住 get() 用戶自己嗰份
+// users/{uid} 文件、同埋 admin_config/adminIds 嗰份名單文件嚟核對——
+// 但兩個 get() 之前都冇加 exists() 護欄。理論上兩份文件對任何一個
+// 已經完成註冊嘅帳戶嚟講都應該存在，但如果因為任何原因（例如帳戶
+// 資料仲未寫完就斷咗線、又或者第二個裝置/分頁嗰陣個 auth session
+// 狀態同 Firestore 文件唔同步）令其中一份讀唔到，get() 就會拋錯，
+// 令成條用到 isAdmin() 嘅 rule（包括 rooms 嘅 list 查詢）評估失敗，
+// Firestore 會將呢種評估錯誤當做拒絕存取處理——前端見到嘅就係成個
+// 大廳查詢都攞唔到，同 viewerRoomPool() 之前冇 exists() 護欄嗰個
+// bug 一模一樣。而家兩個 get() 之前都加返 exists() 檢查，文件唔
+// 存在就當「唔係管理員」處理（保守、安全嘅預設值），唔會再拖累
+// 成條 query。
+function isAdmin(database) {
+  let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+  let adminIdsPath = /databases/$(database)/documents/admin_config/adminIds;
+  // ⚠️ 同 viewerRoomPool() 果邊一樣嘅補鑊：淨係 exists() 唔夠，仲要
+  // 確認 loginId／ids 呢兩個具體欄位本身存在先可以讀，唔係遇到舊
+  // 帳戶或者未初始化好嘅 admin_config 文件就會評估拋錯。
+  return request.auth != null &&
+    exists(userPath) && ('loginId' in get(userPath).data) &&
+    exists(adminIdsPath) && ('ids' in get(adminIdsPath).data) &&
+    get(userPath).data.loginId in get(adminIdsPath).data.ids;
+}
+
+// 管理員權限分級（第四階段第9項，連埋呢次嘅DB層硬性補鑊）：喺
+// isAdmin() 嘅基礎上，再核對 admin_config/adminIds 文件入面嘅 roles
+// map（loginId -> 'super' | 'support'）。同 admin-panel.js 前端嘅
+// getCurrentAdminRole() 一致：冇出現喺 roles map 入面嘅管理員（包括
+// 呢個功能推出之前已經存在嘅舊帳戶）一律當『super』處理，確保舊帳戶
+// 唔會因為呢次改動突然乜都寫唔到。網站設定／管治類文件（扭蛋機、等級
+// 系統、功能圖示、Landing page文案、計分規則、房間設定、防掛機參數、
+// 全站公告、管理員名單）同操作紀錄嘅讀取，而家就係靠呢個 function
+// 喺資料庫層鎖死，唔再淨係靠前端UI唔顯示嗰粒掣——就算『support』帳戶
+// 開瀏覽器開發者工具直接用 Firestore SDK 寫，一樣會被伺服器拒絕。
+function isSuperAdmin(database) {
+  let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+  let adminIdsPath = /databases/$(database)/documents/admin_config/adminIds;
+  return isAdmin(database) &&
+    (
+      !('roles' in get(adminIdsPath).data) ||
+      !(get(userPath).data.loginId in get(adminIdsPath).data.roles) ||
+      get(adminIdsPath).data.roles[get(userPath).data.loginId] == 'super'
+    );
+}
+
+// Phase B（導師後台：科目／課題／教材管理）用嘅輔助 function——判斷
+// 「呢個請求者係咪一位仲喺正常狀態嘅導師」。淨係讀返自己嗰份
+// tutors/{uid} 文件嘅 status 欄位，一定要係 'active' 先算數（申請緊、
+// 被拒、或者已經停權都唔算），防止已被停權嘅導師繼續用前端直接
+// 新增科目／課題／教材。
+function isActiveTutor(database) {
+  let tutorPath = /databases/$(database)/documents/tutors/$(request.auth.uid);
+  // ⚠️ 同上面兩個 function 一樣嘅補鑊：一定要先確認文件、同埋
+  // status 呢個欄位本身都存在先可以讀，唔係遇到未寫齊嘅 tutors
+  // 文件就會評估拋錯，連累用到呢個 function 嘅 create 規則。
+  return request.auth != null &&
+    exists(tutorPath) && ('status' in get(tutorPath).data) &&
+    get(tutorPath).data.status == 'active';
+}
+
+// ⚠️ 兩池公開溫習室（「中學溫習室」／「公開溫習室」）安全隔離用：
+// 判斷返請求者自己屬於邊一池。淨係註冊嗰陣揀咗「本人確認現時為
+// 中學生」（isSecondaryStudent === true）先算「中學溫習室」池，其他
+// 一律當「公開溫習室」池（包括大專生、自修生、成年人、同埋呢個
+// 欄位推出之前註冊、未填過呢個欄位嘅舊帳戶）——呢度特登揀「未填過
+// 就當公開池」而唔係「當中學池」，因為呢個分池嘅目的係保護未成年
+// 學生唔畀陌生成年人喺大廳度見到／揀中佢哋嘅公開房，「未知」嘅
+// 帳戶如果預設當佢係中學生，就會令任何未填過呢個欄位嘅成年人帳戶
+// 都自動混得入中學池，完全失去保護作用。
+function viewerRoomPool(database) {
+  let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+  // ⚠️ 真正嘅 bug 出處（Phase 補鑊）：淨係 exists(userPath) 唔夠！
+  // Firestore 規則入面，讀取一份「文件本身存在、但入面冇呢一個
+  // 欄位」嘅欄位（例如呢個功能推出之前註冊嘅舊帳戶，users/{uid}
+  // 文件根本冇寫過 isSecondaryStudent 呢個 key），一樣會令規則評估
+  // 直接拋錯——唔係好似 JS 咁樣安全噉當佢係 undefined。呢個先係
+  // admin_main（同其他舊帳戶）睇「公開溫習大廳」一直「暫時未能
+  // 載入」嘅真正成因：exists() 只係確認咗份文件存在，冇確認到
+  // isSecondaryStudent 呢個 key 存在。而家加多一重 'isSecondaryStudent'
+  // in get(userPath).data 呢個檢查，冇呢個 key 就當「未知」處理，
+  // 同上面已經講嘅道理一樣，預設歸做公開池。
+  return exists(userPath) &&
+    ('isSecondaryStudent' in get(userPath).data) &&
+    get(userPath).data.isSecondaryStudent == true
+    ? 'secondary' : 'public';
+}
+
+// ⚠️ 安全修補（見 docs/PROGRESS.md）：視訊溫習房嘅「入場證」檢查。
+//
+// 背景：之前 rooms/{roomId}/signals、/candidates 呢兩個 WebRTC 訊令子
+// 集合，淨係要求 request.auth != null（即係：任何已登入嘅 ConcenMate
+// 帳戶）就讀寫得到——完全冇檢查呢個人係咪真係經密碼驗證、有冇被房主
+// 踢走。即係話任何人淨係知道 roomId，就可以用瀏覽器 devtools 直接打
+// Firestore SDK 寫一份 presence 文件落 signals，前端嘅
+// listenToRoomSignaling()／handleIncomingOffer()（room-video.js）會
+// 見到就無條件同佢建立真正嘅 WebRTC 連線、送出鏡頭／麥克風串流——房
+// 間密碼、踢人名單呢兩重機制喺呢一層完全形同虛設。
+//
+// 修補方式：新增 verifyRoomPassword 呢個 Cloud Function（Admin SDK）
+// 簽發嘅「短效入場證」（rooms/{roomId}/entryTickets/{uid}，前端完全
+// 讀寫唔到），密碼核對／踢人名單核對而家全部喺呢個 function 度伺服
+// 器端做一次過。之後 participants／signals／candidates 嘅寫入權限，
+// 一律要求先要有一張仲未過期嘅入場證（或者已經係合法 participants），
+// 前端唔可以再繞過呢重伺服器驗證直接寫入呢幾個 collection。
+function hasValidRoomEntryTicket(database, roomId) {
+  let ticketPath = /databases/$(database)/documents/rooms/$(roomId)/entryTickets/$(request.auth.uid);
+  return request.auth != null && exists(ticketPath) &&
+    get(ticketPath).data.expiresAt is number &&
+    get(ticketPath).data.expiresAt > request.time.toMillis();
+}
+
+// signals／candidates 嘅讀寫，一律要求呢個 uid 已經係呢間房合法嘅
+// participants（即係已經通過上面嘅入場證檢查、joinRoomParticipants()
+// 先寫得入嗰份文件）——冇呢份文件，代表冇經過任何伺服器驗證，一律拒絕。
+function isRoomParticipant(database, roomId) {
+  return request.auth != null &&
+    exists(/databases/$(database)/documents/rooms/$(roomId)/participants/$(request.auth.uid));
+}
+
+// 「是否中學生」嘅年齡把關：揀「是」嘅話，出生年份計落一定要 20 歲
+// 以下（同前端 REG_SECONDARY_STUDENT_MAX_AGE = 19 一致，年份相差 20
+// 已經包埋「今年仲未生日」嘅情況）。requireBirthYear = true（新註冊）
+// 時一定要有出生年份；舊帳戶冇填過出生年份就唔強制（同前端一致）。
+function secondaryAgeOk(data, requireBirthYear) {
+  return !('isSecondaryStudent' in data) || data.isSecondaryStudent != true ||
+    (('birthYear' in data) && data.birthYear is int &&
+      request.time.year() - data.birthYear <= 20) ||
+    (!requireBirthYear && (!('birthYear' in data) || data.birthYear == null));
+}
+
+// ⚠️ 用戶自己更新自己個 users/{uid} 文件嗰陣（例如個人資料修改）嘅止血
+// 檢查。
+//
+// 1) loginId 一經帳號建立就完全鎖死，自己唔可以再改——呢個係最關鍵嗰句，
+//    否則任何人一句 updateDoc({loginId:'admin_main'}) 就可以即刻扮晒
+//    管理員，完全繞過埋個 isAdmin() 檢查（因為 isAdmin() 本身就係睇呢個
+//    欄位）。
+// 2) exp／hours／points 呢三個數值型欄位，而家已經完全鎖死唔俾用戶端
+//    直接寫——原本呢度淨係做「止血」（封頂單次改動幅度、規定方向），
+//    但始終冇辦法完全杜絕「開 devtools 一句 code 改自己分數」呢類作
+//    弊，只係令人哋要慢慢刷先有得逞。而家畀分（房間計分、溫習卡複習、
+//    「仲喺度」確認）同扣分（扭蛋）邏輯已經全部搬咗去 Cloud Functions
+//    （awardStudyPoints／spendGachaPoints），用 Admin SDK 做（Admin SDK
+//    唔受呢份 rules 約束），所以呢度可以直接完全禁止用戶端寫，徹底杜
+//    絕呢類作弊，唔再需要止血式嘅幅度上限。
+//
+// （v1.201.0 起 ownedStickers 都一律經伺服器寫，見下面白名單。）
+function selfUserUpdateOk() {
+  let before = resource.data;
+  let after = request.resource.data;
+  let changed = after.diff(before).affectedKeys();
+  return
+    // avatarBase64／avatarUpdatedAt 都唔畀用戶自己直接改：頭像一定要經
+    // uploadAvatar 呢個 Cloud Function（用 Admin SDK 寫入，唔受呢條規則
+    // 約束），先會經過 SafeSearch 內容審查，逼死唔畀人繞過審查直接寫張
+    // 相入 Firestore。
+    //
+    // todayMinutes／todayDate 原本淨係畫面用、冇收緊，但而家
+    // postStudyPhoto（每日溫習相片發佈）都要靠呢兩個欄位嚟判斷「今日
+    // 有冇溫夠 15 分鐘」，一旦畀用戶端直接改就可以自己喺 devtools 打
+    // 一句 updateDoc({todayMinutes:999}) 就繞過門檻，所以連埋一齊鎖死，
+    // 逼返呢兩個欄位都要經 awardStudyPoints 呢個 Cloud Function 先改得
+    // 到（同佢本身寫入嘅方式完全一樣，唔影響「今日目標」進度條正常運作）。
+    //
+    // photoCount／followerCount／followingCount／lastPhotoPostDate 呢
+    // 四個係新增嘅溫習相簿／Follow 功能用嘅計數同狀態欄位，一定要經
+    // postStudyPhoto／followUser／unfollowUser 呢幾個 Cloud Function 先
+    // 改得到，唔可以自己直接作大粉絲數或者呃「今日發佈過」嘅狀態。
+    //
+    // role（Phase A 起新增）——「學生／導師／管理員」身份欄位，一定要
+    // 經 approveTutorApplication 呢個 Cloud Function（審批導師申請通過
+    // 之後）先可以由 'student' 變做 'tutor'，絕對唔可以畀用戶自己喺
+    // devtools 打一句 updateDoc({role:'tutor'}) 就即刻扮晒導師身份。
+    //
+    // accountType——純粹用嚟喺前端即時判斷「呢個帳戶揀咗導師呢條
+    // 路」，令側邊欄喺審批批准之前都已經顯示導師專用嘅殼（連同「審
+    // 批中」提示），同真正嘅權限判斷（role／tutors.status）分開。一樣
+    // 淨係經 applyTutorRole（註冊嗰陣或者事後喺「我的帳戶」補交申請）
+    // 呢個 Cloud Function 先寫得入，前端唔可以直接改（雖然單靠呢個
+    // 欄位唔會攞到任何實質權限，但都係鎖死佢，避免用戶自己隨便扮成
+    // 「導師審批中」畫面搞亂自己個介面）。
+    // contactEmail／school／grade——「我的帳戶」畫面已經改做唯讀
+    // （disabled），前端亦都已經唔會再送呢三個欄位嘅改動，呢度加多一重
+    // 伺服器端把關，防止有人繞過畫面直接用 devtools／Firebase SDK
+    // 打 updateDoc() 自己改。如用戶想更改，須電郵 support@concenmate.com
+    // 聯絡本公司，由管理員經後台代為更正（管理員走嘅係 isAdmin(database)
+    // 呢個分支，唔受呢個 blocklist 約束）。
+    // ⚠️ v1.198.0 安全修補：由「黑名單」改做「白名單」。
+    // 舊做法係列出「唔准改」嘅欄位，但漏咗 suspended（停權用戶可以自己
+    // 解封）、emailVerified（跳過電郵驗證）、monthlyHours／monthlyPeriod
+    // （「本月」排行榜作弊）等等——黑名單一日唔記得加新欄位就會有漏洞。
+    // 而家反過嚟，淨係列出前端真正需要自己改嘅欄位，其他一律拒絕。
+    // 日後前端新增「用戶自己改自己」嘅欄位，記得要加落呢個名單度。
+    changed.hasOnly([
+      'username', 'favSubjects', 'dislikeSubjects', 'isSecondaryStudent',
+      'otterName', 'otterAvatarStickerId', 'studyDays',
+      'lastSeenAt', 'lastLoginAt', 'language', 'district', 'allowGroupPhoto'
+    ]) &&
+    // v1.204.0：「容許被合照」只可以係 true／false
+    (!changed.hasAny(['allowGroupPhoto']) || after.allowGroupPhoto is bool) &&
+    // ⚠️ v1.201.0：ownedStickers 已移出白名單，貼紙一定要經
+    // spendGachaPoints（伺服器扣分＋抽貼紙）先會增加。
+    // 用戶名長度上限
+    (!changed.hasAny(['username']) ||
+      (after.username is string && after.username.size() >= 1 && after.username.size() <= 30)) &&
+    // ⚠️ v1.201.0：emailVerified／emailVerifyToken 已經移出白名單——
+    // token 改由 sendVerificationEmail Cloud Function 產生，驗證由
+    // verifyEmailToken 完成，前端完全唔可以自己寫（之前用戶可以自己寫
+    // 一個已知 token，再自己呼叫 verifyEmailToken，跳過電郵驗證）。
+    // district 淨係「之前未有」先可以由前端補填（舊帳戶自動補返地區），
+    // 已經有地區就唔可以自己改，防止轉區洗分區排行榜。
+    (!changed.hasAny(['district']) || !('district' in before) || before.district == '') &&
+    // 「是否中學生」：20 歲或以上唔可以自稱中學生入中學溫習室池
+    // （之前淨係前端 disable 個掣，devtools 一樣繞過到）。
+    (!changed.hasAny(['isSecondaryStudent']) || secondaryAgeOk(after, false));
+}
+
+// ⚠️ v1.198.0 安全修補：新帳戶建立 users/{uid} 文件嘅內容檢查。
+// 之前 create 淨係檢查 uid，任何人都可以開個新帳戶，將 loginId 寫成
+// 管理員嘅帳號 ID（admin_config/adminIds 對所有登入用戶公開），即刻
+// 通過 isAdmin() 變成管理員；亦可以一開始就寫入幾萬分、停權狀態、
+// 已驗證電郵、頭像等等。而家逐項核對：
+//   - 欄位一定要係註冊表格會寫嘅嗰幾個（hasOnly）
+//   - loginId 一定要對應返 usernames/{loginId 細楷} 而嗰份文件屬於自己
+//   - loginId 唔可以係管理員名單入面嘅 ID
+//   - 分數／EXP／時數一定由 0 開始，emailVerified 一定係 false
+function newUserProfileOk(database, uid) {
+  let d = request.resource.data;
+  let adminIdsPath = /databases/$(database)/documents/admin_config/adminIds;
+  return d.keys().hasOnly([
+      'uid', 'email', 'loginId', 'contactEmail', 'emailVerified', 'emailVerifyToken',
+      'username', 'school', 'district', 'grade', 'favSubjects', 'dislikeSubjects',
+      'birthYear', 'birthMonth', 'isSecondaryStudent', 'accountType',
+      'hours', 'points', 'exp', 'createdAt'
+    ]) &&
+    d.uid == uid &&
+    d.loginId is string && d.loginId.size() >= 3 && d.loginId.size() <= 20 &&
+    exists(/databases/$(database)/documents/usernames/$(d.loginId.lower())) &&
+    get(/databases/$(database)/documents/usernames/$(d.loginId.lower())).data.uid == request.auth.uid &&
+    (!exists(adminIdsPath) || !('ids' in get(adminIdsPath).data) ||
+      !(d.loginId in get(adminIdsPath).data.ids)) &&
+    d.username is string && d.username.size() >= 1 && d.username.size() <= 30 &&
+    d.points == 0 && d.exp == 0 && (d.hours == '0.0' || d.hours == 0) &&
+    d.emailVerified == false &&
+    // v1.201.0：註冊時唔可以自帶 token（一定要由伺服器產生）
+    (!('emailVerifyToken' in d) || d.emailVerifyToken == null) &&
+    d.accountType in ['student', 'tutor'] &&
+    secondaryAgeOk(d, true);
+}
+
+// ⚠️ v1.199.0：非房主改房間文件（人數／心跳）嘅檢查。之前任何登入用戶
+// 都可以改任何房間嘅 participantCount／lastActiveAt——將 lastActiveAt 改做
+// 好耐之前，就可以觸發「5 分鐘冇心跳可刪」條件刪走任何人嘅房。而家：
+//   - lastActiveAt 只可以由房內參與者更新，而且只可以向前（唔可以改舊），
+//     亦唔可以超過伺服器時間 1 分鐘以上
+//   - participantCount +1：一定要同「建立自己 participants 紀錄」喺同一個
+//     transaction 入面發生（加入房間）
+//   - participantCount -1：一定要同「刪除自己 participants 紀錄」喺同一個
+//     batch 入面發生（離開房間）
+function roomCounterUpdateOk(database, roomId) {
+  let before = resource.data;
+  let after = request.resource.data;
+  let changed = after.diff(before).affectedKeys();
+  let pPath = /databases/$(database)/documents/rooms/$(roomId)/participants/$(request.auth.uid);
+  return changed.hasOnly(['participantCount', 'lastActiveAt']) &&
+    (!changed.hasAny(['lastActiveAt']) || (
+      after.lastActiveAt is number &&
+      after.lastActiveAt <= request.time.toMillis() + 60000 &&
+      (!(before.lastActiveAt is number) || after.lastActiveAt >= before.lastActiveAt) &&
+      existsAfter(pPath)
+    )) &&
+    (!changed.hasAny(['participantCount']) || (
+      before.participantCount is int && after.participantCount is int && (
+        (after.participantCount == before.participantCount + 1 && !exists(pPath) && existsAfter(pPath)) ||
+        (after.participantCount == before.participantCount - 1 && exists(pPath) && !existsAfter(pPath))
+      )
+    ));
+}
+
+// v1.199.0：兩個用戶之間嘅好友邀請文件 ID（同前端 friendRequestDocId()
+// 一樣：兩個 uid 排序後用底線連接）。
+function pairDocId(a, b) {
+  return a < b ? a + '_' + b : b + '_' + a;
+}
+
+// v1.199.0：兩個用戶之間嘅好友邀請已經被接受。寫入好友名單之前一定要
+// 核對呢樣，防止有人未經對方同意就將自己加入對方嘅好友名單。
+function friendshipAccepted(database, a, b) {
+  let p = /databases/$(database)/documents/friendRequests/$(pairDocId(a, b));
+  return exists(p) && get(p).data.status == 'accepted';
+}
+
+// v1.199.0：私訊對象（chatId 入面唔係自己嗰個 uid）
+function chatOtherUid(chatId) {
+  let parts = chatId.split('_');
+  return parts[0] == request.auth.uid ? parts[1] : parts[0];
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===================== 用戶資料 =====================
+    // ⚠️ get 同 list 要分開：get（用已知 uid 讀單一份用戶資料，例如撳
+    // 入某位同學嘅資料卡、監聽某個好友嘅上線狀態）對任何已登入用戶
+    // 開放冇問題——但 list（唔篩選、成個 collection 咁查）就唔可以，
+    // 因為 users 入面存住 email、就讀學校、年級呢類個人資料，一旦
+    // 開放 list，任何一個已登入嘅（甚至惡意）用戶都可以完全跳過個
+    // 網站介面，直接用 Firebase SDK 對成個 collection 落一條冇篩選嘅
+    // 查詢，一次過將全部用戶資料掃晒出嚟——呢個 app 服務緊嘅係中學生，
+    // 呢類批量洩漏未成年人資料嘅風險一定要擋死。所以 list 淨係開放
+    // 俾管理員（管理後台「用戶管理」分頁要用到），一般用戶淨係可以
+    // 逐個已知 uid 咁讀（get），唔可以成個 collection 咁掃。
+    // ===================== 公開個人資料／在線狀態（v1.200.0） =====================
+    // publicProfiles 由 Cloud Function（syncPublicProfileOnUserWrite）同步，
+    // 淨係有用戶名、頭像、學校、年級等公開欄位；前端完全唔寫得。
+    match /publicProfiles/{uid} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    // 好友在線狀態心跳：自己寫自己，淨係一個 lastSeenAt 數字欄位
+    match /presence/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid &&
+        request.resource.data.keys().hasOnly(['lastSeenAt']) &&
+        request.resource.data.lastSeenAt is number;
+    }
+    match /users/{uid} {
+      // ⚠️ v1.200.0 私隱修補：之前任何登入用戶都可以讀任何人成份 users 文件
+      // （真實電郵、出生年月、電郵驗證 token），而 uid 喺排行榜就見到。
+      // 而家淨係本人同管理員讀得到；其他人改讀 publicProfiles。
+      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin(database));
+      allow list: if isAdmin(database);
+      allow create: if request.auth != null && request.auth.uid == uid &&
+        newUserProfileOk(database, uid);
+      // update 分開兩種情況：(1) 帳號主人自己——要通過上面
+      // selfUserUpdateOk() 嗰幾條止血檢查（唔可以自己改 loginId，
+      // exp／hours／points 嘅改動方向同幅度都要合理）；(2) 管理員——
+      // 冇呢啲限制（例如「用戶管理」分頁要幫學生手動補發／更正分數，
+      // 或者改返打錯咗嘅 loginId）。
+      allow update: if request.auth != null && (
+        (request.auth.uid == uid && selfUserUpdateOk()) || isAdmin(database)
+      );
+      allow delete: if false;
+      // 好友名單：淨係自己睇到自己嘅好友名單；新增嗰陣，一係寫入自己個名單
+      // （uid==自己），一係將自己加落第二方個名單（friendUid==自己）——
+      // 兩種情況先會喺「互加好友」嗰下同時出現，缺一唔可但又唔可以撞第三方。
+      match /friends/{friendUid} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        // v1.199.0：一定要雙方嘅好友邀請已經「接受」先寫得入
+        allow create: if request.auth != null && (request.auth.uid == uid || request.auth.uid == friendUid) &&
+          uid != friendUid && friendshipAccepted(database, uid, friendUid);
+        allow delete: if request.auth != null && (request.auth.uid == uid || request.auth.uid == friendUid);
+      }
+      // 扭蛋／抽獎中獎記錄：淨係自己睇到/寫到自己嘅記錄
+      match /gachaHistory/{recordId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+    // ===================== 溫習相片（Instagram 式功能） =====================
+    // 每張相片都要經 postStudyPhoto 呢個 Cloud Function 先建立（要驗證每日
+    // 一張嘅限制、15 分鐘門檻、AI 內容審查），所以呢度淨係俾登入用戶讀，
+    // 完全唔開放直接寫入。
+    match /studyPhotos/{photoId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    // ===================== 分區／學校溫習排行榜 =====================
+    // 呢兩個 collection 係 users（唔開放 list，見上面）嘅「公開精簡
+    // 版」，淨係得返排行榜用得着嘅幾個欄位（uid／username／hours／
+    // school／district，或者 schoolName／totalHours／studentCount），
+    // 由 functions/index.js 嘅 syncLeaderboardOnUserWrite trigger 一有
+    // users/{uid} 寫入就自動同步，前端完全唔可以直接寫（write:
+    // false），淨係 Cloud Function 嘅 Admin SDK 寫得到（Admin SDK 本身
+    // 唔受呢份規則限制）。因為冇存電郵、學校 ID 等敏感資料，開放
+    // list 俾任何已登入用戶都安全，等前端排行榜先查得到「首 50 名」
+    // 呢類排序查詢。
+    match /leaderboardEntries/{uid} {
+      allow read: if request.auth != null;
+      allow list: if request.auth != null;
+      allow write: if false;
+    }
+    match /schoolLeaderboard/{schoolId} {
+      allow read: if request.auth != null;
+      allow list: if request.auth != null;
+      allow write: if false;
+    }
+    // 「本月學校總排行榜」：一個月一份文件（文件 ID 係「學校ID_年-月」），
+    // 邏輯同 schoolLeaderboard 一樣由 syncLeaderboardOnUserWrite 自動同步，
+    // 前端只讀。
+    match /schoolLeaderboardMonthly/{docId} {
+      allow read: if request.auth != null;
+      allow list: if request.auth != null;
+      allow write: if false;
+    }
+    // ===================== Follow（追蹤書伴） =====================
+    // 追蹤／取消追蹤要經 followUser／unfollowUser 呢兩個 Cloud Function
+    // 先做得到（要用 transaction 同步更新 followerCount／followingCount，
+    // 避免計數同實際紀錄唔一致），所以呢度都係淨係開放讀取。
+    match /follows/{followId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    // ===================== 帳號 ID 對應表（登入用） =====================
+    // 淨係支援用完整 ID 做單一文件查詢（get），唔可以成個 collection 咁 list
+    // 出嚟（避免俾人一次過爬晒成堆帳號 email）。設定咗就唔可以再改／刪。
+    match /usernames/{loginId} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+    // ===================== 好友邀請 =====================
+    // 查「我同呢個人之間有冇邀請記錄」嗰陣，個 document 好多時仲未存在
+    // （即係兩個人之間第一次睇資料卡，仲未加過好友）。呢種情況要顯明加
+    // 「resource == null」畀過，唔係讀緊未存在嘅文件會直接俾規則擋（因為
+    // resource.data 喺 resource 係 null 嗰陣讀唔到），前端就會見到「讀取
+    // 好友狀態失敗」。
+    match /friendRequests/{reqId} {
+      allow read: if request.auth != null &&
+        (resource == null ||
+         resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if request.auth != null &&
+        request.resource.data.fromUid == request.auth.uid &&
+        request.resource.data.toUid is string &&
+        request.resource.data.toUid != request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        reqId == pairDocId(request.auth.uid, request.resource.data.toUid);
+      // v1.199.0：之前送出邀請嘅人可以自己將邀請改做「已接受」。而家分三種：
+      //   (1) 收到邀請嘅人：pending → accepted／declined
+      //   (2) 任何一方：accepted → removed（移除好友）
+      //   (3) 任何一方重新送出邀請（變返 pending，送出者一定係自己）
+      allow update: if request.auth != null &&
+        (resource.data.toUid == request.auth.uid || resource.data.fromUid == request.auth.uid) && (
+          (resource.data.toUid == request.auth.uid && resource.data.status == 'pending' &&
+            request.resource.data.status in ['accepted', 'declined'] &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'respondedAt'])) ||
+          (resource.data.status == 'accepted' && request.resource.data.status == 'removed' &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'respondedAt'])) ||
+          (request.resource.data.status == 'pending' &&
+            request.resource.data.fromUid == request.auth.uid &&
+            request.resource.data.toUid is string &&
+            reqId == pairDocId(request.auth.uid, request.resource.data.toUid))
+        );
+      allow delete: if false;
+    }
+    // ===================== 視訊溫習房 =====================
+    // ⚠️ update 之前係 request.auth != null 就得，即係任何已登入用戶都
+    // 可以改任何一間房（包括唔係自己嘅房）——例如將 hostUid 改成自己
+    // 嚟強行奪走房主身份、將 bannedUids 加人嚟踢走第二方、亂改房間
+    // 名稱／人數等等，完全繞得過「淨係房主先可以踢人／轉移房主」呢個
+    // 前端限制，因為嗰個限制淨係喺 UI 層做，冇喺資料庫層再核實一次。
+    // 而家改成分兩種情況：(1) 淨係改緊 participantCount／lastActiveAt
+    // 呢兩個「任何參加者都要更新」嘅共用欄位（入房/離房計人數、房間
+    // 心跳）——呢種唔限房主先得，任何已登入用戶都可以；(2) 改緊其他
+    // 欄位（踢人、轉移房主、改設定等）——一定要係現任房主（用改動前
+    // 嘅 resource.data.hostUid 核實）先得。
+    match /rooms/{roomId} {
+      // ⚠️ 兩池隔離（見上面 viewerRoomPool()）：舊房間（呢個功能推出
+      // 之前建立、文件入面冇 roomPool 呢個欄位）維持舊行為人人讀得
+      // 到；新房間就要 roomPool 同請求者自己個池一致，或者請求者本身
+      // 就係房主先讀得到——單靠前端 UI 嘅 where() 查詢篩選唔夠，識用
+      // Firestore SDK／REST 直接查嘅人可以繞過前端，所以呢一層規則要
+      // 再驗多一次先算數。
+      // 管理員（isAdmin）唔受呢個分池限制——後台「用戶管理／房間管理」
+      // 要睇齊兩個池嘅房先做得到管理／巡查工作。設咗密碼鎖嘅房間
+      // （hasPassword）都豁免呢個限制：呢種房已經要求對方預先知道
+      // 4 位數密碼先入得（真正密碼核對喺 verifyRoomPassword Cloud
+      // Function 做，呢度淨係畀直接分享咗連結／房號嘅人讀到房間名等
+      // 基本資料），密碼本身已經係一重「事先有聯繫」嘅門檻，唔應該
+      // 因為分池而連累到正常嘅（例如）大專生同中學生手足之間互相分享
+      // 密碼房都撳唔入。
+      // 朋友邀請入房（見下面 invitedUids 子集合）都豁免兩池隔離：受邀
+      // 請者本身已經有人（房入面嘅合法參加者）主動搵佢入嚟，屬於「事先
+      // 有聯繫」，唔應該因為分池而撳唔入。
+      allow read: if request.auth != null && (
+        !('roomPool' in resource.data) ||
+        resource.data.hostUid == request.auth.uid ||
+        resource.data.roomPool == viewerRoomPool(database) ||
+        resource.data.hasPassword == true ||
+        exists(/databases/$(database)/documents/rooms/$(roomId)/invitedUids/$(request.auth.uid)) ||
+        isAdmin(database)
+      );
+      // create 嗰陣如果有帶 roomPool 落嚟，一定要同請求者自己個池一致，
+      // 防止有人特登將房間標成另一個池嘅 tag，令唔應該見到嘅人都見到。
+      allow create: if request.auth != null && request.resource.data.hostUid == request.auth.uid &&
+        (!('roomPool' in request.resource.data) || request.resource.data.roomPool == viewerRoomPool(database));
+      allow update: if request.auth != null && (
+        (resource.data.hostUid == request.auth.uid &&
+         (!('roomPool' in resource.data) || !('roomPool' in request.resource.data) ||
+          request.resource.data.roomPool == resource.data.roomPool)) ||
+        roomCounterUpdateOk(database, roomId)
+      );
+      // v1.199.0：多咗「房間已經冇人（人數 0）而且建立咗超過 20 秒」都可以刪
+      // （最後一位非房主離開時清走空房）；因為人數而家改唔到假，呢個條件安全。
+      allow delete: if request.auth != null && (
+        resource.data.hostUid == request.auth.uid ||
+        (resource.data.lastActiveAt is number &&
+         request.time.toMillis() - resource.data.lastActiveAt > 5 * 60 * 1000) ||
+        (resource.data.participantCount is int && resource.data.participantCount <= 0 &&
+         resource.data.createdAt is number &&
+         request.time.toMillis() - resource.data.createdAt > 20 * 1000) ||
+        isAdmin(database)
+      );
+      match /participants/{uid} {
+        allow read: if request.auth != null;
+        // ⚠️ create 一定要先有一張仲未過期嘅入場證（見上面
+        // hasValidRoomEntryTicket()）——密碼、踢人名單已經喺簽發入場證
+        // 嗰步（verifyRoomPassword Cloud Function）核實過，呢度唔使再
+        // 重複核對。update／delete（更新鏡頭狀態、離開房間）維持原本
+        // 「淨係自己」嘅寫法，唔使再次核對入場證。
+        allow create: if request.auth != null && request.auth.uid == uid &&
+          hasValidRoomEntryTicket(database, roomId);
+        allow update, delete: if request.auth != null && request.auth.uid == uid;
+      }
+      // ===================== 入場證（伺服器簽發，前端讀寫唔到） =====================
+      // 由 verifyRoomPassword 呢個 Cloud Function（Admin SDK）喺核對完
+      // 密碼／踢人名單之後簽發，前端完全唔應該、亦冇必要直接讀寫。
+      match /entryTickets/{uid} {
+        allow read, write: if false;
+      }
+      // ===================== 房間密碼鎖（伺服器端驗證） =====================
+      // 密碼真正存放喺呢度（rooms/{roomId}/private/secret，見
+      // window.handleCreateRoomSubmit），特登唔擺喺上面 rooms/{roomId}
+      // 個主文件度——主文件人人讀得到（allow read 見上面），如果密碼都
+      // 放喺嗰度，識用瀏覽器 devtools 嘅人可以直接讀出嚟，密碼鎖形同虛設。
+      // 呢個 private 子集合 allow read: if false，即係連前端 SDK 都完全
+      // 讀唔到（房主都讀唔到），真正嘅核對／查看只可以經 Cloud Functions
+      // 嘅 Admin SDK 做（見 functions/index.js 嘅 verifyRoomPassword／
+      // getRoomPassword，Admin SDK 唔受呢啲規則約束，一定讀得到）。
+      // create 淨係房主本人建房嗰陣做得（hostUid 要同建立者一致），之後
+      // 唔支援前端直接 update／delete（暫時未有「改密碼」呢個功能）。
+      match /private/{docId} {
+        allow read: if false;
+        allow create: if request.auth != null && request.auth.uid == request.resource.data.hostUid;
+        allow update, delete: if false;
+      }
+      // ===================== 朋友邀請入房嘅「已邀請名單」 =====================
+      // 純粹畀上面主文件 allow read 規則入面嘅 exists() 檢查用，前端
+      // 完全唔需要直接讀呢個 collection。房入面已經有嘅合法參加者
+      // （window.inviteFriendToRoom）邀請朋友入房嗰陣，除咗原本嗰份
+      // 負責彈出接受/拒絕通知卡嘅 roomInvites 之外，會喺呢度多寫一份
+      // 「呢位朋友已經被邀請入呢間房」嘅記錄——令主房間讀取規則就算
+      // 受邀請者所屬嘅池同房間唔同，都畀佢讀到房間資料先入得（密碼
+      // 房、朋友邀請房本身已經要求「事先有聯繫」，唔應該受兩池隔離
+      // 規則所限）。
+      // 建立者一定要係呢間房已經喺度嘅合法參加者（isRoomParticipant）
+      // 先寫得低，防止陌生人自己搵條 roomId 就寫呢份文件嚟繞過兩池
+      // 隔離、強行讀到唔屬於自己個池嘅房間。
+      match /invitedUids/{uid} {
+        allow read: if false;
+        allow create: if isRoomParticipant(database, roomId);
+        allow update, delete: if false;
+      }
+      // ⚠️ 之前呢兩個 collection 淨係要求 request.auth != null（任何已
+      // 登入用戶）就讀寫得到，完全冇檢查係咪呢間房嘅合法參加者——即係
+      // 房間密碼、踢人名單喺呢一層完全冇約束力，任何人知道 roomId 就
+      // 可以直接用 Firestore SDK 假扮房內用家、觸發真正嘅 WebRTC 連
+      // 線，偷收鏡頭／麥克風串流。而家一律要求先係 rooms/{roomId}/
+      // participants 入面已登記嘅合法參加者（見上面 isRoomParticipant()
+      // 同 participants 嘅 create 規則），先讀寫得到訊令交換用嘅文件。
+      match /signals/{signalId} {
+        allow read, write: if isRoomParticipant(database, roomId);
+      }
+      match /candidates/{candidateId} {
+        allow read, write: if isRoomParticipant(database, roomId);
+      }
+      // v1.199.0：表情反應淨係房內參與者先讀寫得到，之前任何登入用戶都可以
+      // 向任何房間洗表情。
+      match /reactions/{reactionId} {
+        allow read: if isRoomParticipant(database, roomId);
+        allow create: if isRoomParticipant(database, roomId) &&
+          request.resource.data.uid == request.auth.uid &&
+          request.resource.data.emoji is string && request.resource.data.emoji.size() <= 16;
+        allow update: if false;
+        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      }
+    }
+    // ===================== 房間邀請（邀請朋友入視訊溫習房） =====================
+    // inviteId 由 addDoc 隨機產生，唔似 friendRequests 咁會撞正「查詢一份
+    // 仲未存在嘅文件」，所以唔使加 resource == null 嗰個特殊判斷。
+    match /roomInvites/{inviteId} {
+      allow read: if request.auth != null &&
+        (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      // v1.199.0：淨係可以邀請自己好友名單入面嘅人
+      allow create: if request.auth != null &&
+        request.resource.data.fromUid == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.toUid is string &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(request.resource.data.toUid));
+      allow update: if request.auth != null &&
+        (resource.data.toUid == request.auth.uid || resource.data.fromUid == request.auth.uid);
+      allow delete: if false;
+    }
+    // ===================== 即時對話（好友之間一對一私訊） =====================
+    // chatId 本身就係兩個 uid 由細到大排序、用 "_" 連埋一齊（例如
+    // "abc123_xyz789"）。
+    //
+    // ⚠️ 呢度 read 一定要拆開 get 同 list 兩條規則，唔可以再淨係用一條
+    // 「allow read」！原因：
+    //   - get（攞單一份已知 chatId 嘅文件，例如開緊嗰個對話視窗）：淨係
+    //     憑 documentId 就知道邊兩個人有權限，用 chatId.split('_') 冇問題。
+    //   - list（前端用 `where('participants','array-contains',myUid)`
+    //     查「我有份嘅所有對話」，畀「即時對話」dock panel 用）：Firestore
+    //     對 query 類嘅規則有個好重要嘅限制——規則入面如果淨係睇
+    //     documentId（同個 query 實際過濾緊嘅 participants 呢個資料欄位
+    //     完全冇關係），Firestore 冇辦法單靠條 query 本身嘅定義去證明
+    //     「呢條 query 實際上唔可能撈到冇權限嘅文件」，於是會直接連成條
+    //     query 都拒絕（Missing or insufficient permissions），唔係淨係
+    //     隱藏冇權限嗰幾份、其他照樣顯示。
+    //     呢個正正就係之前「傳送嗰位睇到、收到嗰位個『即時對話』清單
+    //     完全空白，連 refresh 都冇用」嘅真正成因——傳送方睇到係因為前端
+    //     有做「本機樂觀更新」，並唔代表個查詢真係成功；收件方冇送過任何
+    //     嘢，冇呢重樂觀更新遮蓋住，先會現形出嚟。
+    //     解決方法：list 規則要直接睇 resource.data.participants——同個
+    //     query 用嚟過濾嘅係同一個欄位，Firestore 先有辦法證明呢條
+    //     query 安全，先會放行。
+    match /directChats/{chatId} {
+      allow get: if request.auth != null && request.auth.uid in chatId.split('_');
+      allow list: if request.auth != null && request.auth.uid in resource.data.participants;
+      // v1.199.0：對話摘要文件嘅 participants 一定要同 chatId 入面兩個 uid
+      // 一致；唔可以刪除（「清除對話記錄」改為只係記低 clearedAt）。
+      allow create, update: if request.auth != null && request.auth.uid in chatId.split('_') &&
+        request.resource.data.participants is list &&
+        request.resource.data.participants.hasOnly(chatId.split('_'));
+      allow delete: if isAdmin(database);
+      // 訊息內容一經送出就唔可以再改，但雙方之中任何一個都可以刪除
+      // （撳「🗑️ 刪除對話記錄」會成批刪晒），保持對話私隱可以自己清理
+      match /messages/{messageId} {
+        allow read: if request.auth != null && request.auth.uid in chatId.split('_');
+        // v1.199.0：淨係好友之間先可以傳訊息（之前任何人都可以私訊任何人，
+        // 包括陌生成年人私訊中學生），訊息最長 1000 字。
+        // 訊息唔可以由用戶刪除（防止刪走被舉報嘅騷擾證據），管理員除外。
+        allow create: if request.auth != null && request.auth.uid in chatId.split('_') &&
+          request.resource.data.fromUid == request.auth.uid &&
+          request.resource.data.toUid == chatOtherUid(chatId) &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000 &&
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(chatOtherUid(chatId)));
+        allow update: if false;
+        allow delete: if isAdmin(database);
+      }
+    }
+    // ===================== 疑難解答區 =====================
+    match /qa_posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid &&
+        request.resource.data.commentCount == 0 &&
+        request.resource.data.title is string && request.resource.data.title.size() <= 100 &&
+        request.resource.data.subject is string && request.resource.data.subject.size() <= 50 &&
+        (!('photos' in request.resource.data) || (request.resource.data.photos is list && request.resource.data.photos.size() <= 6));
+      // ⚠️ update 之前係 request.auth != null 就得，即係任何已登入用戶
+      // 都可以改任何一篇貼文嘅內容（唔淨止 commentCount），變成任何人
+      // 都可以塗改／破壞第二方發表嘅貼文。而家分開兩種情況：(1) 版主
+      // 本人或者管理員——乜嘢欄位都可以改（包括刪文前嘅編輯）；(2) 其他
+      // 已登入用戶——淨係俾佢哋改 commentCount 呢個共用欄位（留言嗰陣
+      // 要更新緊個計數器），改唔到內容本身。
+      allow update: if request.auth != null && (
+        resource.data.uid == request.auth.uid || isAdmin(database) ||
+        // v1.199.0：其他人淨係可以將回答數 +1／-1，唔可以亂改做任何數字
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']) &&
+          (request.resource.data.commentCount == resource.data.commentCount + 1 ||
+           request.resource.data.commentCount == resource.data.commentCount - 1))
+      );
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin(database));
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin(database));
+      }
+    }
+    // ===================== 後台設定（扭蛋機／等級系統） =====================
+    // 所有已登入用戶都要讀到先計到自己嘅獎勵/等級，但寫入淨係「超級
+    // 管理員」先可以改（見上面 isSuperAdmin()）——呢個collection底下
+    // 嘅文件（gacha、levelSystem、navIcons、scoringRules、roomSettings、
+    // antiIdleRules、adminIds等）全部都係Admin後台「網站設定／管治類」
+    // 分頁用嘅，對應前端 SUPER_ADMIN_ONLY_TABS 嗰張清單，一般『support』
+    // 管理員喺畫面見唔到呢幾頁，呢度喺資料庫層再鎖多一次，唔淨係靠
+    // 前端唔顯示嗰粒掣。
+    match /admin_config/{configId} {
+      allow read: if request.auth != null;
+      allow write: if isSuperAdmin(database);
+    }
+    // Landing page（未登入主頁）文案／圖片設定——同上面 admin_config
+    // 嘅其他文件一樣淨係超級管理員寫得入，但讀取要額外開放俾未登入嘅
+    // 訪客（request.auth == null 都得），因為 Landing page 本身就係畀
+    // 未登入嘅人睇嘅，上面嗰條「要已登入先讀得到」嘅規則唔啱用喺呢份
+    // 文件。Firestore 規則入面，針對同一個路徑嘅多個 match 區塊會逐個
+    // 評估，只要其中一個話 allow 就得，所以呢度加多一個更specific嘅
+    // 例外規則，唔使改動返上面嗰條通用規則。
+    match /admin_config/landingContent {
+      allow read: if true;
+      allow write: if isSuperAdmin(database);
+    }
+    // 全站公告橫幅（見 admin-panel.js 嘅 loadSiteAnnouncementFromFirestore）：
+    // 同Landing page文案一樣，登入前訪客都要見到公告，所以要開放俾未
+    // 登入用戶讀取，但寫入一樣淨係超級管理員先得。
+    match /admin_config/announcement {
+      allow read: if true;
+      allow write: if isSuperAdmin(database);
+    }
+    // 科目清單／地區清單（低優先第11、12項，改用「淨係新增」模式）：
+    // 兩者都要喺未登入嗰陣都讀得到（科目清單喺註冊表格「申請做導師」
+    // 已經會用到，地區清單喺註冊表格揀學校都要用到，兩者都早過登入
+    // 發生），所以同Landing page文案一樣要開放公開讀取。
+    match /admin_config/subjectList {
+      allow read: if true;
+      allow write: if isSuperAdmin(database);
+    }
+    match /admin_config/districtList {
+      allow read: if true;
+      allow write: if isSuperAdmin(database);
+    }
+    // 學校名單（中學／大專大學，跟科目清單／地區清單一樣「淨係新增」
+    // 模式）：學校名一樣會存落users.school、schoolLeaderboard等地方
+    // 做資料值，唔開放改名／刪除。註冊表格揀學校發生喺登入之前，所以
+    // 一樣要公開讀取。
+    match /admin_config/schoolList {
+      allow read: if true;
+      allow write: if isSuperAdmin(database);
+    }
+    // 服務條款／私隱政策內容（低優先第13項）：一樣要喺未登入嗰陣都讀
+    // 得到（註冊表格嘅同意checkbox連結、footer連結都可以喺未登入時
+    // 撳到）。
+    match /admin_config/legalContent {
+      allow read: if true;
+      allow write: if isSuperAdmin(database);
+    }
+    // 操作紀錄（Audit Log，第四階段第10項）：記錄管理員喺後台做過嘅
+    // 敏感操作（例如停權用戶、改管理員名單）。讀取淨係超級管理員先
+    // 得（同前端「操作紀錄」分頁嘅可見範圍一致）；寫入（create）就
+    // 任何已登入嘅管理員都得——因為『support』帳戶做嘅日常操作（例如
+    // 停權用戶、補發PTS）一樣要寫得入呢份紀錄先追蹤得到，唔應該因為
+    // 睇唔到呢頁就連寫紀錄都寫唔到。寫入只開「create」唔開
+    // 「update/delete」，確保呢份紀錄一寫咗落去就唔會被人事後靜雞雞
+    // 改過或刪走，保持紀錄嘅可信性。
+    match /adminAuditLog/{logId} {
+      allow read: if isSuperAdmin(database);
+      allow create: if isAdmin(database);
+      allow update, delete: if false;
+    }
+    // ===================== 忘記密碼（重設 token） =====================
+    // 存放喺呢度嘅一次性重設 token（見 functions/index.js 嘅
+    // requestPasswordReset／confirmPasswordReset）淨係 Cloud Functions
+    // 嘅 Admin SDK 先讀寫得到（Admin SDK 唔受呢啲規則約束）。前端完全
+    // 唔會、亦唔應該直接讀寫呢個 collection——生成 token 嗰陣用戶仲未
+    // 登入（冇 auth.uid 可以核實），核對／消費 token 嗰步亦都要 Admin
+    // 權限先做到「幫第二個未登入嘅用戶強制設定新密碼」，兩步都一定要
+    // 行 Cloud Function，所以呢度寫死全部拒絕就得。
+    match /passwordResets/{token} {
+      allow read, write: if false;
+    }
+    // ===================== 🚦 速率限制記帳（防止亂咁試密碼／濫發請求） =====================
+    // rateLimits/{key} 純粹係 Cloud Functions（verifyRoomPassword／
+    // requestPasswordReset）內部用嚟記低「呢個時間窗入面試咗幾多次」
+    // 嘅記帳文件，見 functions/index.js 嘅 checkRateLimit()。前端完全
+    // 唔應該、亦冇必要直接讀寫——如果開放俾前端寫，惡意用戶大可以自己
+    // 隨便將個計數器歸零，繞過晒個限制，所以呢度同 passwordResets 一
+    // 樣寫死全部拒絕，淨係 Admin SDK（唔受呢啲規則約束）先讀寫得到。
+    match /rateLimits/{key} {
+      allow read, write: if false;
+    }
+    // ===================== 舉報（視訊溫習房不當行為舉報） =====================
+    // 舉報內容（連埋截圖）屬於高敏感資料，淨係管理員先睇到全部。
+    // ⚠️ create 而家已經改做 if false——舉報一定要經 submitReport 呢個
+    // Cloud Function（Admin SDK）先寫得入去，唔再開放前端直接
+    // addDoc()。原因：舊規則淨係核對「係咪本人舉報」，完全冇限制「幾
+    // 耐可以舉報幾多次」，惡意學生可以短時間內狂洗同一個人嘅舉報記
+    // 錄嚟滋擾對方，或者洗版管理後台嘅舉報清單。submitReport 度已經
+    // 套用咗速率限制（同一舉報人 10 分鐘內最多 5 次），呢度配合鎖死
+    // 前端寫入，確保冇辦法繞過呢個限制。刪除都淨係管理員先可以做
+    // （畀佢哋處理完之後清理返啲舊紀錄，前端亦都刻意淨係喺「已處
+    // 理／已駁回」先出刪除掣，唔會俾人手快唔覺意刪走仲未跟進嘅
+    // pending 舉報）。
+    match /reports/{reportId} {
+      allow create: if false;
+      allow read, update, delete: if isAdmin(database);
+    }
+    // ===================== 🎓 導師身份申請（Phase A：導師 PDF 筆記商店） =====================
+    // 申請、批核、駁回全部經 Cloud Functions（applyTutorRole／
+    // approveTutorApplication／rejectTutorApplication，全部用 Admin SDK
+    // 寫入，唔受呢啲規則約束）處理，前端一律唔可以直接寫入——一嚟避免
+    // 用戶自己偽造已批核嘅申請狀態，二嚟審批通過嗰刻仲要同步將
+    // users/{uid}.role 改做 'tutor'、建立 tutors/{uid} 文件，呢類跨
+    // collection 嘅一致性操作一定要行 transaction，唔應該開放前端零散咁寫。
+    match /tutorApplications/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin(database));
+      allow write: if false;
+    }
+    // 導師公開資料（審批通過先會建立）：日後筆記商店頁面要顯示導師
+    // 簡介、所教科目等資料，所以任何已登入用戶都讀得到；建立、修改
+    // （包括停權 suspendTutor／解除停權 reinstateTutor）全部經 Cloud
+    // Functions 處理，前端唔可以直接寫。
+    match /tutors/{uid} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    // ===================== 🗂️ 導師教材管理（Phase B：科目／課題／教材） =====================
+    // 呢一批 collection 撐起導師後台「管理教材」分頁：科目、課題純粹係
+    // 分類用嘅文字結構，冇涉及檔案或者金錢，用「擁有者可以直接讀寫」
+    // 呢種一直沿用喺呢個 app 度嘅簡單規則就夠（同 qa_posts／rooms 嗰種
+        // 做法一致），唔使特登起多幾個 Cloud Function。
+    // ⚠️ create 一定要 isActiveTutor()——已停權或者仲審批緊嘅帳戶唔可以
+    // 新增科目／課題（前端 UI 根本唔會顯示呢個分頁俾佢哋，但 rules 呢
+    // 層係防禦性咁擋多一重，防止有人直接打 Firestore SDK 繞過前端）。
+    match /tutorSubjects/{subjectId} {
+      allow read: if request.auth != null;
+      allow create: if isActiveTutor(database) && request.resource.data.tutorUid == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.tutorUid == request.auth.uid;
+    }
+    match /tutorTopics/{topicId} {
+      allow read: if request.auth != null;
+      allow create: if isActiveTutor(database) && request.resource.data.tutorUid == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.tutorUid == request.auth.uid;
+    }
+    // 教材（PDF 筆記）就唔同：建立呢步一定要經 registerTutorNoteUpload
+    // 呢個 Cloud Function（Admin SDK），因為要讀返啱啱上傳去 Storage
+    // 嗰份 PDF 嘅實際頁數先建立到完整文件；預覽頁揀選（會觸發用
+    // pdf-lib 抽頁另存做 preview.pdf）一樣經 selectTutorNotePreviewPages
+    // 先改得到 status／previewPages；刪除都要經 deleteTutorNote（一併
+    // 清理 Storage 入面嘅 full.pdf／preview.pdf），前端一律唔可以直接
+    // create／delete。淨係「標題／簡介／定價」呢幾個唔涉及檔案本身嘅
+    // 純文字／數字欄位，先開放俾導師自己直接改（例如改個價錢唔使勞
+    // 煩 Cloud Function）。
+    match /tutorNotes/{noteId} {
+      // 未發佈（draft／awaiting_preview_selection）或者已下架
+      // （delisted／removed）嘅教材，淨係擁有者本人或者 admin 睇到——
+      // 唔應該畀所有已登入用戶都可以成個 collection 咁掃，見到其他導
+      // 師仲未發佈嘅草稿內容同定價。已經 published 嘅先對所有已登入
+      // 用戶開放（畀學生喺「溫習資源」瀏覽）。
+      allow read: if request.auth != null &&
+        (resource.data.status == 'published' || resource.data.tutorUid == request.auth.uid || isAdmin(database));
+      allow create: if false;
+      allow update: if request.auth != null && resource.data.tutorUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'priceCents', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // ===================== 書伴廣場：書伴留言牆 =====================
+    // 貼文（buddyPosts）：任何已登入用戶都讀得到（公開留言牆）。create
+    // 一定要 authorUid 同請求者一致（防止假扮第二人發帖），並且對
+    // role／content／subjects 加返伺服器端護欄，防止有人繞過前端直接
+    // 用 SDK 寫入唔合規格嘅資料（例如過長內容、超過 3 個科目標籤、唔
+    // 存在嘅身份標籤）。
+    // ⚠️ update 淨係開放 commentCount 呢一個由留言 create 順帶更新嘅
+    // 計數欄位——其餘欄位（內容、科目、身份標籤）一律唔畀事後亂改，
+    // 避免「發帖時睇落合規、事後偷偷換成違規內容」呢種漏洞。特登冇再
+    // 要求「一定要係擁有者本人」先改得到呢個計數：留言嘅可以係任何
+    // 已登入用戶（唔止貼文作者自己），佢哋留言之後都要更新到呢個貼文
+    // 嘅 commentCount，如果淨係畀作者本人改，第二個人留言完個數字就
+    // 會更新唔到（權限被拒）。呢度改為淨係要求「淨係改緊 commentCount
+    // 呢一個欄位、而且每次淨係加或者減 1」，唔理係邊個已登入用戶做，
+    // 安全性一樣有保障（唔可以順便改埋內容／科目等其他欄位）。
+    // delete 開放俾擁有者自己刪走自己嘅貼文，或者 admin 巡查刪除違規
+    // 貼文。
+    // ⚠️ 呢度暫時未加發帖頻率限制（rate limit）——留返第三步一齊做。
+    match /buddyPosts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.authorUid == request.auth.uid &&
+        request.resource.data.role in ['want_taught', 'can_teach', 'study_together'] &&
+        request.resource.data.content is string &&
+        request.resource.data.content.size() > 0 && request.resource.data.content.size() <= 150 &&
+        request.resource.data.subjects is list && request.resource.data.subjects.size() <= 3;
+      allow update: if request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']) &&
+        (request.resource.data.commentCount == resource.data.commentCount + 1 ||
+         request.resource.data.commentCount == resource.data.commentCount - 1);
+      allow delete: if request.auth != null &&
+        (resource.data.authorUid == request.auth.uid || isAdmin(database));
+
+      // 留言：一樣任何已登入用戶讀得到；create 一定要 authorUid 係自己
+      // 本人，內容都加長度護欄。留言一經留低就唔可以再改／刪（同
+      // qa_posts 唔同，呢度暫時未有編輯／刪除留言嘅功能，保持簡單）。
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null &&
+          request.resource.data.authorUid == request.auth.uid &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 150;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

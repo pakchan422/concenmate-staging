@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.203.2"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.204.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2033,6 +2033,7 @@
               <div class="room-bar-btn-group" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                 <button class="btn btn-primary" type="button" id="btn-camera" onclick="toggleCamera()" data-i18n="room.cameraOn">開啟鏡頭</button>
                 <button class="btn btn-red" type="button" id="btn-mic" onclick="toggleMic()" data-i18n="room.micMuted">已靜音</button>
+                <button class="btn btn-outline" type="button" id="btn-room-snapshot" onclick="openRoomSnapshot()" style="border-color:#B3D6DE; color:#1E4550;" data-i18n="room.snapshotBtn">📸 合照</button>
 
                 <!-- 全螢幕專用嘅背景音掣：平時（唔係全螢幕）呢粒掣係收埋嘅，正常
                      背景音控制擺喺下面嗰個 .fs-hide-in-fullscreen div 度顯示緊。
