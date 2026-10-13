@@ -3289,20 +3289,26 @@
       }
       function videoReady(v) { return v && v.videoWidth > 0 && v.readyState >= 2; }
       // 「cover」方式畫影片：填滿格仔、保持比例、多出嘅部分裁走
-      function drawCover(ctx, src, sw, sh, x, y, w, h, mirror) {
+      // mirror：左右反轉；rot180：轉 180 度。溫習室畫面上所有鏡頭（自己同其他同學）
+      // 都用 CSS scaleX(-1) 左右反轉顯示（見 index.html .canvas-stream-display／
+      // .remote-video-element），所以合照每一格都要用返同一個反轉，方向先會同
+      // 畫面上見到嘅一致。
+      function drawCover(ctx, src, sw, sh, x, y, w, h, mirror, rot180) {
         const scale = Math.max(w / sw, h / sh);
         const dw = sw * scale, dh = sh * scale;
         ctx.save();
-        if (mirror) { ctx.translate(x + w, 0); ctx.scale(-1, 1); ctx.drawImage(src, (w - dw) / 2, y + (h - dh) / 2, dw, dh); }
-        else ctx.drawImage(src, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+        ctx.translate(x + w / 2, y + h / 2);
+        if (rot180) ctx.rotate(Math.PI);
+        if (mirror) ctx.scale(-1, 1);
+        ctx.drawImage(src, -dw / 2, -dh / 2, dw, dh);
         ctx.restore();
       }
       // 打格仔：先縮到好細再放大（所有瀏覽器都支援，包括舊 Safari）
-      function drawPixelated(ctx, v, x, y, w, h) {
+      function drawPixelated(ctx, v, x, y, w, h, mirror, rot180) {
         const small = document.createElement('canvas');
         small.width = Math.max(8, Math.round(w / 28)); small.height = Math.max(8, Math.round(h / 28));
         const sctx = small.getContext('2d');
-        drawCover(sctx, v, v.videoWidth, v.videoHeight, 0, 0, small.width, small.height, false);
+        drawCover(sctx, v, v.videoWidth, v.videoHeight, 0, 0, small.width, small.height, mirror, rot180);
         ctx.save();
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(small, x, y, w, h);
@@ -3333,7 +3339,8 @@
             const v = el ? el.querySelector('video') : null;
             const overlay = el ? el.querySelector('.video-overlay') : null;
             const camOff = overlay && overlay.style.display !== 'none';
-            tiles.push({ video: (!camOff && videoReady(v)) ? v : null, mirror: false, clear: !!(state.photoAllowed && state.photoAllowed[uid]) });
+            const rot180 = !!(v && /rotate\(180deg\)/.test(v.style.transform || ''));
+            tiles.push({ video: (!camOff && videoReady(v)) ? v : null, mirror: true, rot180, clear: !!(state.photoAllowed && state.photoAllowed[uid]) });
           });
         return tiles.slice(0, 4);
       }
@@ -3351,11 +3358,12 @@
         const rowInfo = rows.map((count) => {
           const items = tiles.slice(idx, idx + count); idx += count;
           const sumA = items.reduce((s, t) => s + tileAspect(t), 0);
-          const h = (availW - GAP * (count - 1)) / sumA;
-          totalH += h;
-          return { items, h };
+          return { items, h: (availW - GAP * (count - 1)) / sumA };
         });
-        totalH += GAP * (rows.length - 1);
+        // v1.204.2：所有格用同一個高度（唔會有人特別大張），行數少嘅行置中
+        const uniformH = Math.min(...rowInfo.map((r) => r.h));
+        rowInfo.forEach((r) => { r.h = uniformH; });
+        totalH = uniformH * rowInfo.length + GAP * (rows.length - 1);
         const scale = Math.min(1, availH / totalH);
         let y = 0;
         rowInfo.forEach((r) => {
@@ -3420,8 +3428,8 @@
           roundRectPath(ctx, x, y, w, h, 24);
           ctx.clip();
           if (!t.video) await drawPlaceholder(ctx, x, y, w, h);
-          else if (t.clear) drawCover(ctx, t.video, t.video.videoWidth, t.video.videoHeight, x, y, w, h, t.mirror);
-          else drawPixelated(ctx, t.video, x, y, w, h);
+          else if (t.clear) drawCover(ctx, t.video, t.video.videoWidth, t.video.videoHeight, x, y, w, h, t.mirror, t.rot180);
+          else drawPixelated(ctx, t.video, x, y, w, h, t.mirror, t.rot180);
           ctx.restore();
           ctx.save();
           roundRectPath(ctx, x, y, w, h, 24);
