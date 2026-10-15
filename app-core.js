@@ -1092,7 +1092,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
         const idLower = idOrEmail.toLowerCase();
         const mapSnap = await getDoc(doc(db, 'usernames', idLower));
         if (!mapSnap.exists()) {
-          window.showToast(window.t('core.accountIdNotFoundCheckTypo', '找不到這個帳號 ID，請檢查有沒有打錯'), '❌');
+          // v1.207.1：帳號 ID 唔存在同密碼錯用同一句提示，避免有人逐個 ID
+          // 試，靠提示分辨邊個帳號存在（帳號探測）。
+          window.showToast(window.t('core.loginFailedTemplate', '登入失敗：{error}').replace('{error}', window.friendlyErrorText({ code: 'auth/invalid-credential' })), '❌');
           return;
         }
         const authEmail = mapSnap.data().authEmail;
