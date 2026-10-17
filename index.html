@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.211.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.211.2"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -4021,6 +4021,7 @@
       var u = window.currentUser;
       if (!u || !u.uid) return;
       if (u.accountType === 'tutor' || u.role === 'tutor') return;
+      if (navigator.webdriver) return; // 自動測試（Playwright）唔顯示，以免遮住按鈕
       try { if (localStorage.getItem(key())) return; } catch (e) { return; }
       var created = u.createdAt ? Date.parse(u.createdAt) : 0;
       var isNew = (created && Date.now() - created < 14 * 86400000) || !(parseFloat(u.hours) > 0.05);
