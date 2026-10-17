@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.208.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.208.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -3850,27 +3850,39 @@
       });
     }
 
-    var KEY = 'cm_install_hint_dismissed_at';
+    // 顯示頻率（避免煩擾）：
+    //  · 只向已登入用戶顯示（第一次睇 Landing page 嘅訪客唔會見到）
+    //  · 每次顯示後 7 日內唔會再出（就算冇撳 ×）；15 秒後自動收起
+    //  · 撳 × 之後 30 日內唔會再出；撳過 3 次 × 就永遠唔再出
+    var KEY_SHOWN = 'cm_install_hint_shown_at', KEY_DISMISS = 'cm_install_hint_dismissed_at', KEY_COUNT = 'cm_install_hint_dismiss_count';
+    var DAY = 86400000;
     var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
     if (isStandalone) return;
-    try { var last = Number(localStorage.getItem(KEY) || 0); if (Date.now() - last < 14 * 86400000) return; } catch (e) {}
+    function lsGet(k) { try { return Number(localStorage.getItem(k) || 0); } catch (e) { return 0; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {} }
+    if (lsGet(KEY_COUNT) >= 3) return;
+    if (Date.now() - lsGet(KEY_DISMISS) < 30 * DAY) return;
+    if (Date.now() - lsGet(KEY_SHOWN) < 7 * DAY) return;
 
     var ua = navigator.userAgent || '';
     var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    var isIOSSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|Line|FBAN|FBAV|Instagram/.test(ua);
+    // Instagram／Facebook／Line 等 App 內置瀏覽器加唔到主畫面，所以唔顯示
+    var isInApp = /Line|FBAN|FBAV|Instagram|MicroMessenger/.test(ua);
+    var isIOSSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua) && !isInApp;
+    var isIOSChrome = isIOS && /CriOS/.test(ua) && !isInApp;
     var deferredPrompt = null;
     var tr = function (k, f) { return (window.t ? window.t(k, f) : f); };
     var SHARE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
 
-    function dismiss() {
-      try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
-      var el = document.getElementById('cm-install-hint'); if (el) el.classList.remove('show');
-    }
+    function hide() { var el = document.getElementById('cm-install-hint'); if (el) el.classList.remove('show'); }
+    function dismiss() { lsSet(KEY_DISMISS, Date.now()); lsSet(KEY_COUNT, lsGet(KEY_COUNT) + 1); hide(); }
     function render(mode) {
       var el = document.getElementById('cm-install-hint');
       if (!el) { el = document.createElement('div'); el.id = 'cm-install-hint'; document.body.appendChild(el); }
       var desc = mode === 'ios'
         ? tr('pwa.iosHint', '點擊瀏覽器的「分享」按鈕 {icon}，再選擇「加至主畫面」').replace('{icon}', SHARE_SVG)
+        : mode === 'ioschrome'
+        ? tr('pwa.iosChromeHint', '點擊網址列右邊的「分享」按鈕 {icon}，再選擇「加至主畫面」').replace('{icon}', SHARE_SVG)
         : tr('pwa.androidHint', '安裝後可從主畫面直接開啟，使用更方便');
       el.innerHTML = '<img src="icon-192.png" alt="">'
         + '<div style="flex:1;min-width:0;"><div class="t">' + tr('pwa.title', '將書伴加至主畫面') + '</div><div class="d">' + desc + '</div></div>'
@@ -3884,14 +3896,18 @@
         deferredPrompt.userChoice.finally(function () { deferredPrompt = null; dismiss(); });
       };
       el.classList.add('show');
+      lsSet(KEY_SHOWN, Date.now());
+      setTimeout(hide, 15000);
     }
     // 喺溫習室入面唔好彈出，避免遮住控制按鈕；遲啲再試
     function tryShow(mode, tries) {
       if (window.innerWidth > 900) return;
+      // 未登入就遲啲再試（最多等大約 10 分鐘）
+      if (!window.currentUser) { if (tries < 60) setTimeout(function () { tryShow(mode, tries + 1); }, 10000); return; }
       var inRoom = document.querySelector('#tab-room.active .remote-video-element, #tab-room.active .canvas-stream-display');
       var modalOpen = Array.prototype.some.call(document.querySelectorAll('.modal-backdrop'), function (m) { return m.style.display && m.style.display !== 'none'; });
       if (inRoom || modalOpen) {
-        if (tries < 6) setTimeout(function () { tryShow(mode, tries + 1); }, 20000);
+        if (tries < 60) setTimeout(function () { tryShow(mode, tries + 1); }, 20000);
         return;
       }
       render(mode);
@@ -3901,7 +3917,7 @@
       setTimeout(function () { tryShow('android', 0); }, 6000);
     });
     window.addEventListener('appinstalled', dismiss);
-    if (isIOSSafari) window.addEventListener('load', function () { setTimeout(function () { tryShow('ios', 0); }, 6000); });
+    if (isIOSSafari || isIOSChrome) window.addEventListener('load', function () { setTimeout(function () { tryShow(isIOSSafari ? 'ios' : 'ioschrome', 0); }, 6000); });
   })();
   </script>
 
