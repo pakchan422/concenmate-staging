@@ -324,7 +324,7 @@
             <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">扭蛋機外觀圖片</h3>
             <p style="font-size:13px; color:#888; margin-bottom:10px;">這張是扭蛋機本身的外殼圖（不是貼紙），顯示在學生點擊扭蛋的頁面。上傳新圖會即時取代畫面上顯示的圖案，不上傳則繼續使用程式碼內建的預設圖。</p>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-              <div id="admin-gacha-machine-thumb" onclick="document.getElementById('admin-gacha-machine-input').click()" title="點擊這裡上傳圖片" style="width:80px; height:80px; border-radius:10px; background:#F5F8FD; border:1px dashed #CCDAF0; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${previewInner}</div>
+              <div id="admin-gacha-machine-thumb" onclick="document.getElementById('admin-gacha-machine-input').click()" title="點擊這裡上傳圖片" style="width:80px; height:80px; border-radius:10px; background:#F6F7FB; border:1px dashed #D2D9E9; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${previewInner}</div>
               <input type="file" accept="image/*" id="admin-gacha-machine-input" style="display:none;" onchange="adminUploadGachaMachineImage(this)">
               <div style="display:flex; flex-direction:column; gap:6px;">
                 <button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="document.getElementById('admin-gacha-machine-input').click()">上傳新圖片</button>
@@ -351,7 +351,7 @@
             <td style="text-align:center; color:#888; font-size:13px;">#${p.id}</td>
             <td>
               <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
-                <div id="${thumbId}" onclick="document.getElementById('${inputId}').click()" title="點擊這裡上傳圖片" style="width:44px; height:44px; border-radius:8px; background:#F5F8FD; border:1px dashed #CCDAF0; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${thumbInner}</div>
+                <div id="${thumbId}" onclick="document.getElementById('${inputId}').click()" title="點擊這裡上傳圖片" style="width:44px; height:44px; border-radius:8px; background:#F6F7FB; border:1px dashed #D2D9E9; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${thumbInner}</div>
                 <input type="file" accept="image/*" id="${inputId}" style="display:none;" onchange="adminUploadGachaPhoto(${idx},this)">
                 ${p.photo ? `<button type="button" class="btn btn-outline" style="font-size:13px; padding:1px 6px;" onclick="adminRemoveGachaPhoto(${idx})">移除圖片</button>` : ''}
               </div>
@@ -756,7 +756,7 @@
               <input class="admin-input-sm" style="width:100px;" value="${escapeHtml(r.titleEn || '')}" onchange="adminLevelDraft.ranks[${idx}].titleEn = this.value">
             </label>
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:4px;">顏色
-              <input type="color" style="width:36px; height:26px; padding:1px; border:1px solid #ccc; border-radius:4px;" value="${r.color || '#6F8FC9'}" onchange="adminLevelDraft.ranks[${idx}].color = this.value">
+              <input type="color" style="width:36px; height:26px; padding:1px; border:1px solid #ccc; border-radius:4px;" value="${r.color || '#4A68A8'}" onchange="adminLevelDraft.ranks[${idx}].color = this.value">
             </label>
             <label style="font-size:13px; color:#555; display:flex; align-items:flex-start; gap:4px; width:100%;">升級詳情文字（用戶點擊「Lv.」列會彈出視窗顯示）
               <textarea class="admin-input-sm" rows="2" style="flex:1; min-width:200px; resize:vertical;" oninput="adminLevelDraft.ranks[${idx}].desc = this.value">${escapeHtml(r.desc || '')}</textarea>
@@ -780,7 +780,7 @@
             </label>
           </div>
           <p style="font-size:13px; color:#888;">公式：升到第 L 級總共需要的 EXP = 難度係數 × L × (L−1)。難度係數越大，升級越慢。</p>
-          <p id="admin-level-preview" style="font-size:13px; color:#6F8FC9; font-weight:bold; margin-top:6px;"></p>
+          <p id="admin-level-preview" style="font-size:13px; color:#4A68A8; font-weight:bold; margin-top:6px;"></p>
         </div>
 
         <div class="admin-card" style="margin-top:12px;">
@@ -815,7 +815,7 @@
 
     window.adminAddLevelRank = function() {
       if (!adminLevelDraft) return;
-      adminLevelDraft.ranks.push({ minLevel: 1, emoji: '🌟', title: '新段位', titleEn: 'NewRank', color: '#6F8FC9', desc: '' });
+      adminLevelDraft.ranks.push({ minLevel: 1, emoji: '🌟', title: '新段位', titleEn: 'NewRank', color: '#4A68A8', desc: '' });
       renderAdminLevelTab();
     };
 
@@ -1420,7 +1420,7 @@
           : `<span style="color:var(--brand-600); display:inline-flex;">${typeof window.cmNavSvg === 'function' ? window.cmNavSvg(item.key) : ''}</span>`;
         return `
           <div style="display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid #F0F0F0;">
-            <div id="${thumbId}" onclick="document.getElementById('${inputId}').click()" title="點擊這裡上傳圖片" style="width:52px; height:52px; border-radius:10px; background:#F5F8FD; border:1px dashed #CCDAF0; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; flex-shrink:0;">${thumbInner}</div>
+            <div id="${thumbId}" onclick="document.getElementById('${inputId}').click()" title="點擊這裡上傳圖片" style="width:52px; height:52px; border-radius:10px; background:#F6F7FB; border:1px dashed #D2D9E9; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; flex-shrink:0;">${thumbInner}</div>
             <input type="file" accept="image/*" id="${inputId}" style="display:none;" onchange="adminUploadNavIcon('${item.key}',this)">
             <div style="flex:1; font-size:14px; font-weight:600; color:#333;">${escapeHtml(item.label)}</div>
             <div style="display:flex; gap:6px;">
@@ -1575,7 +1575,7 @@
       const statusColor = status === 'pending' ? '#C0524A' : (status === 'approved' ? '#2F6B3A' : '#999');
       const when = a.submittedAt ? new Date(a.submittedAt).toLocaleString('zh-HK') : '—';
       const subjectsHtml = (a.subjectsIntended || [])
-        .map(s => `<span class="tag" style="background:#F5F8FD; color:#33466E; margin-right:4px;">${escapeHtml(s)}</span>`)
+        .map(s => `<span class="tag" style="background:#F6F7FB; color:#29395C; margin-right:4px;">${escapeHtml(s)}</span>`)
         .join('');
       return `
         <div class="admin-card" style="${status !== 'pending' ? 'opacity:.65;' : ''}">
@@ -1606,7 +1606,7 @@
       const statusLabel = status === 'active' ? '正常' : '已停權';
       const statusColor = status === 'active' ? '#2F6B3A' : '#C0524A';
       const subjectsHtml = (t.subjectsIntended || [])
-        .map(s => `<span class="tag" style="background:#F5F8FD; color:#33466E; margin-right:4px;">${escapeHtml(s)}</span>`)
+        .map(s => `<span class="tag" style="background:#F6F7FB; color:#29395C; margin-right:4px;">${escapeHtml(s)}</span>`)
         .join('');
       return `
         <div class="admin-card">
@@ -1811,7 +1811,7 @@
           <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">${title}</h3>
           <p style="font-size:13px; color:#888; margin-bottom:10px;">${desc}</p>
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <div id="admin-landing-${imgKey}-thumb" onclick="document.getElementById('admin-landing-${imgKey}-input').click()" title="點擊這裡上傳圖片" style="width:80px; height:80px; border-radius:10px; background:#F5F8FD; border:1px dashed #CCDAF0; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${previewInner}</div>
+            <div id="admin-landing-${imgKey}-thumb" onclick="document.getElementById('admin-landing-${imgKey}-input').click()" title="點擊這裡上傳圖片" style="width:80px; height:80px; border-radius:10px; background:#F6F7FB; border:1px dashed #D2D9E9; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${previewInner}</div>
             <input type="file" accept="image/*" id="admin-landing-${imgKey}-input" style="display:none;" onchange="adminUploadLandingImage('${imgKey}', this)">
             <div style="display:flex; flex-direction:column; gap:6px;">
               <button type="button" class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="document.getElementById('admin-landing-${imgKey}-input').click()">上傳新圖片</button>
@@ -3249,7 +3249,7 @@
       const rows = (window.TUTOR_DSE_SUBJECTS || []).filter((s) => s !== '其他（自行輸入）').map((s) => {
         const isAdded = addedNames.has(s);
         const enName = (window.DSE_SUBJECT_EN_NAMES && window.DSE_SUBJECT_EN_NAMES[s]) || '—';
-        return `<tr><td>${escapeHtml(s)}</td><td style="color:#888;">${escapeHtml(enName)}</td><td>${isAdded ? '<span style="color:#5A79B4;">後台新增</span>' : '<span style="color:#999;">內建</span>'}</td></tr>`;
+        return `<tr><td>${escapeHtml(s)}</td><td style="color:#888;">${escapeHtml(enName)}</td><td>${isAdded ? '<span style="color:#3F588F;">後台新增</span>' : '<span style="color:#999;">內建</span>'}</td></tr>`;
       }).join('');
 
       container.innerHTML = `
@@ -3371,7 +3371,7 @@
         const rows = g.districts.map((d) => {
           const isAdded = addedNames.has(d);
           const enName = (window.HK_DISTRICT_EN_NAMES && window.HK_DISTRICT_EN_NAMES[d]) || '—';
-          return `<tr><td>${escapeHtml(d)}</td><td style="color:#888;">${escapeHtml(enName)}</td><td>${isAdded ? '<span style="color:#5A79B4;">後台新增</span>' : '<span style="color:#999;">內建</span>'}</td></tr>`;
+          return `<tr><td>${escapeHtml(d)}</td><td style="color:#888;">${escapeHtml(enName)}</td><td>${isAdded ? '<span style="color:#3F588F;">後台新增</span>' : '<span style="color:#999;">內建</span>'}</td></tr>`;
         }).join('');
         return `<p style="font-size:13px; font-weight:bold; margin:12px 0 6px;">${escapeHtml(g.region)}</p><table class="admin-table"><thead><tr><th>地區</th><th>English</th><th>來源</th></tr></thead><tbody>${rows}</tbody></table>`;
       }).join('');
@@ -3972,16 +3972,16 @@
         </div>`;
       const box = document.getElementById('admin-navmenu-list');
       const rowHome = document.createElement('div');
-      rowHome.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid #E6EDF8; border-radius:10px; background:#F7FAFD;';
-      rowHome.innerHTML = '<input type="checkbox" checked disabled style="width:18px; height:18px;"><span style="font-weight:bold; color:#33466E; flex:1;">主頁</span><span style="font-size:12px; color:#999;">固定顯示</span>';
+      rowHome.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid #E9EDF5; border-radius:10px; background:#F7FAFD;';
+      rowHome.innerHTML = '<input type="checkbox" checked disabled style="width:18px; height:18px;"><span style="font-weight:bold; color:#29395C; flex:1;">主頁</span><span style="font-size:12px; color:#999;">固定顯示</span>';
       box.appendChild(rowHome);
       list.forEach((f) => {
         const hidden = !!(window.navHiddenFeatures && window.navHiddenFeatures[f.id]);
         const row = document.createElement('label');
-        row.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid #E6EDF8; border-radius:10px; background:#fff; cursor:pointer;';
+        row.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid #E9EDF5; border-radius:10px; background:#fff; cursor:pointer;';
         row.innerHTML = `
           <input type="checkbox" ${hidden ? '' : 'checked'} style="width:18px; height:18px; cursor:pointer;" onchange="window.adminSetNavFeature('${f.id}', this.checked, this)">
-          <span style="font-weight:bold; color:#33466E; flex:1;">${f.label}</span>
+          <span style="font-weight:bold; color:#29395C; flex:1;">${f.label}</span>
           <span id="admin-navmenu-status-${f.id}" style="font-size:12px; font-weight:bold; padding:2px 8px; border-radius:6px; ${hidden ? 'background:#F3F4F6; color:#6B7280;' : 'background:#E6F4EA; color:#1E7B3A;'}">${hidden ? '已關閉' : '顯示中'}</span>`;
         box.appendChild(row);
       });
@@ -4040,9 +4040,9 @@
       const grid = document.getElementById('admin-snapshotbg-grid');
       for (let n = 1; n <= 4; n++) {
         const card = document.createElement('div');
-        card.style.cssText = 'border:1px solid #E6EDF8; border-radius:12px; padding:10px; text-align:center; background:#fff;';
+        card.style.cssText = 'border:1px solid #E9EDF5; border-radius:12px; padding:10px; text-align:center; background:#fff;';
         card.innerHTML = `
-          <div style="font-weight:bold; color:#33466E; margin-bottom:8px;">${n} 人合照背景</div>
+          <div style="font-weight:bold; color:#29395C; margin-bottom:8px;">${n} 人合照背景</div>
           <div id="admin-snapshotbg-preview-${n}" style="aspect-ratio:4/5; border-radius:8px; background:#F7F4EE; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px; overflow:hidden;">載入中…</div>
           <div style="display:flex; gap:6px; justify-content:center; margin-top:8px; flex-wrap:wrap;">
             <label class="btn btn-primary" style="font-size:13px; padding:5px 10px; cursor:pointer;">上載圖片

@@ -209,7 +209,7 @@ window.applyRoleBasedSidebar = function() {
       }
       if (subjectsEl) {
         subjectsEl.innerHTML = (t.subjectsIntended || [])
-          .map((s) => `<span class="tag" style="background:#F5F8FD; color:#33466E;">${escapeHtmlLocal(window.translateSubjectName ? window.translateSubjectName(s) : s)}</span>`)
+          .map((s) => `<span class="tag" style="background:#F6F7FB; color:#29395C;">${escapeHtmlLocal(window.translateSubjectName ? window.translateSubjectName(s) : s)}</span>`)
           .join('');
       }
       if (followerCountEl) followerCountEl.innerText = u.followerCount || 0;
@@ -247,7 +247,7 @@ window.applyRoleBasedSidebar = function() {
     listContainer.innerHTML = filtered.map((t) => {
       const uid = t.uid;
       const subjectsHtml = (t.subjectsIntended || [])
-        .map((s) => `<span class="tag" style="background:#F5F8FD; color:#33466E; margin-right:4px;">${escapeHtmlLocal(window.translateSubjectName ? window.translateSubjectName(s) : s)}</span>`)
+        .map((s) => `<span class="tag" style="background:#F6F7FB; color:#29395C; margin-right:4px;">${escapeHtmlLocal(window.translateSubjectName ? window.translateSubjectName(s) : s)}</span>`)
         .join('');
       // 撳頭像／導師名稱：只開細細張「資料卡」（window.viewUserProfile()），
       // 純顯示基本身份資訊；撳卡片其他位置（簡介、科目標籤、「查看 ›」、
@@ -634,7 +634,7 @@ window.applyRoleBasedSidebar = function() {
         </div>
         <div style="font-weight:700; font-size:14px; color:var(--brand-800); margin-bottom:2px;">${escapeHtmlLocal(n.title)}</div>
         <div style="font-size:12px; color:#888; margin-bottom:6px; min-height:16px;">${escapeHtmlLocal(n.description || '')}</div>
-        <div style="font-size:13px; color:#5A79B4; font-weight:700;">${centsToDollarStr(n.priceCents)}</div>
+        <div style="font-size:13px; color:#3F588F; font-weight:700;">${centsToDollarStr(n.priceCents)}</div>
         <div style="font-size:12px; color:#aaa; margin:4px 0;">${n.pageCount ? (n.pageCount + ' 頁') : '頁數計算中…'}${n.previewPages && n.previewPages.length ? '　預覽頁：' + n.previewPages.join(', ') : ''}</div>
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
           ${n.fullStoragePath
@@ -843,7 +843,7 @@ window.applyRoleBasedSidebar = function() {
                   <div style="font-weight:700; font-size:14px; color:var(--brand-800); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtmlLocal(n.title)}</div>
                   ${topicNameMap[n.topicId] ? `<div style="font-size:12px; color:#888; margin-top:2px;">${escapeHtmlLocal(topicNameMap[n.topicId])}</div>` : ''}
                 </div>
-                <div style="font-size:13px; color:#5A79B4; font-weight:700; flex-shrink:0; white-space:nowrap;">${centsToDollarStr(n.priceCents)}</div>
+                <div style="font-size:13px; color:#3F588F; font-weight:700; flex-shrink:0; white-space:nowrap;">${centsToDollarStr(n.priceCents)}</div>
               </div>
               <div style="display:flex; gap:6px; margin-top:8px;">
                 ${n.previewStoragePath
