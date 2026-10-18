@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.213.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.213.2"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1690,7 +1690,7 @@
   </header>
 
   <!-- 全站置頂嘅「今日目標 + 等級／EXP」合併狀態列：唔理揭緊邊個分頁都見到，登入先顯示 -->
-  <div id="global-status-bar" style="display:none; background:linear-gradient(135deg, #4A68A8, #A4B4D4); padding:6px 16px;">
+  <div id="global-status-bar" style="display:none; background:linear-gradient(135deg, #34518F, #2A4275); padding:6px 16px;">
     <div style="max-width:480px; margin:0 auto; display:flex; align-items:stretch; gap:10px;">
       <div style="flex:1; min-width:0;">
         <div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px;">
@@ -1698,7 +1698,7 @@
           <span id="global-goal-label" style="font-size:13px; color:rgba(255,255,255,.9); white-space:nowrap;">0/60分鐘</span>
         </div>
         <div style="background:rgba(255,255,255,.3); border-radius:99px; height:5px; overflow:hidden; margin-top:3px;">
-          <div id="global-goal-bar" style="height:100%; background:#fff; border-radius:99px; width:0%; transition:width .6s ease;"></div>
+          <div id="global-goal-bar" style="height:100%; background:#FFD84D; border-radius:99px; width:0%; transition:width .6s ease;"></div>
         </div>
       </div>
       <div style="width:1px; align-self:stretch; background:rgba(255,255,255,.3); flex-shrink:0;"></div>
@@ -1708,7 +1708,7 @@
           <span onclick="event.stopPropagation(); openPtsExpInfoModal();" title="PTS 及 EXP 如何獲得？" data-i18n-title="ptsExp.title" style="display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:50%; background:rgba(255,255,255,.35); font-size:11px; font-weight:900; font-style:normal; flex-shrink:0; cursor:pointer;">!</span>
         </div>
         <div style="background:rgba(255,255,255,.3); border-radius:6px; height:5px; margin-top:3px; overflow:hidden;">
-          <div id="global-exp-bar" style="background:#fff; height:100%; width:0%; transition:width .4s ease;"></div>
+          <div id="global-exp-bar" style="background:#FFD84D; height:100%; width:0%; transition:width .4s ease;"></div>
         </div>
       </div>
     </div>
