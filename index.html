@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.213.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.213.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -1474,11 +1474,12 @@
   <script>
     if (!window.IS_PROD_SITE) {
       document.write(
-        '<div style="position:fixed;top:0;left:0;right:0;z-index:999999;' +
-        'background:#DC2626;color:#fff;font-weight:700;font-size:13px;' +
-        'text-align:center;padding:4px 8px;font-family:sans-serif;' +
-        'box-shadow:0 1px 4px rgba(0,0,0,.2);">' +
-        '開發／測試環境（concenmate-dev） —— 此處的任何操作都不會影響真實學生資料' +
+        // 細細粒紅色標籤，放左下角；pointer-events:none 令佢唔會阻到任何按鈕
+        '<div id="cm-dev-env-tag" title="此處的任何操作都不會影響真實學生資料" style="position:fixed;left:10px;bottom:10px;z-index:999999;' +
+        'pointer-events:none;background:#DC2626;color:#fff;font-weight:700;font-size:12px;' +
+        'padding:5px 11px;border-radius:999px;font-family:sans-serif;opacity:.92;' +
+        'box-shadow:0 2px 8px rgba(0,0,0,.25);">' +
+        '測試環境（concenmate-dev）' +
         '</div>'
       );
     }
