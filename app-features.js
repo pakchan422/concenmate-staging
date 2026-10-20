@@ -3035,7 +3035,8 @@
       wrap.style.display = 'flex';
       wrap.innerHTML = active.map(se => {
         const items = gachaItemsInSeries(se.id);
-        const cover = se.cover || (items.find(st => st.photo) || {}).photo;
+        // 系列縮圖：用該系列嘅扭蛋機圖（冇就用預設扭蛋機圖）
+        const cover = se.machineImage || window.GACHA_MACHINE_IMAGE_URL || 'gacha-machine.png';
         const on = String(se.id) === String(sel);
         return `<button type="button" onclick="selectGachaSeries('${escapeHtml(String(se.id))}')" class="gacha-series-chip${on ? ' on' : ''}">
           ${cover ? `<img src="${cover}" alt="">` : ''}

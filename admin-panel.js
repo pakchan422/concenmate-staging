@@ -323,8 +323,8 @@
           : `<img src="gacha-machine.png" style="width:100%; height:100%; object-fit:contain;">`;
         return `
           <div class="admin-card">
-            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">扭蛋機外觀圖片</h3>
-            <p style="font-size:13px; color:#888; margin-bottom:10px;">這張是扭蛋機本身的外殼圖（不是造型），顯示在學生點擊扭蛋的頁面。上傳新圖會即時取代畫面上顯示的圖案，不上傳則繼續使用程式碼內建的預設圖。</p>
+            <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">預設扭蛋機圖片</h3>
+            <p style="font-size:13px; color:#888; margin-bottom:10px;">這張是預設的扭蛋機外觀圖（不是造型）。未在下方「扭蛋系列」表格設定專屬「扭蛋機圖」的系列，會使用這張圖；不上傳則使用網站內建的預設圖。</p>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <div id="admin-gacha-machine-thumb" onclick="document.getElementById('admin-gacha-machine-input').click()" title="點擊這裡上傳圖片" style="width:80px; height:80px; border-radius:10px; background:#F6F7FB; border:1px dashed #D2D9E9; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;">${previewInner}</div>
               <input type="file" accept="image/*" id="admin-gacha-machine-input" style="display:none;" onchange="adminUploadGachaMachineImage(this)">
