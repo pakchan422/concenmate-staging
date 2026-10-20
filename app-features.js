@@ -3457,13 +3457,13 @@
       const gridEl = document.getElementById('gacha-result-batch-grid');
       gridEl.innerHTML = rolls.map(({ sticker, isNew, ownedCountAfter }, idx) => {
         const thumb = sticker.photo
-          ? `<img src="${sticker.photo}" alt="${escapeHtml(gachaItemName(sticker))}" style="width:56px; height:56px; object-fit:contain; border-radius:8px;">`
+          ? `<img src="${sticker.photo}" alt="${escapeHtml(gachaItemName(sticker))}" style="width:100%; max-width:64px; aspect-ratio:1; object-fit:contain; border-radius:8px; display:block; margin:0 auto;">`
           : `<span style="font-size:30px;">${escapeHtml(sticker.emoji || '🦦')}</span>`;
         const badgeColor = isNew ? '#C0524A' : '#344976';
         const badgeText = isNew ? window.t('gacha.newStickerShort', '新造型') : `×${ownedCountAfter}`;
         const rarityBorder = GACHA_RARITY_STYLE[gachaRarityOf(sticker)].border;
         return `
-          <div onclick="showGachaPrizeDetail(${idx})" style="cursor:pointer; background:${isNew ? '#FBEAE8' : '#F6F7FB'}; border:2px solid ${gachaRarityOf(sticker) === 'common' ? badgeColor : rarityBorder}; border-radius:12px; padding:8px 4px; text-align:center;" title="${escapeHtml(window.t('gacha.clickToEnlargeTemplate', '點擊放大查看：{name}').replace('{name}', gachaItemName(sticker)))}">
+          <div onclick="showGachaPrizeDetail(${idx})" style="cursor:pointer; background:${isNew ? '#FBEAE8' : '#F6F7FB'}; border:2px solid ${gachaRarityOf(sticker) === 'common' ? badgeColor : rarityBorder}; border-radius:12px; padding:8px 4px; text-align:center; min-width:0; box-sizing:border-box;" title="${escapeHtml(window.t('gacha.clickToEnlargeTemplate', '點擊放大查看：{name}').replace('{name}', gachaItemName(sticker)))}">
             <div>${thumb}</div>
             <div style="font-size:13px; font-weight:bold; color:${badgeColor}; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${badgeText}</div>
           </div>`;

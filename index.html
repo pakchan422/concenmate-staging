@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.214.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.214.1"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2652,9 +2652,9 @@
                    呼叫）按 <main> 呢個內容區（唔連左邊側邊欄）嘅實際闊度
                    計算，先至係「扭蛋頁面部分」視覺上嘅正中央，唔係成個
                    瀏覽器視窗（連側邊欄）嘅正中央。 -->
-              <div id="gacha-result-box-batch" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:2000; width:400px; max-width:94vw; padding:18px; border-radius:16px; background:rgba(246,247,251,.98); border:2px solid #D2D9E9; box-shadow:0 8px 32px rgba(0,0,0,.35); animation: gacha-pop-center .4s ease; text-align:center;">
+              <div id="gacha-result-box-batch" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:2000; width:480px; max-width:94vw; padding:18px; box-sizing:border-box; border-radius:16px; background:rgba(246,247,251,.98); border:2px solid #D2D9E9; box-shadow:0 8px 32px rgba(0,0,0,.35); animation: gacha-pop-center .4s ease; text-align:center;">
                 <div style="font-size:17px; font-weight:bold; color:#29395C; margin-bottom:12px;" data-i18n="gacha.batchResultTitle">連續抽十次結果</div>
-                <div id="gacha-result-batch-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;"></div>
+                <div id="gacha-result-batch-grid" style="display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:8px;"></div>
               </div>
               <!-- 扭蛋機外殼 SVG -->
               <img id="gacha-machine-img" src="gacha-machine.png" width="190" alt="扭蛋機" style="display:block; filter:drop-shadow(0 4px 12px rgba(0,0,0,.15));">
