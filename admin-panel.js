@@ -356,6 +356,11 @@
               <input type="file" accept="image/*" id="admin-series-machine-input-${idx}" style="display:none;" onchange="adminUploadSeriesMachineImage(${idx}, this)">
               ${se.machineImage ? `<button type="button" class="btn btn-outline" style="padding:1px 6px; font-size:12px; vertical-align:middle;" onclick="adminRemoveSeriesMachineImage(${idx})">移除</button>` : ''}
             </td>
+            <td style="white-space:nowrap;">
+              <div onclick="document.getElementById('admin-series-bg-input-${idx}').click()" title="點擊上傳此系列的背景圖" style="display:inline-flex; width:80px; height:45px; border-radius:8px; background:#F6F7FB; border:1px dashed #D2D9E9; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; vertical-align:middle; font-size:11px; color:#999;">${se.bgImage ? `<img src="${se.bgImage}" style="width:100%; height:100%; object-fit:cover;">` : '上傳'}</div>
+              <input type="file" accept="image/*" id="admin-series-bg-input-${idx}" style="display:none;" onchange="adminUploadSeriesBgImage(${idx}, this)">
+              ${se.bgImage ? `<button type="button" class="btn btn-outline" style="padding:1px 6px; font-size:12px; vertical-align:middle;" onclick="adminRemoveSeriesBgImage(${idx})">移除</button>` : ''}
+            </td>
             <td><button type="button" class="btn btn-red" style="padding:3px 8px; font-size:13px;" onclick="adminRemoveGachaSeries(${idx})">刪除</button></td>
           </tr>`;
         }).join('');
@@ -365,11 +370,11 @@
               <h3 style="font-size:15px; font-weight:bold; color:var(--brand-800);">扭蛋系列（共 ${list.length} 個）</h3>
               <button class="btn btn-outline" style="font-size:13px; padding:4px 10px;" onclick="adminAddGachaSeries()">新增系列</button>
             </div>
-            <p style="font-size:13px; color:#888; margin-bottom:8px;">學生在扭蛋頁面先選擇系列，再抽該系列的造型；每個系列有獨立的收集進度。取消「開放扭蛋」後，學生不能再抽該系列，但已收集的造型會保留，圖鑑顯示為「已停售」。系列的排列次序即扭蛋頁面的顯示次序。英文名稱留空時，英文介面會顯示中文名稱。「扭蛋機圖」可為每個系列設定專屬的扭蛋機外觀（建議使用透明背景 PNG）；未上傳時使用下方的預設扭蛋機圖。</p>
+            <p style="font-size:13px; color:#888; margin-bottom:8px;">學生在扭蛋頁面先選擇系列，再抽該系列的造型；每個系列有獨立的收集進度。取消「開放扭蛋」後，學生不能再抽該系列，但已收集的造型會保留，圖鑑顯示為「已停售」。系列的排列次序即扭蛋頁面的顯示次序。英文名稱留空時，英文介面會顯示中文名稱。「扭蛋機圖」可為每個系列設定專屬的扭蛋機外觀（建議使用透明背景 PNG）；未上傳時使用下方的預設扭蛋機圖。「背景圖」是扭蛋機後面的場景（建議 16:9 橫向圖，中間留空），未上傳時使用網站內建的預設背景。</p>
             <div style="overflow-x:auto;">
               <table class="admin-table">
-                <thead><tr><th>次序</th><th>中文名稱</th><th>英文名稱</th><th>開放扭蛋</th><th>造型數量</th><th>扭蛋機圖</th><th></th></tr></thead>
-                <tbody>${rows || '<tr><td colspan="7" style="text-align:center; color:#999; padding:16px;">未有系列，請點擊「新增系列」</td></tr>'}</tbody>
+                <thead><tr><th>次序</th><th>中文名稱</th><th>英文名稱</th><th>開放扭蛋</th><th>造型數量</th><th>扭蛋機圖</th><th>背景圖</th><th></th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="8" style="text-align:center; color:#999; padding:16px;">未有系列，請點擊「新增系列」</td></tr>'}</tbody>
               </table>
             </div>
           </div>`;
@@ -704,6 +709,37 @@
         window.showToast('圖片上傳失敗：' + (err.message || err), '❌');
       }
     };
+    // 個別系列專屬嘅扭蛋機背景場景圖
+    window.adminUploadSeriesBgImage = async function(idx, inputEl) {
+      if (!adminGachaDraft || !adminGachaDraft.series[idx]) return;
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { window.showToast('請選擇圖片檔案', '⚠️'); return; }
+      if (!window.storage || !window.storageApi) { window.showToast('Storage 未初始化，請重新整理頁面再試', '⚠️'); return; }
+      const se = adminGachaDraft.series[idx];
+      const oldUrl = se.bgImage;
+      window.showToast('上傳中圖片…', '📤');
+      try {
+        const { blob, mimeType } = await compressImageFileToBlob(file, 1600, 0.85);
+        const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+        const path = `gacha_stickers/bg_series_${String(se.id).replace(/[^A-Za-z0-9_-]/g, '')}_${Date.now()}.${ext}`;
+        const fileRef = window.storageApi.ref(window.storage, path);
+        await window.storageApi.uploadBytes(fileRef, blob, { contentType: mimeType });
+        se.bgImage = await window.storageApi.getDownloadURL(fileRef);
+        renderAdminGachaTab();
+        window.showToast('圖片上傳成功，請點擊「儲存全部改動」才會正式生效', '🎉');
+        tryDeleteOldGachaStoragePhoto(oldUrl);
+      } catch (err) {
+        window.showToast('圖片上傳失敗：' + (err.message || err), '❌');
+      }
+    };
+    window.adminRemoveSeriesBgImage = function(idx) {
+      if (!adminGachaDraft || !adminGachaDraft.series[idx]) return;
+      tryDeleteOldGachaStoragePhoto(adminGachaDraft.series[idx].bgImage);
+      adminGachaDraft.series[idx].bgImage = null;
+      renderAdminGachaTab();
+    };
+
     window.adminRemoveSeriesMachineImage = function(idx) {
       if (!adminGachaDraft || !adminGachaDraft.series[idx]) return;
       tryDeleteOldGachaStoragePhoto(adminGachaDraft.series[idx].machineImage);
@@ -797,7 +833,7 @@
       }
       const payload = {
         stickers: adminGachaDraft.stickers,
-        series: adminGachaDraft.series.map((se, i) => ({ id: String(se.id), name: se.name || '', nameEn: se.nameEn || '', enabled: se.enabled !== false, order: i + 1, cover: se.cover || null, machineImage: se.machineImage || null })),
+        series: adminGachaDraft.series.map((se, i) => ({ id: String(se.id), name: se.name || '', nameEn: se.nameEn || '', enabled: se.enabled !== false, order: i + 1, cover: se.cover || null, machineImage: se.machineImage || null, bgImage: se.bgImage || null })),
         costNormal: adminGachaDraft.costNormal,
         costLucky: adminGachaDraft.costLucky,
         machineImageUrl: adminGachaDraft.machineImageUrl || null,
