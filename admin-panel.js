@@ -337,6 +337,49 @@
         `;
       }
 
+      // 圖片規格說明（只供管理人員參考，唔影響任何設定）
+      function renderGachaImageSpecCard() {
+        const row = (k, v) => `<tr><td style="white-space:nowrap; font-weight:700; color:var(--brand-800); vertical-align:top; padding:6px 10px 6px 0;">${k}</td><td style="padding:6px 0; line-height:1.7;">${v}</td></tr>`;
+        const sec = (title, rows) => `
+          <div style="margin-top:12px;">
+            <div style="font-size:14px; font-weight:800; color:var(--brand-800); border-left:4px solid var(--brand-500); padding-left:8px; margin-bottom:4px;">${title}</div>
+            <table style="width:100%; font-size:13px; color:#475F92; border-collapse:collapse;">${rows}</table>
+          </div>`;
+        return `
+          <div class="admin-card">
+            <details>
+              <summary style="cursor:pointer; font-size:15px; font-weight:bold; color:var(--brand-800);">圖片規格說明（製作或更換圖片前請先閱讀）</summary>
+              <p style="font-size:13px; color:#888; margin:8px 0 0;">以下為扭蛋相關圖片的建議規格。所有圖片均使用 Ottie 的統一畫風：中灰藍色柔和描邊、平塗上色，不可含任何文字、字母或數字。</p>
+              ${sec('一、造型圖（每件扭蛋造型）',
+                row('尺寸', '正方形 1:1，建議 1024 × 1024 像素') +
+                row('格式', 'PNG') +
+                row('普通', '透明背景，只有 Ottie 及道具，四周留少量空位') +
+                row('稀有', '簡單場景背景（牆壁、地面、一至兩件小物件，淡色），剪裁為圓角正方形，圓角以外為透明') +
+                row('限定', '豐富完整的場景背景（多件道具、燈光效果、顏色較濃），剪裁為圓角正方形，圓角以外為透明') +
+                row('上傳處理', '系統會自動壓縮至最闊 600 像素'))}
+              ${sec('二、扭蛋機圖（每個系列可各自設定）',
+                row('尺寸', '橫向長方形，闊高比 6:5，建議 960 × 800 像素') +
+                row('格式', 'PNG，透明背景') +
+                row('置中', '<b>扭蛋機機身的正中必須位於圖片的正中</b>。如旁邊有 Ottie 等角色，須在另一邊加上相同闊度的透明空位，令機身置中') +
+                row('高度', '扭蛋機（連角色）高度約佔圖片高度 94%，底部貼近圖片下緣') +
+                row('網站顯示', '闊 360 像素（手機畫面較窄時自動縮小）；系列選擇按鈕的縮圖亦會使用此圖') +
+                row('上傳處理', '系統會自動壓縮至最闊 800 像素'))}
+              ${sec('三、背景圖（每個系列可各自設定）',
+                row('尺寸', '橫向 16:9，建議 1376 × 768 或 1920 × 1080 像素') +
+                row('格式', 'JPG') +
+                row('構圖', '畫面正中約 40% 闊度須<b>完全留空</b>（扭蛋機放在此處）；裝飾物件放在左右兩邊') +
+                row('地平線', '地面與牆壁或天空的分界線約在圖片高度 65% 至 75% 的位置，令扭蛋機看起來站在地上') +
+                row('底部', '圖片底部約 15% 保持淺色及簡單，以免遮擋「抽一次」「連續抽十次」按鈕') +
+                row('網站顯示', '電腦版：填滿整個框並貼底顯示，頂部可能被裁走少許。手機版：放大至框高的 140% 並貼底顯示，左右兩邊會被裁走較多，重要物件須放近中間') +
+                row('未上傳時', '使用網站內建的預設背景（gacha-bg.jpg）') +
+                row('上傳處理', '系統會自動壓縮至最闊 1600 像素'))}
+              ${sec('四、原始檔存放位置',
+                row('造型', 'Desktop/concenmate-app/Ottie Pic/（每個系列一個資料夾，例如「動物連身衣」「書伴日常」）') +
+                row('扭蛋機及背景', 'Desktop/concenmate-app/Ottie Pic/扭蛋機/'))}
+            </details>
+          </div>`;
+      }
+
       function renderSeriesCard() {
         const list = adminGachaDraft.series;
         const rows = list.map((se, idx) => {
@@ -458,6 +501,8 @@
             <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">連續抽十次 (PTS，一次過 10 抽的總費用)：<input class="admin-input-sm" type="number" min="0" style="width:80px;" value="${adminGachaDraft.costLucky}" onchange="adminGachaDraft.costLucky = parseInt(this.value)||0"></label>
           </div>
         </div>
+
+        ${renderGachaImageSpecCard()}
 
         ${renderMachineImageCard()}
 
