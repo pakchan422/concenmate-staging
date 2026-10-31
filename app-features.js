@@ -3299,21 +3299,20 @@
       const have = gachaFragments();
       const groups = GACHA_SERIES.slice().sort((a, b) => (a.order || 0) - (b.order || 0))
         .filter(se => se && se.enabled !== false)
-        .map(se => ({ se, items: gachaItemsInSeries(se.id).filter(st => !((owned[st.id] || 0) > 0)) }))
+        .map(se => ({ se, items: gachaItemsInSeries(se.id) }))
         .filter(g => g.items.length);
-      if (!GACHA_SERIES.length) {
-        const items = GACHA_STICKERS.filter(st => !((owned[st.id] || 0) > 0));
-        if (items.length) groups.push({ se: null, items });
-      }
-      if (!groups.length) {
-        list.innerHTML = `<p style="text-align:center; color:#5A79B4; font-weight:700; padding:24px 8px;">${escapeHtml(window.t('gacha.fragmentShopAllOwned', '你已收集所有可兌換的造型！'))}</p>`;
-        return;
-      }
-      list.innerHTML = groups.map(g => {
+      if (!GACHA_SERIES.length && GACHA_STICKERS.length) groups.push({ se: null, items: GACHA_STICKERS.slice() });
+      // 已擁有的造型照樣顯示，按鈕改為「已收集」；全部收集齊先在頂部加一句提示
+      const allOwned = groups.every(g => g.items.every(st => (owned[st.id] || 0) > 0));
+      const allOwnedNote = allOwned
+        ? `<p style="grid-column:1/-1; text-align:center; color:#5A79B4; font-weight:700; margin:4px 0;">${escapeHtml(window.t('gacha.fragmentShopAllOwned', '你已收集所有可兌換的造型！'))}</p>`
+        : '';
+      list.innerHTML = allOwnedNote + groups.map(g => {
         const head = g.se ? `<div style="grid-column:1/-1; font-size:14px; font-weight:800; color:#29395C; margin-top:6px;">${escapeHtml(gachaSeriesName(g.se))}</div>` : '';
         return head + g.items.map(st => {
           const price = gachaFragmentCostOf(st);
-          const ok = have >= price;
+          const isOwned = (owned[st.id] || 0) > 0;
+          const ok = !isOwned && have >= price;
           const rs = GACHA_RARITY_STYLE[gachaRarityOf(st)];
           const thumb = st.photo
             ? `<img src="${st.photo}" alt="${escapeHtml(gachaItemName(st))}" style="width:100%; aspect-ratio:1; object-fit:contain; border-radius:8px;">`
@@ -3323,7 +3322,9 @@
             ${thumb}
             <div style="font-size:12px; font-weight:bold; color:#344976; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(gachaItemName(st))}</div>
             <div>${gachaRarityBadge(st, 11)}</div>
-            <button type="button" class="btn ${ok ? 'btn-primary' : 'btn-outline'}" ${ok ? '' : 'disabled'} onclick="exchangeFragmentSticker(${idArg}, this)" style="font-size:12px; padding:5px 6px; width:100%;">${escapeHtml(window.t('gacha.fragmentExchangeBtnTemplate', '{n} 碎片兌換').replace('{n}', price))}</button>
+            ${isOwned
+              ? `<div style="font-size:12px; font-weight:700; padding:6px; width:100%; box-sizing:border-box; text-align:center; border-radius:8px; background:#E9EDF5; color:#5A79B4;">${escapeHtml(window.t('gacha.collectedLabelShort', '已收集'))}</div>`
+              : `<button type="button" class="btn ${ok ? 'btn-primary' : 'btn-outline'}" ${ok ? '' : 'disabled'} onclick="exchangeFragmentSticker(${idArg}, this)" style="font-size:12px; padding:5px 6px; width:100%; justify-content:center; text-align:center;">${escapeHtml(window.t('gacha.fragmentExchangeBtnTemplate', '{n} 碎片兌換').replace('{n}', price))}</button>`}
           </div>`;
         }).join('');
       }).join('');
