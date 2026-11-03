@@ -265,6 +265,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
       }
       return window.getViewerRoomPool();
     }
+    window.getLobbyViewPool = getLobbyViewPool;
 
     // 管理員撳「🛠️ 轉換溫習室」掣嗰陣叫呢個 function：喺兩個池之間切換
     // （唔理而家係咪跟緊自己帳戶嘅池，撳一下就切去另一個），重新訂閱
