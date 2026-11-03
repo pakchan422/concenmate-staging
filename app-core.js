@@ -281,11 +281,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
       const titleEl = document.getElementById('room-lobby-title');
       const isAdmin = typeof window.isCurrentUserAdmin === 'function' && window.isCurrentUserAdmin();
       const viewPool = getLobbyViewPool();
-      if (titleEl) {
-        let title = window.t('room.lobbyTitle', '公開溫習大廳');
-        if (isAdmin && adminRoomPoolOverride) title += window.t('room.adminViewSuffix', '（管理員檢視）');
-        titleEl.innerText = title;
-      }
+      // v1.223.1：唔再顯示「公開溫習大廳」標題，兩粒溫習室掣已經足夠說明
+      if (titleEl) titleEl.innerText = '';
       // v1.223.1：兩粒掣——睇緊嗰個池藍色，另一個淺灰加鎖（管理員冇鎖，可以撳嚟切換）
       const lockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
       [['secondary', window.t('room.poolPillSecondary', '中學生溫習室')], ['public', window.t('room.poolPillPublic', '公開溫習室')]].forEach(([pool, label]) => {
