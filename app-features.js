@@ -803,10 +803,88 @@
     window.stoneSrcForExp = (exp) => window.stoneSrcForRank(getRankTitle(calcLevelInfo(exp || 0).level));
     // v1.222.0：石頭改為累積，分款記錄（伺服器 users/{uid}.stones）。
     // 未有 stones 欄位（舊帳戶第一次溫習之前）就用累積時數估算總數。
+    function sortedRankList() {
+      return ((LEVEL_CONFIG && Array.isArray(LEVEL_CONFIG.ranks) && LEVEL_CONFIG.ranks.length) ? LEVEL_CONFIG.ranks : DEFAULT_LEVEL_CONFIG.ranks)
+        .slice().sort((a, b) => (a.minLevel || 0) - (b.minLevel || 0));
+    }
+    // 未有 stones 欄位：用同伺服器 backfillStones 一樣的方法估算各款粒數（第一次溫習後就會變成伺服器的真實數字）
+    function estimateStoneCounts() {
+      const u = window.currentUser || {};
+      const counts = [0, 0, 0, 0, 0];
+      const total = Math.floor(((parseFloat(u.hours) || 0) * 60) / STONE_MINUTES);
+      const exp = Math.max(0, parseInt(u.exp) || 0);
+      const f = (LEVEL_CONFIG && LEVEL_CONFIG.levelCurveFactor) || 10;
+      const sorted = sortedRankList();
+      let given = 0;
+      if (total > 0 && exp > 0) {
+        sorted.forEach((r, i) => {
+          const L = r.minLevel || 1;
+          const startExp = f * L * (L - 1);
+          const next = sorted[i + 1];
+          const endExp = next ? f * (next.minLevel || 1) * ((next.minLevel || 1) - 1) : Infinity;
+          const part = Math.max(0, Math.min(exp, endExp) - startExp);
+          if (part <= 0) return;
+          const n = Math.floor(total * part / exp);
+          counts[stoneIndexForRank(r) - 1] += n;
+          given += n;
+        });
+      }
+      counts[stoneIndexForRank(getRankTitle(calcLevelInfo(exp).level)) - 1] += Math.max(0, total - given);
+      return counts;
+    }
     function myStoneCounts() {
       const s = (window.currentUser && window.currentUser.stones) || null;
-      return s ? [1, 2, 3, 4, 5].map(i => parseInt(s[String(i)]) || 0) : null;
+      return s ? [1, 2, 3, 4, 5].map(i => parseInt(s[String(i)]) || 0) : estimateStoneCounts();
     }
+    // v1.223.0：段位解鎖石頭款式；用戶可以揀返已解鎖的舊款嚟磨
+    function unlockedStoneMap(exp) {
+      const level = calcLevelInfo(exp || 0).level;
+      const map = {}; // idx -> 解鎖所需等級
+      sortedRankList().forEach(r => {
+        const idx = stoneIndexForRank(r);
+        if (!(idx in map)) map[idx] = r.minLevel || 1;
+      });
+      const unlocked = new Set(Object.keys(map).filter(k => level >= map[k]).map(Number));
+      if (!unlocked.size) unlocked.add(1);
+      return { map, unlocked };
+    }
+    const CHOSEN_STONE_KEY = 'cm_chosenStone';
+    window.getChosenStone = function() {
+      if (window._pendingStoneChoice) {
+        try { const v = parseInt(localStorage.getItem(CHOSEN_STONE_KEY)); if (v >= 0 && v <= 5) return v; } catch (e) {}
+      }
+      const v = window.currentUser && window.currentUser.activeStone;
+      return (typeof v === 'number' && v >= 0 && v <= 5) ? v : 0;
+    };
+    window.confirmChosenStone = function(v) {
+      if (window._pendingStoneChoice && window.getChosenStone() === v) {
+        window._pendingStoneChoice = false;
+        try { localStorage.removeItem(CHOSEN_STONE_KEY); } catch (e) {}
+      }
+      if (window.currentUser && !window._pendingStoneChoice) window.currentUser.activeStone = v;
+    };
+    try { if (localStorage.getItem(CHOSEN_STONE_KEY) !== null) window._pendingStoneChoice = true; } catch (e) {}
+    // 自己而家磨緊邊款（1–5）
+    window.myActiveStoneIndex = function() {
+      const exp = (window.currentUser && window.currentUser.exp) || 0;
+      const { unlocked } = unlockedStoneMap(exp);
+      const c = window.getChosenStone();
+      if (c && unlocked.has(c)) return c;
+      return stoneIndexForRank(getRankTitle(calcLevelInfo(exp).level));
+    };
+    window.chooseStone = function(idx) {
+      const exp = (window.currentUser && window.currentUser.exp) || 0;
+      const { unlocked } = unlockedStoneMap(exp);
+      if (!unlocked.has(idx)) return;
+      const autoIdx = stoneIndexForRank(getRankTitle(calcLevelInfo(exp).level));
+      const v = idx === autoIdx ? 0 : idx; // 揀返最新嗰款 = 自動，日後升段會自動轉新款
+      window._pendingStoneChoice = true;
+      try { localStorage.setItem(CHOSEN_STONE_KEY, String(v)); } catch (e) {}
+      if (window.currentUser) window.currentUser.activeStone = v;
+      if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard();
+      if (typeof window.refreshMyStoneTag === 'function') window.refreshMyStoneTag();
+      window.openStoneInfo(window._lastStoneInfoOpts || {});
+    };
     function totalStoneCount() {
       const c = myStoneCounts();
       if (c) return c.reduce((a, b) => a + b, 0);
@@ -830,6 +908,9 @@
       const mode = opts.mode || 'today';
       const count = typeof opts.count === 'number' ? opts.count : totalStoneCount();
       const perType = isMe ? myStoneCounts() : null;
+      if (isMe) window._lastStoneInfoOpts = opts;
+      const unlockInfo = unlockedStoneMap(exp);
+      const activeIdx = isMe ? window.myActiveStoneIndex() : curIdx;
       let line;
       if (!isMe) {
         line = window.t('stone.otherCountTemplate', '{name} 今次溫習，Ottie 已磨好 {n} 粒。').replace('{name}', opts.name).replace('{n}', count);
@@ -841,21 +922,26 @@
       }
       const row = ranks.slice(0, STONE_COUNT).map(r => {
         const idx = stoneIndexForRank(r);
-        const on = idx === curIdx;
-        return `<div style="display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; flex:1;">
-          <img src="stone-${idx}.png" alt="" width="34" height="34" style="border-radius:50%; ${on ? 'box-shadow:0 0 0 3px var(--accent);' : (idx > curIdx ? 'filter:grayscale(1); opacity:.55;' : '')}">
-          <span style="font-size:11px; color:${on ? 'var(--brand-800)' : '#8A94A8'}; font-weight:${on ? '700' : '400'}; white-space:nowrap;">${escapeHtml(window.stoneNameForRank(r))}</span>
-          <span style="font-size:10px; color:#8A94A8; white-space:nowrap;">${escapeHtml(window.rankTitle ? window.rankTitle(r) : r.title)}</span>
+        const unlocked = unlockInfo.unlocked.has(idx);
+        const on = idx === activeIdx;
+        const clickable = isMe && unlocked;
+        const sub = unlocked
+          ? escapeHtml(window.rankTitle ? window.rankTitle(r) : r.title)
+          : escapeHtml(window.t('stone.unlockAtTemplate', 'Lv.{n} 解鎖').replace('{n}', unlockInfo.map[idx] || r.minLevel || 1));
+        return `<div ${clickable ? `role="button" tabindex="0" onclick="window.chooseStone(${idx})"` : ''} style="display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; flex:1; ${clickable ? 'cursor:pointer;' : ''}">
+          <img src="stone-${idx}.png" alt="" width="34" height="34" style="border-radius:50%; ${on ? 'box-shadow:0 0 0 3px var(--accent);' : (!unlocked ? 'filter:grayscale(1); opacity:.45;' : '')}">
+          <span style="font-size:11px; color:${on ? 'var(--brand-800)' : (unlocked ? 'var(--brand-700)' : '#8A94A8')}; font-weight:${on ? '700' : '400'}; white-space:nowrap;">${escapeHtml(window.stoneNameForRank(r))}</span>
+          <span style="font-size:10px; color:#8A94A8; white-space:nowrap;">${sub}</span>
           ${perType ? `<span style="font-size:13px; font-weight:800; color:${perType[idx - 1] ? 'var(--brand-800)' : '#B8C0CF'};">×${perType[idx - 1]}</span>` : ''}
         </div>`;
       }).join('');
       const body = document.getElementById('stone-info-body');
       if (body) body.innerHTML = `
-        <img src="${window.stoneSrcForRank(rank)}" alt="" width="64" height="64" style="display:block; margin:6px auto 8px;">
+        <img src="stone-${activeIdx}.png" alt="" width="64" height="64" style="display:block; margin:6px auto 8px;">
         <p style="font-size:14px; color:var(--brand-800); line-height:1.6; margin:0 0 6px;">${escapeHtml(window.t('stone.infoDesc', '你每專心溫習 15 分鐘，Ottie 就在你身邊磨好一粒石頭。'))}</p>
         <p style="font-size:14px; font-weight:700; color:var(--brand-700); margin:0 0 12px;">${escapeHtml(line)}</p>
         <div style="display:flex; gap:4px; justify-content:space-between; padding:10px 6px; background:var(--brand-50); border-radius:12px;">${row}</div>
-        <p style="font-size:12px; color:#8A94A8; margin:8px 0 0;">${escapeHtml(window.t('stone.upgradeHint', '段位越高，Ottie 磨的石頭越珍貴。'))}</p>`;
+        <p style="font-size:12px; color:#8A94A8; margin:8px 0 0;">${escapeHtml(isMe ? window.t('stone.chooseHint', '段位越高，解鎖越珍貴的石頭。點擊已解鎖的石頭，就可以選擇 Ottie 接下來磨哪一款。') : window.t('stone.upgradeHint', '段位越高，Ottie 磨的石頭越珍貴。'))}</p>`;
       openModal('modal-stone-info');
     };
 
@@ -1843,7 +1929,7 @@
       // 今日石頭（第 6 格）：今日溫習分鐘 ÷ 15
       const stoneTile = document.getElementById('otter-stat-stones');
       if (stoneTile) {
-        stoneTile.innerHTML = `<img src="${window.stoneSrcForRank(rank)}" alt="" style="width:1.2em; height:1.2em; display:block;">×${totalStoneCount()}`;
+        stoneTile.innerHTML = `<img src="stone-${window.myActiveStoneIndex()}.png" alt="" style="width:1.2em; height:1.2em; display:block;">×${totalStoneCount()}`;
       }
     }
     window.updateOtterStatsCard = updateOtterStatsCard;

@@ -589,7 +589,7 @@
         el.dataset.bound = '1';
         el.addEventListener('click', (e) => { e.stopPropagation(); window.openStoneInfo && window.openStoneInfo({ mode: 'room', count: state.myStones || 0 }); });
       }
-      el.innerHTML = stoneTagHtml(window.stoneSrcForExp ? window.stoneSrcForExp(window.currentUser.exp || 0) : 'stone-1.png', state.myStones || 0);
+      el.innerHTML = stoneTagHtml(window.myActiveStoneIndex ? `stone-${window.myActiveStoneIndex()}.png` : 'stone-1.png', state.myStones || 0);
       if (pop) { el.classList.remove('stone-pop'); void el.offsetWidth; el.classList.add('stone-pop'); }
     }
     window.refreshMyStoneTag = refreshMyStoneTag;
@@ -1989,6 +1989,8 @@
         isNewDay,
         todayDateStr: hoursIncrement > 0 ? getTodayDateStr() : undefined
       };
+      // v1.223.0：用戶揀咗磨邊款石頭（0 = 自動跟最新段位）
+      if (hoursIncrement > 0 && typeof window.getChosenStone === 'function') payload.activeStone = window.getChosenStone();
       // v1.220.0：升級提示等伺服器回覆先顯示，咁就可以連埋升級獎勵一齊講
       const showLevelUpToast = (reward) => {
         const rank = getRankTitle(newLevel);
@@ -2007,6 +2009,7 @@
         if (res && res.stoneInfo) {
           window.currentUser.stones = res.stoneInfo.stones;
           window.currentUser.stoneMinutes = res.stoneInfo.stoneMinutes;
+          if (typeof res.stoneInfo.activeStone === 'number' && typeof window.confirmChosenStone === 'function') window.confirmChosenStone(res.stoneInfo.activeStone);
           if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard();
         }
         const reward = res && res.levelReward;

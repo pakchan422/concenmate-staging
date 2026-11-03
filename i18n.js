@@ -426,6 +426,8 @@
     'stone.todayCountTemplate': { 'zh-Hant': '今日 Ottie 已磨好 {n} 粒，再溫 {m} 分鐘就磨好下一粒。', 'en': 'Ottie has polished {n} today. {m} more minutes for the next one.', 'yue': '今日 Ottie 已經磨好 {n} 粒，再溫 {m} 分鐘就磨好下一粒。' },
     'stone.roomCountTemplate': { 'zh-Hant': '今次溫習，Ottie 已磨好 {n} 粒。', 'en': 'Ottie has polished {n} this session.', 'yue': '今次溫習，Ottie 已經磨好 {n} 粒。' },
     'stone.otherCountTemplate': { 'zh-Hant': '{name} 今次溫習，Ottie 已磨好 {n} 粒。', 'en': "In {name}'s session, Ottie has polished {n}.", 'yue': '{name} 今次溫習，Ottie 已經磨好 {n} 粒。' },
+    'stone.unlockAtTemplate': { 'zh-Hant': 'Lv.{n} 解鎖', 'en': 'Unlocks at Lv.{n}', 'yue': 'Lv.{n} 解鎖' },
+    'stone.chooseHint': { 'zh-Hant': '段位越高，解鎖越珍貴的石頭。點擊已解鎖的石頭，就可以選擇 Ottie 接下來磨哪一款。', 'en': 'Higher ranks unlock more precious stones. Tap an unlocked stone to choose which one Ottie polishes next.', 'yue': '段位越高，解鎖越矜貴嘅石頭。撳已解鎖嘅石頭，就可以揀 Ottie 之後磨邊款。' },
     'stone.upgradeHint': { 'zh-Hant': '段位越高，Ottie 磨的石頭越珍貴。', 'en': 'The higher your rank, the more precious the stone.', 'yue': '段位越高，Ottie 磨嘅石頭越矜貴。' },
     'otter.stonesTodayTemplate': { 'zh-Hant': 'Ottie 今日磨好 {n} 粒{stone}', 'en': 'Ottie polished {n} × {stone} today', 'yue': 'Ottie 今日磨好咗 {n} 粒{stone}' },
     'otter.stoneNextTemplate': { 'zh-Hant': '再溫 {m} 分鐘磨好下一粒', 'en': '{m} more min for the next one', 'yue': '再溫 {m} 分鐘磨好下一粒' },
