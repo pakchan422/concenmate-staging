@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.221.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.221.2"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -566,6 +566,9 @@
       right: 8px;
       z-index: 11;
     }
+    .emoji-reaction-toggle-btn img { width: 26px; height: 26px; display: block; }
+    .emoji-reaction-popover button img { width: 34px; height: 34px; display: block; }
+    .emoji-reaction-popover button:hover img { transform: scale(1.15); transition: transform .15s; }
     .emoji-reaction-toggle-btn {
       background: rgba(0,0,0,0.65);
       backdrop-filter: blur(4px);
@@ -573,8 +576,9 @@
       border: none;
       color: #fff;
       font-size: 15px;
-      width: 28px;
-      height: 28px;
+      width: 34px;
+      height: 34px;
+      padding: 0;
       border-radius: 50%;
       cursor: pointer;
       display: flex;
@@ -2357,12 +2361,12 @@
                      面板改為只喺撳返「😊」個切換掣，或者撳返畫面其他
                      地方（見 document click 監聽）先會關閉。 -->
                 <div class="emoji-reaction-toggle-wrap" onclick="event.stopPropagation();">
-                  <button type="button" class="emoji-reaction-toggle-btn" onclick="toggleEmojiReactionPanel()" title="表情反應" data-i18n-title="room.emojiReaction">😊</button>
+                  <button type="button" class="emoji-reaction-toggle-btn" onclick="toggleEmojiReactionPanel()" title="表情反應" data-i18n-title="room.emojiReaction"><img src="react-love.png" alt="表情反應"></button>
                   <div class="emoji-reaction-popover" id="emoji-reaction-popover" style="display:none;">
-                    <button type="button" onclick="sendDanmakuSticker('😆')">😆</button>
-                    <button type="button" onclick="sendDanmakuSticker('😍')">😍</button>
-                    <button type="button" onclick="sendDanmakuSticker('😭')">😭</button>
-                    <button type="button" onclick="sendDanmakuSticker('😴')">😴</button>
+                    <button type="button" onclick="sendDanmakuSticker('😆')" title="大笑"><img src="react-laugh.png" alt="大笑"></button>
+                    <button type="button" onclick="sendDanmakuSticker('😍')" title="喜歡"><img src="react-love.png" alt="喜歡"></button>
+                    <button type="button" onclick="sendDanmakuSticker('😭')" title="喊"><img src="react-cry.png" alt="喊"></button>
+                    <button type="button" onclick="sendDanmakuSticker('😴')" title="瞓覺"><img src="react-sleep.png" alt="瞓覺"></button>
                   </div>
                 </div>
 

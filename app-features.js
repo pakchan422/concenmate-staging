@@ -2537,16 +2537,24 @@
     };
 
     // 產生一個飄浮嘅表情動畫，放入指定嘅容器（自己或其他人嘅視訊卡片皆可用）
+    // v1.221.2：表情反應改用 Ottie 圖。廣播出去的仍然是 emoji（舊版本都收得到），
+    // 收到時對照呢個表換成 Ottie 圖；表入面冇的就照舊顯示文字。
+    const OTTIE_REACTIONS = { '😆': 'react-laugh.png', '😍': 'react-love.png', '😭': 'react-cry.png', '😴': 'react-sleep.png' };
+    window.OTTIE_REACTIONS = OTTIE_REACTIONS;
     function spawnSticker(container, emoji) {
       if (!container) return;
 
       const sticker = document.createElement('div');
       sticker.className = 'danmaku-sticker';
-      sticker.innerText = emoji;
+      if (OTTIE_REACTIONS[emoji]) {
+        sticker.innerHTML = `<img src="${OTTIE_REACTIONS[emoji]}" alt="" style="width:1em; height:1em; display:block;">`;
+      } else {
+        sticker.innerText = emoji;
+      }
 
       const randomLeft = Math.floor(Math.random() * 75) + 10;
       const randomRotate = Math.floor(Math.random() * 40) - 20;
-      const randomSize = Math.floor(Math.random() * 22) + 36;
+      const randomSize = Math.floor(Math.random() * 22) + 52;
 
       sticker.style.left = randomLeft + '%';
       sticker.style.fontSize = randomSize + 'px';
