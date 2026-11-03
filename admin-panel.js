@@ -1073,6 +1073,23 @@
         </div>
 
         <div class="admin-card" style="margin-top:12px;">
+          <h3 style="font-size:14px; font-weight:bold; margin-bottom:8px;">升級獎勵</h3>
+          <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px;">
+            <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">
+              每升一級送免費扭蛋券：
+              <input class="admin-input-sm" type="number" min="0" max="10" step="1" style="width:60px;" value="${adminLevelDraft.levelUpTickets ?? 1}" oninput="adminLevelDraft.levelUpTickets = parseInt(this.value)||0"> 張
+            </label>
+            <label style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">
+              每
+              <input class="admin-input-sm" type="number" min="1" max="100" step="1" style="width:60px;" value="${adminLevelDraft.milestoneEvery ?? 5}" oninput="adminLevelDraft.milestoneEvery = parseInt(this.value)||5">
+              級額外送碎片：
+              <input class="admin-input-sm" type="number" min="0" max="1000" step="1" style="width:60px;" value="${adminLevelDraft.milestoneFragments ?? 5}" oninput="adminLevelDraft.milestoneFragments = parseInt(this.value)||0"> 個
+            </label>
+          </div>
+          <p style="font-size:13px; color:#888;">用戶溫習時一升級，伺服器就會自動派發。免費扭蛋券可在扭蛋頁單抽一次，不扣積分。每一級只派一次；管理員手動補發 EXP 後，用戶下次溫習時會補派中間各級的獎勵。</p>
+        </div>
+
+        <div class="admin-card" style="margin-top:12px;">
           <h3 style="font-size:14px; font-weight:bold; margin-bottom:4px;">段位稱號 + 水獺貼圖（由低到高，建議第一行等級門檻＝1）</h3>
           <p style="font-size:13px; color:#888; margin-bottom:10px;">每個段位可以上傳專屬水獺相片，用家升到那個等級，主頁「我的水獺」就會自動換成那張相；不上傳則使用共用的預設插畫（有心情表情變化）。</p>
           <div>${ranksCards}</div>
@@ -1149,6 +1166,9 @@
       const payload = {
         expPerMinute: adminLevelDraft.expPerMinute,
         levelCurveFactor: adminLevelDraft.levelCurveFactor,
+        levelUpTickets: Math.max(0, Math.min(10, Math.floor(adminLevelDraft.levelUpTickets ?? 1))),
+        milestoneEvery: Math.max(1, Math.min(100, Math.floor(adminLevelDraft.milestoneEvery ?? 5))),
+        milestoneFragments: Math.max(0, Math.min(1000, Math.floor(adminLevelDraft.milestoneFragments ?? 5))),
         ranks: adminLevelDraft.ranks
       };
       const approxBytes = new Blob([JSON.stringify(payload)]).size;
@@ -1173,6 +1193,7 @@
           const data = snap.data();
           if (typeof data.expPerMinute === 'number') LEVEL_CONFIG.expPerMinute = data.expPerMinute;
           if (typeof data.levelCurveFactor === 'number') LEVEL_CONFIG.levelCurveFactor = data.levelCurveFactor;
+          ['levelUpTickets', 'milestoneEvery', 'milestoneFragments'].forEach(k => { if (typeof data[k] === 'number') LEVEL_CONFIG[k] = data[k]; });
           if (Array.isArray(data.ranks) && data.ranks.length) LEVEL_CONFIG.ranks = data.ranks;
         }
         levelConfigLoaded = true;
