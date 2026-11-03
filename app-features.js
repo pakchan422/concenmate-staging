@@ -801,10 +801,21 @@
     }
     window.stoneSrcForRank = (rank) => `stone-${stoneIndexForRank(rank)}.png`;
     window.stoneSrcForExp = (exp) => window.stoneSrcForRank(getRankTitle(calcLevelInfo(exp || 0).level));
-    function todayStoneCount() {
-      if (!window.currentUser) return 0;
-      const isToday = window.currentUser.todayDate === getTodayDateStr();
-      return Math.floor((isToday ? (window.currentUser.todayMinutes || 0) : 0) / STONE_MINUTES);
+    // v1.222.0：石頭改為累積，分款記錄（伺服器 users/{uid}.stones）。
+    // 未有 stones 欄位（舊帳戶第一次溫習之前）就用累積時數估算總數。
+    function myStoneCounts() {
+      const s = (window.currentUser && window.currentUser.stones) || null;
+      return s ? [1, 2, 3, 4, 5].map(i => parseInt(s[String(i)]) || 0) : null;
+    }
+    function totalStoneCount() {
+      const c = myStoneCounts();
+      if (c) return c.reduce((a, b) => a + b, 0);
+      return Math.floor(((parseFloat(window.currentUser && window.currentUser.hours) || 0) * 60) / STONE_MINUTES);
+    }
+    function minutesToNextStone() {
+      const u = window.currentUser || {};
+      const m = (u.stones && typeof u.stoneMinutes === 'number') ? u.stoneMinutes : Math.floor((parseFloat(u.hours) || 0) * 60) % STONE_MINUTES;
+      return STONE_MINUTES - m;
     }
     // 石頭說明視窗：exp 係邊個用戶嘅（自己或者溫習室入面嘅同學），count 係要顯示嘅粒數，
     // mode = 'today'（首頁）或者 'room'（今次入房）
@@ -817,17 +828,16 @@
       const ranks = ((LEVEL_CONFIG && Array.isArray(LEVEL_CONFIG.ranks) && LEVEL_CONFIG.ranks.length) ? LEVEL_CONFIG.ranks : DEFAULT_LEVEL_CONFIG.ranks)
         .slice().sort((a, b) => (a.minLevel || 0) - (b.minLevel || 0));
       const mode = opts.mode || 'today';
-      const count = typeof opts.count === 'number' ? opts.count : todayStoneCount();
+      const count = typeof opts.count === 'number' ? opts.count : totalStoneCount();
+      const perType = isMe ? myStoneCounts() : null;
       let line;
       if (!isMe) {
         line = window.t('stone.otherCountTemplate', '{name} 今次溫習，Ottie 已磨好 {n} 粒。').replace('{name}', opts.name).replace('{n}', count);
       } else if (mode === 'room') {
         line = window.t('stone.roomCountTemplate', '今次溫習，Ottie 已磨好 {n} 粒。').replace('{n}', count);
       } else {
-        const isToday = window.currentUser && window.currentUser.todayDate === getTodayDateStr();
-        const mins = isToday ? (window.currentUser.todayMinutes || 0) : 0;
-        line = window.t('stone.todayCountTemplate', '今日 Ottie 已磨好 {n} 粒，再溫 {m} 分鐘就磨好下一粒。')
-          .replace('{n}', count).replace('{m}', STONE_MINUTES - (mins % STONE_MINUTES));
+        line = window.t('stone.totalCountTemplate', 'Ottie 累積磨好 {n} 粒，再溫 {m} 分鐘就磨好下一粒。')
+          .replace('{n}', count).replace('{m}', minutesToNextStone());
       }
       const row = ranks.slice(0, STONE_COUNT).map(r => {
         const idx = stoneIndexForRank(r);
@@ -836,6 +846,7 @@
           <img src="stone-${idx}.png" alt="" width="34" height="34" style="border-radius:50%; ${on ? 'box-shadow:0 0 0 3px var(--accent);' : (idx > curIdx ? 'filter:grayscale(1); opacity:.55;' : '')}">
           <span style="font-size:11px; color:${on ? 'var(--brand-800)' : '#8A94A8'}; font-weight:${on ? '700' : '400'}; white-space:nowrap;">${escapeHtml(window.stoneNameForRank(r))}</span>
           <span style="font-size:10px; color:#8A94A8; white-space:nowrap;">${escapeHtml(window.rankTitle ? window.rankTitle(r) : r.title)}</span>
+          ${perType ? `<span style="font-size:13px; font-weight:800; color:${perType[idx - 1] ? 'var(--brand-800)' : '#B8C0CF'};">×${perType[idx - 1]}</span>` : ''}
         </div>`;
       }).join('');
       const body = document.getElementById('stone-info-body');
@@ -1832,7 +1843,7 @@
       // 今日石頭（第 6 格）：今日溫習分鐘 ÷ 15
       const stoneTile = document.getElementById('otter-stat-stones');
       if (stoneTile) {
-        stoneTile.innerHTML = `<img src="${window.stoneSrcForRank(rank)}" alt="" style="width:1.2em; height:1.2em; display:block;">×${todayStoneCount()}`;
+        stoneTile.innerHTML = `<img src="${window.stoneSrcForRank(rank)}" alt="" style="width:1.2em; height:1.2em; display:block;">×${totalStoneCount()}`;
       }
     }
     window.updateOtterStatsCard = updateOtterStatsCard;

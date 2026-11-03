@@ -2004,6 +2004,11 @@
       try {
         await flushAwardSyncQueue(); // 先追返之前排隊緊嘅（保住次序），先寄呢次新嘅
         const res = await window.callCloudFunction('awardStudyPoints', payload);
+        if (res && res.stoneInfo) {
+          window.currentUser.stones = res.stoneInfo.stones;
+          window.currentUser.stoneMinutes = res.stoneInfo.stoneMinutes;
+          if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard();
+        }
         const reward = res && res.levelReward;
         if (reward) {
           window.currentUser.freeGachaTickets = reward.freeGachaTickets;

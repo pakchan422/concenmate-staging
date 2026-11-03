@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.221.2"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.222.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -2115,10 +2115,10 @@
                     <div id="otter-stat-stickers" style="font-size:clamp(13px,3.8vw,17px); font-weight:bold; color:#29395C; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">0/0</div>
                     <div style="font-size:11px; color:#999; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" data-i18n="otter.stat.stickers">圖鑑完成度</div>
                   </div>
-                  <!-- v1.221.1：今日石頭（撳落去開石頭說明） -->
+                  <!-- v1.222.0：累積石頭（撳落去開石頭說明，分款數目） -->
                   <button type="button" onclick="openStoneInfo()" style="min-width:0; background:none; border:none; padding:0; cursor:pointer; font:inherit;">
                     <div id="otter-stat-stones" style="font-size:clamp(13px,3.8vw,17px); font-weight:bold; color:#29395C; white-space:nowrap; display:flex; align-items:center; justify-content:center; gap:2px;">×0</div>
-                    <div style="font-size:11px; color:#999; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" data-i18n="otter.stat.stones">今日石頭</div>
+                    <div style="font-size:11px; color:#999; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" data-i18n="otter.stat.stones">累積石頭</div>
                   </button>
                 </div>
               </div>
@@ -2361,7 +2361,7 @@
                      面板改為只喺撳返「😊」個切換掣，或者撳返畫面其他
                      地方（見 document click 監聽）先會關閉。 -->
                 <div class="emoji-reaction-toggle-wrap" onclick="event.stopPropagation();">
-                  <button type="button" class="emoji-reaction-toggle-btn" onclick="toggleEmojiReactionPanel()" title="表情反應" data-i18n-title="room.emojiReaction"><img src="react-love.png" alt="表情反應"></button>
+                  <button type="button" class="emoji-reaction-toggle-btn" onclick="toggleEmojiReactionPanel()" title="表情反應" data-i18n-title="room.emojiReaction"><img src="react-smile.png" alt="表情反應"></button>
                   <div class="emoji-reaction-popover" id="emoji-reaction-popover" style="display:none;">
                     <button type="button" onclick="sendDanmakuSticker('😆')" title="大笑"><img src="react-laugh.png" alt="大笑"></button>
                     <button type="button" onclick="sendDanmakuSticker('😍')" title="喜歡"><img src="react-love.png" alt="喜歡"></button>
