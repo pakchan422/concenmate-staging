@@ -1027,6 +1027,9 @@
 
       // v1.220.2：段位改為一個表格，同「到達需時」放埋一齊睇；
       // 已移除段位相片（主頁 Ottie 而家跟用戶揀嘅貼圖，唔再跟段位轉）
+      // v1.224.0 溫習黃金時段（舊設定冇呢個欄位就用預設值）
+      adminLevelDraft.goldenHour = Object.assign({ enabled: false, title: '書伴自習時段', start: '19:00', end: '23:00', expMultiplier: 2, stoneMultiplier: 2 }, adminLevelDraft.goldenHour || {});
+      const gh = adminLevelDraft.goldenHour;
       const th = 'padding:6px 8px; text-align:left; white-space:nowrap; color:#6B7894; font-weight:700;';
       const td = 'padding:6px 8px; vertical-align:middle;';
       const rankRows = adminLevelDraft.ranks.map((r, idx) => `
@@ -1103,6 +1106,30 @@
             </label>
           </div>
           <p style="font-size:13px; color:#888;">用戶溫習時一升級，伺服器就會自動派發。免費扭蛋券可在扭蛋頁單抽一次，不扣積分。每一級只派一次。</p>
+        </div>
+
+        <div class="admin-card" style="margin-top:12px;">
+          <h3 style="font-size:14px; font-weight:bold; margin-bottom:8px;">溫習黃金時段</h3>
+          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:10px; font-size:13px; color:#555;">
+            <label style="display:flex; align-items:center; gap:6px;">
+              <input type="checkbox" ${gh.enabled ? 'checked' : ''} onchange="adminLevelDraft.goldenHour.enabled = this.checked"> 啟用
+            </label>
+            <label style="display:flex; align-items:center; gap:6px;">名稱：
+              <input class="admin-input-sm" style="width:130px;" value="${escapeHtml(gh.title || '')}" oninput="adminLevelDraft.goldenHour.title = this.value">
+            </label>
+            <label style="display:flex; align-items:center; gap:6px;">每日
+              <input class="admin-input-sm" type="time" style="width:auto;" value="${gh.start}" oninput="adminLevelDraft.goldenHour.start = this.value">
+              至
+              <input class="admin-input-sm" type="time" style="width:auto;" value="${gh.end}" oninput="adminLevelDraft.goldenHour.end = this.value">
+            </label>
+            <label style="display:flex; align-items:center; gap:6px;">EXP ×
+              <input class="admin-input-sm" type="number" min="1" max="5" step="1" style="width:56px;" value="${gh.expMultiplier}" oninput="adminLevelDraft.goldenHour.expMultiplier = parseInt(this.value)||1">
+            </label>
+            <label style="display:flex; align-items:center; gap:6px;">石頭 ×
+              <input class="admin-input-sm" type="number" min="1" max="5" step="1" style="width:56px;" value="${gh.stoneMultiplier}" oninput="adminLevelDraft.goldenHour.stoneMultiplier = parseInt(this.value)||1">
+            </label>
+          </div>
+          <p style="font-size:13px; color:#888;">以香港時間計算；結束時間早於開始時間代表跨過午夜。時段內每分鐘溫習的 EXP 及石頭進度按倍數計算（例如石頭 ×2 即每 7.5 分鐘一粒），由伺服器計算，用戶改不到。時段內所有用戶頁頂會顯示提示。</p>
         </div>
 
         <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
@@ -1228,6 +1255,12 @@
         levelUpTickets: Math.max(0, Math.min(10, Math.floor(adminLevelDraft.levelUpTickets ?? 1))),
         milestoneEvery: Math.max(1, Math.min(100, Math.floor(adminLevelDraft.milestoneEvery ?? 5))),
         milestoneFragments: Math.max(0, Math.min(1000, Math.floor(adminLevelDraft.milestoneFragments ?? 5))),
+        goldenHour: (() => {
+          const g = adminLevelDraft.goldenHour || {};
+          const okT = (t) => typeof t === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+          const m = (v) => Math.max(1, Math.min(5, Math.floor(v || 1)));
+          return { enabled: g.enabled === true, title: String(g.title || '').slice(0, 20), start: okT(g.start) ? g.start : '19:00', end: okT(g.end) ? g.end : '23:00', expMultiplier: m(g.expMultiplier), stoneMultiplier: m(g.stoneMultiplier) };
+        })(),
         // 段位相片已停用：儲存時順手清走舊相片，減細設定文件
         ranks: adminLevelDraft.ranks.map(r => ({ minLevel: parseInt(r.minLevel) || 1, title: r.title || '', titleEn: r.titleEn || '', desc: r.desc || '', ...(parseInt(r.stone) >= 1 && parseInt(r.stone) <= 5 ? { stone: parseInt(r.stone) } : {}) }))
       };
@@ -1255,8 +1288,10 @@
           if (typeof data.levelCurveFactor === 'number') LEVEL_CONFIG.levelCurveFactor = data.levelCurveFactor;
           ['levelUpTickets', 'milestoneEvery', 'milestoneFragments'].forEach(k => { if (typeof data[k] === 'number') LEVEL_CONFIG[k] = data[k]; });
           if (Array.isArray(data.ranks) && data.ranks.length) LEVEL_CONFIG.ranks = data.ranks;
+          if (data.goldenHour && typeof data.goldenHour === 'object') LEVEL_CONFIG.goldenHour = data.goldenHour;
         }
         levelConfigLoaded = true;
+        if (typeof window.refreshGoldenHourBar === 'function') window.refreshGoldenHourBar();
         if (window.currentUser) {
           updateLevelDisplay();
           // 段位嘅水獺相片就係喺呢個設定入面，一齊刷新，唔使等5分鐘嗰個定時器先見到
