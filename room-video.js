@@ -1935,7 +1935,10 @@
       const expPerPoint = (LEVEL_CONFIG && typeof LEVEL_CONFIG.expPerMinute === 'number') ? LEVEL_CONFIG.expPerMinute : 1;
       // v1.224.0：黃金時段本機先按倍數顯示，伺服器回覆後再以伺服器數字為準
       const goldenNow = (hoursIncrement > 0 && typeof window.currentGoldenHour === 'function') ? window.currentGoldenHour() : null;
-      const expGain = expPerPoint * pointsAmount * (goldenNow ? goldenNow.expMultiplier : 1);
+      // 小數倍數：本機用累積餘數估算，最後以伺服器回覆的 exp 為準
+      const rawGain = expPerPoint * pointsAmount * (goldenNow ? goldenNow.expMultiplier : 1) + (state.localExpFrac || 0);
+      const expGain = Math.floor(rawGain + 1e-9);
+      state.localExpFrac = rawGain - expGain;
       // 「今日目標」同一次處理埋：如果 todayDate 仲係今日就當「今日累積」加多
       // 1 分鐘，如果隔咗一日（或者未設過）就當呢分鐘係新一日嘅第一分鐘。
       const isNewDay = hoursIncrement > 0 && window.currentUser.todayDate !== getTodayDateStr();

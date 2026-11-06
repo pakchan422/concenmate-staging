@@ -799,7 +799,7 @@
       const s = toMin(g.start), e = toMin(g.end);
       const inside = s < e ? (now >= s && now < e) : (now >= s || now < e);
       if (!inside) return null;
-      const m = (v) => (typeof v === 'number' && v >= 1 && v <= 5) ? Math.floor(v) : 1;
+      const m = (v) => (typeof v === 'number' && v >= 1 && v <= 5) ? Math.round(v * 10) / 10 : 1;
       return { title: g.title || '', start: g.start, end: g.end, expMultiplier: m(g.expMultiplier), stoneMultiplier: m(g.stoneMultiplier) };
     };
     window.refreshGoldenHourBar = function() {
