@@ -308,6 +308,7 @@
       }
       const title = document.getElementById('swm-stage-title');
       if (title) title.innerText = st.stream.title || '';
+      renderPinned();
       const host = document.getElementById('swm-stage-host');
       if (host) host.innerText = (st.stream.hostName || '') + (st.stream.subject ? ' · ' + st.stream.subject : '');
       if (st.mode === 'viewer') {
@@ -362,6 +363,7 @@
         </div>
         <div class="swm-chat">
           <div style="font-size:14px; font-weight:700; color:var(--brand-800); padding:10px 12px; border-bottom:1px solid var(--brand-100);">${esc(t('stream.chat', '留言'))}</div>
+ <div id="swm-pinned" style="display:none; margin:8px 12px 0; padding:8px 10px; background:#FFF8DB; border:1px solid #FFD84D; border-radius:10px; font-size:13px; line-height:1.5; word-break:break-word;"></div>
           <div id="swm-msgs" style="flex:1; overflow-y:auto; padding:8px 12px; display:flex; flex-direction:column; gap:6px;"></div>
           <form onsubmit="event.preventDefault(); window.swmSend();" style="display:flex; gap:6px; padding:10px; border-top:1px solid var(--brand-100);">
             <input id="swm-input" class="input-field" maxlength="200" autocomplete="off" placeholder="${esc(t('stream.chatPlaceholder', '輸入留言（請勿留下聯絡資料）'))}" style="flex:1; margin:0;">
@@ -371,6 +373,7 @@
       </div>`;
     box.dataset.canModerate = canModerate ? '1' : '';
     startChat();
+    renderPinned();
     if (st.room && host && LK) {
       const pub = st.room.localParticipant.getTrackPublication(LK.Track.Source.Camera);
       if (pub && pub.track) pub.track.attach(document.getElementById('swm-video'));
@@ -381,6 +384,28 @@
       }));
     }
   }
+
+  function renderPinned() {
+    const box = document.getElementById('swm-pinned');
+    if (!box) return;
+    const p = st.stream && st.stream.pinned;
+    if (!p || !p.text) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    const canUnpin = st.mode === 'host' || isAdmin();
+    box.innerHTML = `<div style="display:flex; justify-content:space-between; gap:6px; align-items:flex-start;">
+        <div><span style="font-size:11px; font-weight:700; color:#1F2F55; background:#FFD84D; border-radius:4px; padding:1px 5px; margin-right:4px;">${esc(t('stream.pinnedLabel', '置頂'))}</span>
+        <span style="font-weight:700; color:#C0392B;">${esc(p.name)}</span> <span style="color:var(--brand-800);">${esc(p.text)}</span></div>
+        ${canUnpin ? `<button type="button" onclick="window.swmUnpin()" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; white-space:nowrap; padding:0;">${esc(t('stream.unpin', '取消置頂'))}</button>` : ''}
+      </div>`;
+    box.style.display = '';
+  }
+  window.swmPin = async function (messageId) {
+    try { await window.callCloudFunction('moderateStream', { streamId: st.streamId, action: 'pin', messageId }); }
+    catch (e) { toast(errText(e), '❌'); }
+  };
+  window.swmUnpin = async function () {
+    try { await window.callCloudFunction('moderateStream', { streamId: st.streamId, action: 'unpin' }); }
+    catch (e) { toast(errText(e), '❌'); }
+  };
 
   function startChat() {
     if (chatUnsub) chatUnsub();
@@ -394,6 +419,9 @@
       list.innerHTML = snap.docs.slice().reverse().filter(d => !d.data().deleted).map(d => {
         const m = d.data();
         const actions = [];
+        if (st.mode === 'host' && m.uid === myUid) {
+          actions.push(`<button type="button" onclick="window.swmPin('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.pin', '置頂'))}</button>`);
+        }
         if (canModerate && m.uid !== myUid) {
           actions.push(`<button type="button" onclick="window.swmDeleteMsg('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.delete', '刪除'))}</button>`);
           if (!m.isHost) actions.push(`<button type="button" onclick="window.swmBlock('${esc(m.uid)}')" style="border:none; background:none; color:#C0392B; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.block', '封鎖'))}</button>`);
