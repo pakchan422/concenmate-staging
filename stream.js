@@ -129,34 +129,64 @@
         </div>
         <div style="font-size:15px; font-weight:700; color:var(--brand-800); word-break:break-all;">${esc(s.title)}</div>
         <div style="font-size:13px; color:var(--brand-700);">${esc(s.hostName)}${s.subject ? ' · ' + esc(s.subject) : ''}</div>
-        <div style="font-size:12px; color:#8A94A8;">${esc(t('stream.elapsedTemplate', '已溫習 {t}').replace('{t}', elapsedText(Date.now() - (s.startedAt || Date.now()))))}</div>
+        <div style="font-size:12px; color:#8A94A8;">${esc(t('stream.elapsedTemplate', '已溫習 {t}').replace('{t}', elapsedText(Date.now() - (s.startedAt || Date.now()))))}${s.plannedMinutes ? esc(t('stream.plannedTemplate', '（預計 {t}）').replace('{t}', elapsedText(s.plannedMinutes * 60000))) : ''}</div>
       </button>`).join('');
   }
 
+  // 開播表格：跟「建立公開溫習房」同一款式的彈出視窗
   window.swmOpenStartForm = function () {
-    const box = document.getElementById('swm-start-form');
-    if (!box) return;
+    const old = document.getElementById('modal-create-stream');
+    if (old) old.remove();
     const u = me();
     const minor = u.isSecondaryStudent === true || (typeof u.birthYear === 'number' && new Date().getFullYear() - u.birthYear < 18);
     const needConsent = minor && !u.parentConsentAt;
-    box.innerHTML = `
-      <div class="admin-card" style="margin-bottom:14px;">
-        <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin-bottom:4px;">${esc(t('stream.titleLabel', '直播標題'))}</label>
-        <input id="swm-title" class="input-field" maxlength="40" placeholder="${esc(t('stream.titlePlaceholder', '例如：一起溫 DSE 數學'))}">
-        <label style="font-size:13px; font-weight:bold; color:var(--brand-700); display:block; margin:10px 0 4px;">${esc(t('stream.subjectLabel', '科目（可留空）'))}</label>
-        <input id="swm-subject" class="input-field" maxlength="20">
-        <p style="font-size:13px; color:#6B7894; margin:10px 0;">${esc(t('stream.privacyTip', '開播前請留意：建議只拍攝書桌及雙手，避免拍到校服、校徽、住址等個人資料。咪高峰預設關閉。'))}</p>
-        ${needConsent ? `<label style="display:flex; gap:8px; align-items:flex-start; font-size:13px; margin-bottom:10px;"><input type="checkbox" id="swm-consent" style="margin-top:3px;"> <span>${esc(t('stream.consentLabel', '本人確認已取得父母或監護人同意使用直播功能。'))}</span></label>` : ''}
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button type="button" class="btn btn-primary" id="swm-go-btn" onclick="window.swmStart()">${esc(t('stream.goLive', '開始直播'))}</button>
-          <button type="button" class="btn btn-outline" onclick="document.getElementById('swm-start-form').innerHTML=''">${esc(t('common.cancel', '取消'))}</button>
+    const roomSubject = document.getElementById('modal-room-subject');
+    const subjectOptions = roomSubject ? roomSubject.innerHTML : '<option value="其他">其他</option>';
+    const maxH = Math.max(1, Math.min(12, parseInt(settings.maxDurationHours, 10) || 4));
+    const durations = [30, 60, 90, 120, 180, 240, 300, 360, 480, 600, 720].filter(m => m <= maxH * 60);
+    const durLabel = (m) => m < 60 ? `${m} 分鐘` : (m % 60 ? `${Math.floor(m / 60)} 小時 ${m % 60} 分鐘` : `${m / 60} 小時`);
+    const wrap = document.createElement('div');
+    wrap.className = 'modal-backdrop';
+    wrap.id = 'modal-create-stream';
+    wrap.innerHTML = `
+      <div class="modal-box">
+        <div style="text-align:center; margin-bottom:12px;">
+          <h3 style="font-size:18px; font-weight:bold; color:var(--brand-800);">${esc(t('stream.createTitle', '開始 Study with me 直播'))}</h3>
+          <p style="font-size:13px; color:#666; margin-top:2px;">${esc(t('stream.createSubtitle', '其他同學可以在大廳看到你的直播並留言'))}</p>
         </div>
+        <form id="swm-create-form" style="display:flex; flex-direction:column; gap:10px;">
+          <div>
+            <label style="font-size:13px; font-weight:bold; color:#555; display:block;">${esc(t('stream.titleLabel', '直播標題 *'))}</label>
+            <input type="text" id="swm-title" class="input-field" required maxlength="40" value="Study with me">
+          </div>
+          <div>
+            <label style="font-size:13px; font-weight:bold; color:#555; display:block;">${esc(t('stream.subjectLabel', '溫習學科 *'))}</label>
+            <select id="swm-subject" class="input-field">${subjectOptions}</select>
+          </div>
+          <div>
+            <label style="font-size:13px; font-weight:bold; color:#555; display:block;">${esc(t('stream.durationLabel', '預計直播時間'))}</label>
+            <select id="swm-duration" class="input-field">${durations.map(m => `<option value="${m}" ${m === Math.min(120, maxH * 60) ? 'selected' : ''}>${esc(durLabel(m))}</option>`).join('')}</select>
+            <p style="font-size:13px; color:#999; margin-top:4px;">${esc(t('stream.durationHint', '時間到會自動結束直播，你亦可以隨時提早結束。'))}</p>
+          </div>
+          <p style="font-size:13px; color:#6B7894; margin:0;">${esc(t('stream.privacyTip', '開播前請留意：建議只拍攝書桌及雙手，避免拍到校服、校徽、住址等個人資料。咪高峰預設關閉。'))}</p>
+          ${needConsent ? `<label style="display:flex; gap:8px; align-items:flex-start; font-size:13px;"><input type="checkbox" id="swm-consent" style="margin-top:3px;"> <span>${esc(t('stream.consentLabel', '本人確認已取得父母或監護人同意使用直播功能。'))}</span></label>` : ''}
+          <div style="display:flex; gap:8px; margin-top:4px;">
+            <button type="submit" class="btn btn-primary" id="swm-go-btn" style="flex:1;">${esc(t('stream.goLive', '開始直播'))}</button>
+            <button type="button" class="btn btn-outline" id="swm-cancel-btn" style="flex:1;">${esc(t('common.cancel', '取消'))}</button>
+          </div>
+        </form>
       </div>`;
+    document.body.appendChild(wrap);
+    const subjectSel = wrap.querySelector('#swm-subject');
+    if (subjectSel) subjectSel.selectedIndex = roomSubject ? roomSubject.selectedIndex : 0;
+    wrap.querySelector('#swm-cancel-btn').onclick = () => wrap.remove();
+    wrap.querySelector('#swm-create-form').onsubmit = (e) => { e.preventDefault(); window.swmStart(); };
   };
 
   // ---------- 主播 ----------
   window.swmStart = async function () {
     const consentEl = document.getElementById('swm-consent');
+    let started = null;
     if (consentEl && !consentEl.checked) { toast(t('stream.needConsent', '請先確認已取得家長或監護人同意'), '⚠️'); return; }
     const btn = document.getElementById('swm-go-btn');
     if (btn) { btn.disabled = true; btn.innerText = t('stream.starting', '準備中…'); }
@@ -165,8 +195,10 @@
       const res = await window.callCloudFunction('startStream', {
         title: (document.getElementById('swm-title') || {}).value || '',
         subject: (document.getElementById('swm-subject') || {}).value || '',
+        plannedMinutes: parseInt((document.getElementById('swm-duration') || {}).value, 10) || 0,
         parentConsent: !!(consentEl && consentEl.checked)
       });
+      started = res.streamId;
       if (consentEl && consentEl.checked && window.currentUser) window.currentUser.parentConsentAt = Date.now();
       const q = QUALITY[res.quality] || QUALITY['480p'];
       const room = new lk.Room({ adaptiveStream: true, dynacast: true });
@@ -179,6 +211,8 @@
       st.heartbeat = setInterval(sendHeartbeat, 60 * 1000);
       st.endTimer = setTimeout(() => window.swmEnd(true), Math.max(60000, res.maxEndAt - Date.now()));
       watchStreamDoc(res.streamId);
+      const modal = document.getElementById('modal-create-stream');
+      if (modal) modal.remove();
       renderStage();
       const track = room.localParticipant.getTrackPublication(lk.Track.Source.Camera);
       if (track && track.track) track.track.attach(document.getElementById('swm-video'));
@@ -187,6 +221,8 @@
       toast(t('stream.startFailed', '未能開始直播：') + errText(e), '❌');
       if (btn) { btn.disabled = false; btn.innerText = t('stream.goLive', '開始直播'); }
       if (st.room && st.mode !== 'host') { try { st.room.disconnect(); } catch (_) {} st.room = null; }
+      // 伺服器已建立直播但連線失敗：即時結束，避免大廳出現無畫面的直播
+      if (started && st.mode !== 'host') window.callCloudFunction('endStream', { streamId: started }).catch(() => {});
     }
   };
 
