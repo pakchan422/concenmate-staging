@@ -184,6 +184,7 @@
 
     // ── 通用字眼（好多分頁都會用到，一次搬好，之後其他分頁轉換嗰陣
     //    可以直接重用返呢批 key，唔使逐頁重複做） ──
+    'nav.stream': { 'zh-Hant': 'Study with me', 'en': 'Study with me', 'yue': 'Study with me' },
     'common.cancel': { 'zh-Hant': '取消', 'en': 'Cancel', 'yue': '取消' },
     'common.save': { 'zh-Hant': '儲存', 'en': 'Save', 'yue': '儲存' },
     'common.close': { 'zh-Hant': '關閉', 'en': 'Close', 'yue': '閂返' },

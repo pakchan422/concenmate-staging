@@ -1616,7 +1616,7 @@
           <label style="display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:6px; cursor:pointer;">
             <input type="checkbox" ${d.enabled ? 'checked' : ''} onchange="window.adminUpdateStreamingDraft('enabled', this.checked)"> 開放直播功能（總開關）
           </label>
-          <p style="font-size:13px; color:#888; margin:0;">直播伺服器尚未設置，請保持關閉。開通資格（合資格溫習日數）已開始記錄。</p>
+          <p style="font-size:13px; color:#888; margin:0;">關閉時，只有管理員可以開播及觀看，供測試之用；開啟後，合資格用戶可以開播，所有登入用戶可以觀看。管理員不受開通日數限制。開通資格（合資格溫習日數）已開始記錄。</p>
         </div>
         <div class="admin-card" style="margin-top:12px;">
           <h3 style="font-size:14px; font-weight:bold; margin-bottom:10px;">開通資格</h3>
@@ -1649,7 +1649,12 @@
           <div style="display:flex; gap:16px; flex-wrap:wrap;">
             ${num('monthlyBudgetHkd', '每月上限 HK$', '（包括主機月費）', 0, 1000000)}
           </div>
-          <p style="font-size:13px; color:#888; margin:8px 0 0;">用到 80%：所有直播最高畫質降至 360p 並通知管理員；用到 100%：暫停開新直播，進行中的直播可繼續。</p>
+          <p style="font-size:13px; color:#888; margin:8px 0 0;">用到 80%：所有直播最高畫質降至 360p 並通知管理員；用到 100%：暫停開新直播，進行中的直播可繼續。（預算自動控制將於日後版本啟用）</p>
+        </div>
+        <div class="admin-card" style="margin-top:12px;">
+          <h3 style="font-size:14px; font-weight:bold; margin-bottom:8px;">留言額外過濾字詞</h3>
+          <textarea class="admin-input-sm" rows="4" style="width:100%; font-size:13px;" placeholder="每行一個字詞" oninput="window.adminUpdateStreamingDraft('bannedWordsText', this.value)">${escapeHtml((d.bannedWords || []).join('\n'))}</textarea>
+          <p style="font-size:13px; color:#888; margin:8px 0 0;">系統已內置常見粗口（中文、粵語、英文）及聯絡資料（電話、網址、IG、WhatsApp 等）過濾；這裏可以額外加入字詞，留言中出現會被遮蓋。</p>
         </div>
         <div style="text-align:center; margin-top:16px;">
           <button type="button" class="btn btn-primary" style="padding:12px 32px; font-size:15px;" onclick="window.adminSaveStreamingSettings()">儲存直播設定</button>
@@ -1659,6 +1664,7 @@
       if (!adminStreamingDraft) return;
       if (key === 'enabled') adminStreamingDraft.enabled = !!value;
       else if (key === 'defaultQuality' || key === 'hotQuality') adminStreamingDraft[key] = value;
+      else if (key === 'bannedWordsText') adminStreamingDraft.bannedWords = String(value || '').split('\n').map(w => w.trim()).filter(Boolean).slice(0, 500);
       else { const n = parseInt(value, 10); if (Number.isFinite(n) && n >= 0) adminStreamingDraft[key] = n; }
     };
     window.adminSaveStreamingSettings = async function() {
@@ -1678,6 +1684,7 @@
         idleShutdownMinutes: clamp(d.idleShutdownMinutes, 5, 240, 30),
         defaultQuality: q(d.defaultQuality, '480p'),
         hotQuality: q(d.hotQuality, '720p'),
+        bannedWords: Array.isArray(d.bannedWords) ? d.bannedWords.map(w => String(w).trim().slice(0, 40)).filter(Boolean).slice(0, 500) : [],
         updatedAt: Date.now()
       };
       try {

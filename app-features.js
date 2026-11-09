@@ -249,6 +249,9 @@
         window.renderTutorDirectoryTab();
       }
 
+      // v1.227.0 Study with me 直播分頁（stream.js）
+      if (tabId === 'stream' && typeof window.openStreamTab === 'function') window.openStreamTab();
+
       // 「溫習排行榜」分頁一開就即刻載入（預設：自己所屬地區嘅個人榜）
       if (tabId === 'leaderboard' && typeof window.loadLeaderboardTab === 'function') {
         window.loadLeaderboardTab();

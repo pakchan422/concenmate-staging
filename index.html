@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.226.0"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.227.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -330,6 +330,9 @@
     .nav-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; }
     .nav-icon img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
     .nav-icon svg { width: 20px; height: 20px; display: block; }
+    .swm-stage { display:grid; grid-template-columns: minmax(0, 1fr) 320px; gap:14px; align-items:start; }
+    .swm-chat { background:#fff; border:1px solid var(--brand-200); border-radius:14px; display:flex; flex-direction:column; height:520px; min-width:0; }
+    @media (max-width: 900px) { .swm-stage { grid-template-columns: 1fr; } .swm-chat { height:380px; } }
     .nav-btn:not(.active):not(:hover) .nav-icon { color: var(--brand-600); }
 
     .auth-wall-container {
@@ -1896,6 +1899,7 @@
              i18n.js）示範性咁轉咗嘅位，揀 English／廣東話嗰陣呢幾句
              會自動跟住轉，其餘畫面文字暫時未轉，仍然顯示繁體中文。 -->
         <button class="nav-btn student-only-nav" id="nav-btn-room" type="button" onclick="switchTab('room', this)"><span class="nav-icon" id="nav-icon-room"></span> <span class="nav-text" data-i18n="nav.room">視訊溫習室</span></button>
+        <button class="nav-btn" id="nav-btn-stream" type="button" onclick="switchTab('stream', this)" style="display:none;"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg></span> <span class="nav-text" data-i18n="nav.stream">Study with me</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-qa" type="button" onclick="switchTab('qa', this)"><span class="nav-icon" id="nav-icon-qa"></span> <span class="nav-text" data-i18n="nav.qa">疑難解答區</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-vip" type="button" onclick="switchTab('vip', this)"><span class="nav-icon" id="nav-icon-vip"></span> <span class="nav-text" data-i18n="nav.vip">教材中心</span></button>
         <button class="nav-btn student-only-nav" id="nav-btn-store" type="button" onclick="switchTab('store', this)"><span class="nav-icon" id="nav-icon-store"></span> <span class="nav-text" data-i18n="nav.store">時數扭蛋機</span></button>
@@ -2408,6 +2412,11 @@
 
           </div>
 
+        </section>
+
+        <!-- v1.227.0 Study with me 直播（stream.js 負責渲染） -->
+        <section id="tab-stream" class="tab-content">
+          <div id="swm-root"></div>
         </section>
 
         <section id="tab-qa" class="tab-content">
@@ -4323,6 +4332,7 @@
   <script type="module" src="app-core.js"></script>
 
   <script src="room-video.js"></script>
+  <script src="stream.js"></script>
   <!-- 房主退出房間選擇彈窗 -->
   <div class="modal-backdrop" id="modal-host-leave" style="display:none;">
     <div class="modal-box" style="text-align:center;">
