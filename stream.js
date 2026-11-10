@@ -127,10 +127,16 @@
     loadLK().catch(() => {}); // 預先載入直播程式，入場更快
   }
 
+  function stopLobbyListener() {
+    if (lobbyUnsub) { try { lobbyUnsub(); } catch (_) {} lobbyUnsub = null; }
+  }
   function startLobbyListener() {
     if (lobbyUnsub || !window.db) return;
     const q = window.fs.query(window.fs.collection(window.db, 'streams'), window.fs.where('status', '==', 'live'), window.fs.limit(100));
     lobbyUnsub = window.fs.onSnapshot(q, (snap) => {
+      // v1.227.9：已離開大廳（轉了分頁或正在觀看／主持直播）就停止更新，節省讀取次數；
+      // 再開大廳時 renderLobby() 會重新開始
+      if (!isTabOpen() || st.mode !== 'lobby') { stopLobbyListener(); return; }
       lobbyStreams = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(fresh).sort((a, b) => (b.viewerCount || 0) - (a.viewerCount || 0));
       if (st.mode === 'lobby') renderLobbyList();
     }, (err) => console.warn('讀取直播列表失敗:', err));
@@ -235,7 +241,7 @@
       await room.localParticipant.setCameraEnabled(true,
         { resolution: { width: q.width, height: q.height, frameRate: 15 } },
         { simulcast: true, videoEncoding: { maxBitrate: q.maxBitrate, maxFramerate: 15 }, videoSimulcastLayers: [lk.VideoPresets43.h180, lk.VideoPresets43.h360] });
-      Object.assign(st, { mode: 'host', room, streamId: res.streamId, micOn: false });
+      Object.assign(st, { mode: 'host', room, streamId: res.streamId, micOn: false }); stopLobbyListener();
       room.on(lk.RoomEvent.Disconnected, () => {
         if (st.mode !== 'host') return;
         const id = st.streamId;
@@ -264,8 +270,9 @@
   async function sendHeartbeat() {
     if (st.mode !== 'host' || !st.room) return;
     try {
-      const viewers = Math.max(0, (st.room.numParticipants || 1) - 1);
-      const res = await window.callCloudFunction('streamHeartbeat', { streamId: st.streamId, viewerCount: viewers });
+      // v1.227.9：觀看人數由伺服器向直播伺服器查詢後回傳
+      const res = await window.callCloudFunction('streamHeartbeat', { streamId: st.streamId });
+      const viewers = res && typeof res.viewerCount === 'number' ? res.viewerCount : Math.max(0, (st.room.numParticipants || 1) - 1);
       const vc = document.getElementById('swm-viewers');
       if (vc) vc.innerText = t('stream.viewersTemplate', '{n} 人觀看').replace('{n}', viewers);
       if (res && res.ended) stopAll(t('stream.endedMax', '直播已結束'));
@@ -299,7 +306,7 @@
   window.swmWatch = async function (streamId) {
     if (st.mode !== 'lobby') return;
     if (blockIfInRoom()) return;
-    Object.assign(st, { mode: 'viewer', room: null, streamId });
+    Object.assign(st, { mode: 'viewer', room: null, streamId }); stopLobbyListener();
     st.stream = lobbyStreams.find(x => x.id === streamId) || null;
     watchStreamDoc(streamId);
     renderStage();
