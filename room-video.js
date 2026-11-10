@@ -1331,6 +1331,11 @@
 
     window.handleCreateRoomSubmit = async function(e) {
       e.preventDefault();
+      // v1.227.3：直播或觀看直播期間不可以同時使用視訊溫習室
+      if (typeof window.swmIsBusy === 'function' && window.swmIsBusy()) {
+        window.showToast(window.t('stream.busyRoom', '你正在直播或觀看直播，請先離開直播再使用視訊溫習室'), '⚠️');
+        return;
+      }
 
       // 防止撳「立即建立並廣播」撳得太快／連撳幾下：第一下撳落嗰陣，
       // setDoc 仲未完成（await 緊）之前，畫面上個掣睇落去同平時冇分別，
@@ -1433,7 +1438,12 @@
     // verifyRoomPassword 呢個 Cloud Function 回應（見下面），如果啱啱
     // 冇人用過呢個 function（冷啟動），可能要等幾秒先有反應；擋住個掣
     // 兼改文字，等用戶知道網站有反應緊、唔係當機。
+    window.isInStudyRoom = function() { return !!state.currentRoomId; };
     window.joinPublicRoom = async function(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid, btnEl) {
+      if (typeof window.swmIsBusy === 'function' && window.swmIsBusy()) {
+        window.showToast(window.t('stream.busyRoom', '你正在直播或觀看直播，請先離開直播再使用視訊溫習室'), '⚠️');
+        return;
+      }
       let originalBtnHtml = null;
       if (btnEl) {
         originalBtnHtml = btnEl.innerHTML;
@@ -1457,6 +1467,10 @@
     };
 
     async function enterRoomSetup(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid) {
+      if (typeof window.swmIsBusy === 'function' && window.swmIsBusy()) {
+        window.showToast(window.t('stream.busyRoom', '你正在直播或觀看直播，請先離開直播再使用視訊溫習室'), '⚠️');
+        return false;
+      }
       if (!window.currentUser || !window.db || !window.fs) {
         window.showToast(window.t('room.needLoginMember', '請先登入'), "⚠️");
         return false;

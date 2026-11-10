@@ -24,6 +24,16 @@
   const me = () => window.currentUser || {};
   const fresh = (s) => s && s.status === 'live' && typeof s.lastActiveAt === 'number' && (Date.now() - s.lastActiveAt) < 3 * 60 * 1000;
 
+  // v1.227.3：直播與視訊溫習室只可以二選一
+  window.swmIsBusy = function () { return st.mode !== 'lobby'; };
+  function inStudyRoom() {
+    return typeof window.isInStudyRoom === 'function' && window.isInStudyRoom();
+  }
+  function blockIfInRoom() {
+    if (inStudyRoom()) { toast(t('stream.busyStream', '你正在視訊溫習室，請先退出溫習室再使用直播'), '⚠️'); return true; }
+    return false;
+  }
+
   async function loadLK() {
     if (!LK) LK = await import(LK_URL);
     return LK;
@@ -98,6 +108,7 @@
       <div id="swm-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px;"></div>`;
     startLobbyListener();
     renderLobbyList();
+    loadLK().catch(() => {}); // 預先載入直播程式，入場更快
   }
 
   function startLobbyListener() {
@@ -135,6 +146,7 @@
 
   // 開播表格：跟「建立公開溫習房」同一款式的彈出視窗
   window.swmOpenStartForm = function () {
+    if (blockIfInRoom()) return;
     const old = document.getElementById('modal-create-stream');
     if (old) old.remove();
     const u = me();
@@ -185,6 +197,7 @@
 
   // ---------- 主播 ----------
   window.swmStart = async function () {
+    if (blockIfInRoom()) return;
     const consentEl = document.getElementById('swm-consent');
     let started = null;
     if (consentEl && !consentEl.checked) { toast(t('stream.needConsent', '請先確認已取得家長或監護人同意'), '⚠️'); return; }
@@ -263,16 +276,20 @@
   // ---------- 觀眾 ----------
   window.swmWatch = async function (streamId) {
     if (st.mode !== 'lobby') return;
+    if (blockIfInRoom()) return;
+    Object.assign(st, { mode: 'viewer', room: null, streamId });
+    st.stream = lobbyStreams.find(x => x.id === streamId) || null;
+    watchStreamDoc(streamId);
+    renderStage();
+    setLoading(true);
     try {
-      const lk = await loadLK();
-      const res = await window.callCloudFunction('joinStream', { streamId });
+      const [lk, res] = await Promise.all([loadLK(), window.callCloudFunction('joinStream', { streamId })]);
+      if (st.mode !== 'viewer' || st.streamId !== streamId) return;
       const room = new lk.Room({ adaptiveStream: true, dynacast: true });
-      Object.assign(st, { mode: 'viewer', room, streamId });
-      watchStreamDoc(streamId);
-      renderStage();
+      st.room = room;
       room.on(lk.RoomEvent.TrackSubscribed, (track) => {
-        if (track.kind === 'video') track.attach(document.getElementById('swm-video'));
-        if (track.kind === 'audio') { const a = track.attach(); a.style.display = 'none'; document.getElementById('swm-audio-holder').appendChild(a); }
+        if (track.kind === 'video') { track.attach(document.getElementById('swm-video')); setLoading(false); }
+        if (track.kind === 'audio') { const a = track.attach(); a.style.display = 'none'; const h = document.getElementById('swm-audio-holder'); if (h) h.appendChild(a); }
       });
       room.on(lk.RoomEvent.AudioPlaybackStatusChanged, () => {
         const b = document.getElementById('swm-audio-btn');
@@ -281,11 +298,16 @@
       room.on(lk.RoomEvent.Disconnected, () => { if (st.mode === 'viewer') stopAll(t('stream.viewerEnded', '直播已結束或你已離開')); });
       await room.connect(res.url, res.token);
       watchBlocked(streamId);
+      setTimeout(() => setLoading(false), 8000);
     } catch (e) {
       toast(t('stream.joinFailed', '未能觀看直播：') + errText(e), '❌');
       stopAll();
     }
   };
+  function setLoading(on) {
+    const el = document.getElementById('swm-loading');
+    if (el) el.style.display = on ? 'flex' : 'none';
+  }
   window.swmStartAudio = function () { if (st.room) st.room.startAudio().catch(() => {}); };
   window.swmLeave = function () { stopAll(); };
 
@@ -309,7 +331,7 @@
       const title = document.getElementById('swm-stage-title');
       if (title) title.innerText = st.stream.title || '';
       const newPin = (st.stream.pinned && st.stream.pinned.messageId) || '';
-      if (newPin !== st.lastPinId) { st.lastPinId = newPin; if (st.lastMsgs) startChat(); }
+      if (newPin !== st.lastPinId) { st.lastPinId = newPin; drawChat(); }
       renderPinned();
       const host = document.getElementById('swm-stage-host');
       if (host) host.innerText = (st.stream.hostName || '') + (st.stream.subject ? ' · ' + st.stream.subject : '');
@@ -354,7 +376,7 @@
     if (chatUnsub) { chatUnsub(); chatUnsub = null; }
     if (streamDocUnsub) { streamDocUnsub(); streamDocUnsub = null; }
     if (blockedUnsub) { blockedUnsub(); blockedUnsub = null; }
-    Object.assign(st, { mode: 'lobby', room: null, streamId: null, stream: null, heartbeat: null, endTimer: null, micOn: false });
+    Object.assign(st, { mode: 'lobby', room: null, streamId: null, stream: null, heartbeat: null, endTimer: null, micOn: false, pending: [], lastMsgs: null });
     if (room) { try { room.disconnect(); } catch (_) {} }
     if (message) toast(message, '');
     if (isTabOpen()) renderLobby();
@@ -379,12 +401,15 @@
               <span id="swm-viewers" style="background:rgba(0,0,0,.55); color:#fff; font-size:12px; border-radius:6px; padding:2px 8px;">${esc(t('stream.viewersTemplate', '{n} 人觀看').replace('{n}', (st.stream && st.stream.viewerCount) || 0))}</span>
             </div>
             <div id="swm-audio-holder"></div>
+            <div id="swm-loading" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#fff; font-size:14px; background:#111;">
+              <div class="swm-spinner"></div>${esc(t('stream.connecting', '正在連接直播…'))}
+            </div>
           </div>
-          <div style="margin-top:10px;">
+          <div class="swm-titlebox" style="margin-top:10px;">
             <div id="swm-stage-title" style="font-size:16px; font-weight:700; color:var(--brand-800); word-break:break-all;"></div>
             <div id="swm-stage-host" style="font-size:13px; color:var(--brand-700); margin-top:2px;"></div>
           </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+          <div class="swm-controls" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
             ${host
               ? `<button type="button" class="btn btn-outline" id="swm-mic-btn" onclick="window.swmToggleMic()">${esc(t('stream.micOn', '開啟咪高峰'))}</button>
                  <button type="button" class="btn btn-red" onclick="window.swmEnd(false)">${esc(t('stream.endBtn', '結束直播'))}</button>`
@@ -440,35 +465,57 @@
     catch (e) { toast(errText(e), '❌'); }
   };
 
+  st.pending = [];
+  function drawChat() {
+    const list = document.getElementById('swm-msgs');
+    const root = document.getElementById('swm-root');
+    if (!list || !root) return;
+    const docs = st.lastMsgs || [];
+    const canModerate = !!root.dataset.canModerate;
+    const myUid = me().uid;
+    const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+    const pinnedId = st.stream && st.stream.pinned && st.stream.pinned.messageId;
+    const rows = docs.slice().reverse().filter(d => !d.data().deleted).map(d => {
+      const m = d.data();
+      const actions = [];
+      if (st.mode === 'host' && m.uid === myUid && d.id !== pinnedId) {
+        actions.push(`<button type="button" onclick="window.swmPin('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.pin', '置頂'))}</button>`);
+      }
+      if (canModerate && m.uid !== myUid) {
+        actions.push(`<button type="button" onclick="window.swmDeleteMsg('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.delete', '刪除'))}</button>`);
+        if (!m.isHost) actions.push(`<button type="button" onclick="window.swmBlock('${esc(m.uid)}')" style="border:none; background:none; color:#C0392B; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.block', '封鎖'))}</button>`);
+      } else if (m.uid !== myUid) {
+        actions.push(`<button type="button" onclick="window.swmReport('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.report', '舉報'))}</button>`);
+      }
+      return `<div class="swm-msg" style="font-size:13px; line-height:1.5; word-break:break-word;">
+        <span style="font-weight:700; color:${m.isHost ? '#C0392B' : 'var(--brand-700)'};">${esc(m.name)}</span>
+        <span style="color:var(--brand-800);">${esc(m.text)}</span> ${actions.join('')}
+      </div>`;
+    });
+    const pend = (st.pending || []).map(p => `<div class="swm-msg" style="font-size:13px; line-height:1.5; word-break:break-word; opacity:.6;">
+        <span style="font-weight:700; color:var(--brand-700);">${esc(me().username || '')}</span>
+        <span style="color:var(--brand-800);">${esc(p.text)}</span>
+        <span style="font-size:11px; color:#8A94A8;">${p.failed ? esc(t('stream.sendFailed', '未能送出')) : esc(t('stream.sending', '傳送中…'))}</span>
+      </div>`);
+    list.innerHTML = rows.concat(pend).join('');
+    if (atBottom || pend.length) list.scrollTop = list.scrollHeight;
+  }
+
   function startChat() {
     if (chatUnsub) chatUnsub();
     const q = window.fs.query(window.fs.collection(window.db, 'streams', st.streamId, 'messages'), window.fs.orderBy('at', 'desc'), window.fs.limit(60));
     chatUnsub = window.fs.onSnapshot(q, (snap) => {
-      const list = document.getElementById('swm-msgs');
-      if (!list) return;
-      const canModerate = !!document.getElementById('swm-root').dataset.canModerate;
-      const myUid = me().uid;
-      const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
-      list.innerHTML = snap.docs.slice().reverse().filter(d => !d.data().deleted).map(d => {
-        const m = d.data();
-        const actions = [];
-        const pinnedId = st.stream && st.stream.pinned && st.stream.pinned.messageId;
-        if (st.mode === 'host' && m.uid === myUid && d.id !== pinnedId) {
-          actions.push(`<button type="button" onclick="window.swmPin('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.pin', '置頂'))}</button>`);
-        }
-        if (canModerate && m.uid !== myUid) {
-          actions.push(`<button type="button" onclick="window.swmDeleteMsg('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.delete', '刪除'))}</button>`);
-          if (!m.isHost) actions.push(`<button type="button" onclick="window.swmBlock('${esc(m.uid)}')" style="border:none; background:none; color:#C0392B; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.block', '封鎖'))}</button>`);
-        } else if (m.uid !== myUid) {
-          actions.push(`<button type="button" onclick="window.swmReport('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.report', '舉報'))}</button>`);
-        }
-        return `<div style="font-size:13px; line-height:1.5; word-break:break-word;">
-          <span style="font-weight:700; color:${m.isHost ? '#C0392B' : 'var(--brand-700)'};">${esc(m.name)}</span>
-          <span style="color:var(--brand-800);">${esc(m.text)}</span> ${actions.join('')}
-        </div>`;
-      }).join('');
-      if (atBottom) list.scrollTop = list.scrollHeight;
       st.lastMsgs = snap.docs;
+      // 伺服器已收到的留言：移除對應的「傳送中」
+      const myUid = me().uid;
+      snap.docChanges().forEach(ch => {
+        if (ch.type !== 'added') return;
+        const m = ch.doc.data();
+        if (m.uid !== myUid) return;
+        const i = (st.pending || []).findIndex(p => !p.failed && m.at >= p.at - 5000);
+        if (i >= 0) st.pending.splice(i, 1);
+      });
+      drawChat();
     }, (err) => console.warn('讀取留言失敗:', err));
   }
 
@@ -477,11 +524,17 @@
     const text = input ? input.value.trim() : '';
     if (!text || !st.streamId) return;
     input.value = '';
+    const p = { text, at: Date.now() };
+    st.pending.push(p);
+    drawChat();
     try {
       const res = await window.callCloudFunction('sendStreamMessage', { streamId: st.streamId, text });
       if (res && res.filtered) toast(t('stream.filtered', '留言中的部分字詞或聯絡資料已被遮蓋'), '');
     } catch (e) {
-      input.value = text;
+      const i = st.pending.indexOf(p);
+      if (i >= 0) st.pending.splice(i, 1);
+      drawChat();
+      if (!input.value) input.value = text;
       toast(errText(e), '❌');
     }
   };

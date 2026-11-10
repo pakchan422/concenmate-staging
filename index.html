@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.227.2"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.227.3"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -342,13 +342,26 @@
     .swm-stage.swm-full .swm-left > div:not(.swm-video-box) { display:none; }
     .swm-stage.swm-full .swm-chat { height:auto; max-height:none; background:rgba(255,255,255,.96); }
     body.swm-full-open { overflow:hidden; }
+    .swm-stage.swm-full .swm-titlebox { display:none; }
+    .swm-stage.swm-full { z-index:100000; }
+    .swm-spinner { width:30px; height:30px; border:3px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:swmspin 0.8s linear infinite; }
+    @keyframes swmspin { to { transform:rotate(360deg); } }
     @media (max-width: 900px) {
-      .swm-stage.swm-full { grid-template-columns:1fr; padding:0; }
+      .swm-chat { height:300px; }
+      .swm-stage.swm-full { grid-template-columns:1fr; padding:0; gap:0; }
+      .swm-stage.swm-full .swm-left { height:100%; }
       .swm-stage.swm-full .swm-video-box { border-radius:0; }
-      .swm-stage.swm-full .swm-chat { position:absolute; left:8px; right:8px; bottom:8px; height:42%; background:rgba(0,0,0,.45); border:none; }
-      .swm-stage.swm-full .swm-chat, .swm-stage.swm-full #swm-msgs * { color:#fff !important; text-shadow:0 1px 2px rgba(0,0,0,.6); }
-      .swm-stage.swm-full .swm-chat input { background:rgba(255,255,255,.9); color:#1F2C47; }
-      .swm-stage.swm-full #swm-pinned, .swm-stage.swm-full #swm-pinned * { color:#1F2F55 !important; text-shadow:none; }
+      .swm-stage.swm-full .swm-controls { margin:0 !important; padding:8px; background:#000; }
+      /* 手機全螢幕：留言區細細一格疊喺畫面下方，大約顯示 5 行 */
+      .swm-stage.swm-full .swm-chat { position:absolute; left:8px; right:8px; bottom:64px; height:auto; max-height:34%; background:rgba(0,0,0,.35); border:none; }
+      .swm-stage.swm-full .swm-chat > div:first-child { display:none; }
+      .swm-stage.swm-full #swm-msgs { max-height:120px; padding:6px 10px !important; gap:2px !important; }
+      .swm-stage.swm-full #swm-msgs .swm-msg { font-size:12px !important; line-height:1.4 !important; }
+      .swm-stage.swm-full .swm-chat form { padding:6px !important; border-top:none !important; }
+      .swm-stage.swm-full .swm-chat input { height:34px; font-size:13px; }
+      .swm-stage.swm-full .swm-chat, .swm-stage.swm-full #swm-msgs * { color:#fff !important; text-shadow:0 1px 2px rgba(0,0,0,.7); }
+      .swm-stage.swm-full .swm-chat input { background:rgba(255,255,255,.9); color:#1F2C47 !important; }
+      .swm-stage.swm-full #swm-pinned, .swm-stage.swm-full #swm-pinned * { color:#1F2F55 !important; text-shadow:none; font-size:12px; }
     }
     .nav-btn:not(.active):not(:hover) .nav-icon { color: var(--brand-600); }
 
