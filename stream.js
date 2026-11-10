@@ -47,10 +47,21 @@
     if (u.accountType === 'tutor' || u.role === 'tutor') return false;
     return settings.enabled === true;
   }
+  // v1.227.5：記住上次是否顯示，重新載入時即時套用，避免功能表遲半秒才彈出
+  const NAV_KEY = 'swmNavVisible';
   function refreshNav() {
     const btn = document.getElementById('nav-btn-stream');
-    if (btn) btn.style.display = canSee() ? '' : 'none';
+    const show = canSee();
+    if (btn) btn.style.display = show ? '' : 'none';
+    try { if (me().uid) localStorage.setItem(NAV_KEY, show ? '1' : '0'); else localStorage.removeItem(NAV_KEY); } catch (_) {}
   }
+  (function applyCachedNav() {
+    let cached = null;
+    try { cached = localStorage.getItem(NAV_KEY); } catch (_) {}
+    if (cached !== '1') return;
+    const apply = () => { const b = document.getElementById('nav-btn-stream'); if (b) b.style.display = ''; };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+  })();
 
   function init() {
     const u = me();
@@ -64,10 +75,15 @@
       if (st.mode === 'lobby' && isTabOpen()) renderLobby();
     }, () => {});
   }
-  setInterval(() => {
+  // 登入後盡快初始化（首 10 秒每 0.3 秒檢查一次，之後每 2 秒）
+  let navTicks = 0;
+  function navTick() {
     if (window.currentUser && window.currentUser.uid) init();
     else if (initUid) { initUid = null; refreshNav(); }
-  }, 2000);
+    navTicks++;
+    setTimeout(navTick, navTicks < 33 ? 300 : 2000);
+  }
+  navTick();
 
   function isTabOpen() {
     const tab = document.getElementById('tab-stream');
@@ -498,7 +514,7 @@
         actions.push(`<button type="button" onclick="window.swmReport('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.report', '舉報'))}</button>`);
       }
       return `<div class="swm-msg" style="font-size:13px; line-height:1.5; word-break:break-word;">
-        <span style="font-weight:700; color:${m.isHost ? '#C0392B' : 'var(--brand-700)'};">${esc(m.name)}</span>
+        <span class="swm-name" onclick="window.swmViewUser('${esc(m.uid)}')" style="font-weight:700; cursor:pointer; color:${m.isHost ? '#C0392B' : 'var(--brand-700)'};">${esc(m.name)}</span>
         <span style="color:var(--brand-800);">${esc(m.text)}</span> ${actions.join('')}
       </div>`;
     });
@@ -564,6 +580,14 @@
   };
 
   // ---------- 舉報 ----------
+  // v1.227.5：點擊留言區的名字，彈出該用戶的資訊卡（全螢幕時先退出，否則資訊卡會被遮住）
+  window.swmViewUser = function (uid) {
+    if (!uid || typeof window.viewUserProfile !== 'function') return;
+    const stage = document.getElementById('swm-stage');
+    if (stage && stage.classList.contains('swm-full')) window.swmToggleFullscreen();
+    window.viewUserProfile(uid);
+  };
+
   window.swmReport = function (messageId) {
     const s = st.stream || {};
     let reportedUid = s.hostUid, reportedName = s.hostName, quoted = '';
