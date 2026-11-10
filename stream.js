@@ -360,7 +360,8 @@
       if (newPin !== st.lastPinId) { st.lastPinId = newPin; drawChat(); }
       renderPinned();
       const host = document.getElementById('swm-stage-host');
-      if (host) host.innerText = (st.stream.hostName || '') + (st.stream.subject ? ' · ' + st.stream.subject : '');
+      // v1.227.6：主播名字可點擊，彈出資訊卡
+      if (host) host.innerHTML = `<span class="swm-name" onclick="window.swmViewUser('${esc(st.stream.hostUid || '')}')" style="cursor:pointer;">${esc(st.stream.hostName || '')}</span>` + (st.stream.subject ? ' · ' + esc(st.stream.subject) : '');
       if (st.mode === 'viewer') {
         const vc = document.getElementById('swm-viewers');
         if (vc) vc.innerText = t('stream.viewersTemplate', '{n} 人觀看').replace('{n}', st.stream.viewerCount || 0);
@@ -402,7 +403,7 @@
     if (chatUnsub) { chatUnsub(); chatUnsub = null; }
     if (streamDocUnsub) { streamDocUnsub(); streamDocUnsub = null; }
     if (blockedUnsub) { blockedUnsub(); blockedUnsub = null; }
-    Object.assign(st, { mode: 'lobby', room: null, streamId: null, stream: null, heartbeat: null, endTimer: null, micOn: false, pending: [], lastMsgs: null });
+    Object.assign(st, { mode: 'lobby', room: null, streamId: null, stream: null, heartbeat: null, endTimer: null, micOn: false, pending: [], lastMsgs: null, hiddenIds: null });
     if (room) { try { room.disconnect(); } catch (_) {} }
     if (message) toast(message, '');
     if (isTabOpen()) renderLobby();
@@ -501,7 +502,8 @@
     const myUid = me().uid;
     const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
     const pinnedId = st.stream && st.stream.pinned && st.stream.pinned.messageId;
-    const rows = docs.slice().reverse().filter(d => !d.data().deleted).map(d => {
+    const hidden = st.hiddenIds || new Set();
+    const rows = docs.slice().reverse().filter(d => !d.data().deleted && !hidden.has(d.id)).map(d => {
       const m = d.data();
       const actions = [];
       if (st.mode === 'host' && m.uid === myUid && d.id !== pinnedId) {
@@ -564,9 +566,14 @@
       toast(errText(e), '❌');
     }
   };
+  // v1.227.6：刪除前先確認；確認後即時在畫面隱藏（不用等伺服器回覆），失敗才還原
   window.swmDeleteMsg = async function (messageId) {
+    if (!confirm(t('stream.confirmDelete', '確定刪除這則留言？'))) return;
+    if (!st.hiddenIds) st.hiddenIds = new Set();
+    st.hiddenIds.add(messageId);
+    drawChat();
     try { await window.callCloudFunction('moderateStream', { streamId: st.streamId, action: 'deleteMessage', messageId }); }
-    catch (e) { toast(errText(e), '❌'); }
+    catch (e) { st.hiddenIds.delete(messageId); drawChat(); toast(errText(e), '❌'); }
   };
   window.swmBlock = async function (targetUid) {
     if (!confirm(t('stream.confirmBlock', '確定封鎖這位觀眾？對方將被移出直播，並不能再進入。'))) return;
