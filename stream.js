@@ -220,7 +220,13 @@
         { resolution: { width: q.width, height: q.height, frameRate: 15 } },
         { simulcast: true, videoEncoding: { maxBitrate: q.maxBitrate, maxFramerate: 15 }, videoSimulcastLayers: [lk.VideoPresets43.h180, lk.VideoPresets43.h360] });
       Object.assign(st, { mode: 'host', room, streamId: res.streamId, micOn: false });
-      room.on(lk.RoomEvent.Disconnected, () => { if (st.mode === 'host') stopAll(t('stream.disconnected', '直播連線已中斷')); });
+      room.on(lk.RoomEvent.Disconnected, () => {
+        if (st.mode !== 'host') return;
+        const id = st.streamId;
+        stopAll(t('stream.disconnected', '直播連線已中斷，直播已結束'));
+        // 主播連線中斷（例如同一帳戶在另一部機登入）：即時結束直播，避免大廳留下無人直播
+        if (id) window.callCloudFunction('endStream', { streamId: id }).catch(() => {});
+      });
       st.heartbeat = setInterval(sendHeartbeat, 60 * 1000);
       st.endTimer = setTimeout(() => window.swmEnd(true), Math.max(60000, res.maxEndAt - Date.now()));
       watchStreamDoc(res.streamId);
@@ -296,6 +302,10 @@
         if (b) b.style.display = room.canPlaybackAudio ? 'none' : '';
       });
       room.on(lk.RoomEvent.Disconnected, () => { if (st.mode === 'viewer') stopAll(t('stream.viewerEnded', '直播已結束或你已離開')); });
+      // 主播離開房間：觀眾自動返回大廳
+      room.on(lk.RoomEvent.ParticipantDisconnected, (p) => {
+        if (st.mode === 'viewer' && st.stream && p.identity === st.stream.hostUid) stopAll(t('stream.hostLeft', '主播已離開直播'));
+      });
       await room.connect(res.url, res.token);
       watchBlocked(streamId);
       setTimeout(() => setLoading(false), 8000);
