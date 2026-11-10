@@ -251,8 +251,9 @@
       // 得個「網站設定」四個字、下面乜掣都冇咁奇怪。
       ['admin-tab-group-settings', 'admin-tab-group-governance', 'admin-tab-group-rewards', 'admin-tab-group-content', 'admin-tab-group-lists'].forEach((groupId) => {
         const groupEl = document.getElementById(groupId);
-        if (groupEl) groupEl.style.display = isSuper ? '' : 'none';
+        if (groupEl) groupEl.dataset.allowed = isSuper ? '1' : '0';
       });
+      buildAdminCategoryBar();
       // 如果而家記住嘅分頁係『support』見唔到嗰啲，就退返去「數據總覽」，
       // 避免見到一個冇按鈕對應、又撳唔返嘅空白分頁。
       let startTab = currentAdminTab || (isSuper ? 'costs' : 'dashboard');
@@ -272,6 +273,7 @@
         tab = 'dashboard';
       }
       currentAdminTab = tab;
+      updateAdminCategoryUI(tab);
       document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         const active = btn.getAttribute('data-tab') === tab;
         btn.className = 'btn admin-tab-btn ' + (active ? 'btn-primary active' : 'btn-outline');
@@ -290,6 +292,78 @@
         return;
       }
       renderSingleAdminTab(tab);
+    };
+
+    // v1.228.1：後台分頁改為兩層 tab——上排是類別（總覽、日常營運……），
+    // 下排只顯示所選類別入面的分頁，唔再一路向下排晒所有分頁
+    const adminLastTabByGroup = {};
+    function adminTabGroups() {
+      return Array.from(document.querySelectorAll('#admin-tab-nav > [id^="admin-tab-group-"]'));
+    }
+    function buildAdminCategoryBar() {
+      const nav = document.getElementById('admin-tab-nav');
+      if (!nav) return;
+      let bar = document.getElementById('admin-cat-bar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'admin-cat-bar';
+        bar.setAttribute('role', 'tablist');
+        nav.insertBefore(bar, nav.firstChild);
+      }
+      bar.innerHTML = adminTabGroups().map(g => {
+        const labelEl = g.querySelector('.admin-tab-group-label');
+        if (labelEl) labelEl.style.display = 'none';
+        const label = labelEl ? labelEl.textContent.trim() : g.id;
+        const hidden = g.dataset.allowed === '0' ? ' style="display:none;"' : '';
+        return `<button type="button" class="admin-cat-btn" role="tab" data-group="${g.id}"${hidden} onclick="window.switchAdminCategory('${g.id}')">${label}</button>`;
+      }).join('');
+      updateAdminCategoryUI(currentAdminTab || 'dashboard');
+      syncAdminCategoryBadges();
+    }
+    // 「舉報處理」「導師申請」有待處理項目時，喺「日常營運」類別旁邊顯示紅點，
+    // 即使管理員停留喺其他類別都會見到
+    function syncAdminCategoryBadges() {
+      const badges = ['admin-reports-badge', 'admin-tutors-badge'].map(id => document.getElementById(id)).filter(Boolean);
+      const update = () => {
+        adminTabGroups().forEach(g => {
+          const catBtn = document.querySelector(`#admin-cat-bar .admin-cat-btn[data-group="${g.id}"]`);
+          if (!catBtn) return;
+          const pending = Array.from(g.querySelectorAll('[id$="-badge"]')).some(el => el.style.display !== 'none' && el.textContent.trim() !== '0');
+          let dot = catBtn.querySelector('.admin-cat-dot');
+          if (pending && !dot) {
+            dot = document.createElement('span');
+            dot.className = 'admin-cat-dot';
+            dot.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; background:#C0524A; margin-left:5px; vertical-align:middle;';
+            catBtn.appendChild(dot);
+          } else if (!pending && dot) dot.remove();
+        });
+      };
+      if (!window._adminCatBadgeObserver && window.MutationObserver) {
+        window._adminCatBadgeObserver = new MutationObserver(update);
+        badges.forEach(el => window._adminCatBadgeObserver.observe(el, { attributes: true, childList: true, characterData: true, subtree: true }));
+      }
+      update();
+    }
+    function updateAdminCategoryUI(tab) {
+      const btn = document.querySelector(`.admin-tab-btn[data-tab="${tab}"]`);
+      const activeGroup = btn ? btn.closest('[id^="admin-tab-group-"]') : null;
+      if (activeGroup) adminLastTabByGroup[activeGroup.id] = tab;
+      adminTabGroups().forEach(g => {
+        g.style.display = (g === activeGroup && g.dataset.allowed !== '0') ? '' : 'none';
+      });
+      document.querySelectorAll('#admin-cat-bar .admin-cat-btn').forEach(b => {
+        const on = !!activeGroup && b.dataset.group === activeGroup.id;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+    }
+    window.switchAdminCategory = function(groupId) {
+      const g = document.getElementById(groupId);
+      if (!g) return;
+      const visibleBtns = Array.from(g.querySelectorAll('.admin-tab-btn')).filter(b => b.style.display !== 'none');
+      const remembered = adminLastTabByGroup[groupId];
+      const target = (remembered && visibleBtns.some(b => b.dataset.tab === remembered)) ? remembered : (visibleBtns[0] && visibleBtns[0].dataset.tab);
+      if (target) window.switchAdminTab(target);
     };
 
     function renderSingleAdminTab(tab) {
