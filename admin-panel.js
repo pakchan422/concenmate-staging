@@ -592,12 +592,12 @@
       renderAdminGachaTab();
       window.showToast('已新增系列（預設未開放扭蛋），請點擊「儲存全部改動」', '📦');
     };
-    window.adminRemoveGachaSeries = function(idx) {
+    window.adminRemoveGachaSeries = async function(idx) {
       if (!adminGachaDraft || !adminGachaDraft.series[idx]) return;
       const se = adminGachaDraft.series[idx];
       const n = adminGachaDraft.stickers.filter(st => String(st.seriesId) === String(se.id)).length;
       if (n > 0) { window.showToast(`此系列仍有 ${n} 張貼圖，請先將貼圖移到其他系列或刪除`, '⚠️'); return; }
-      if (!confirm(`確定刪除系列「${se.name || se.id}」？`)) return;
+      if (!(await window.appConfirm(`確定刪除系列「${se.name || se.id}」？`))) return;
       adminGachaDraft.series.splice(idx, 1);
       adminGachaDraft.series.forEach((x, i) => { x.order = i + 1; });
       if (adminGachaSeriesFilter === String(se.id)) adminGachaSeriesFilter = '';
@@ -865,9 +865,9 @@
       renderAdminGachaTab();
     };
 
-    window.adminRemoveGachaPrize = function(idx) {
+    window.adminRemoveGachaPrize = async function(idx) {
       if (!adminGachaDraft) return;
-      if (!confirm('確定刪除這張貼圖？若已經有用戶擁有，其收集紀錄會保留，但在圖鑑中將不再顯示。')) return;
+      if (!(await window.appConfirm('確定刪除這張貼圖？若已經有用戶擁有，其收集紀錄會保留，但在圖鑑中將不再顯示。'))) return;
       adminGachaDraft.stickers.splice(idx, 1);
       renderAdminGachaTab();
     };
@@ -880,9 +880,9 @@
     // 掉」，唔係刪走但會變樣。所以特登喺按鈕嗰段文字、同呢度嘅 confirm
     // 入面都講清楚呢個風險，等管理員自己衡量而家係咪安全時機（例如仲
     // 未有學生正式扭過蛋）先撳。
-    window.adminRenumberGachaStickers = function() {
+    window.adminRenumberGachaStickers = async function() {
       if (!adminGachaDraft || !adminGachaDraft.stickers.length) return;
-      if (!confirm('重新排序編號會將貼紙 id 由 1 開始重新連續編號。\n\n如果已經有真實學生使用這個扭蛋機扭過蛋、收藏了某幾隻貼紙，他們原有的收藏會因為編號改變而對應不上（貼紙會「變成另一隻」）。如果尚未有學生正式使用過，或者你願意接受洗牌整批收藏記錄，才繼續。\n\n確定要重新編號？')) return;
+      if (!(await window.appConfirm('重新排序編號會將貼紙 id 由 1 開始重新連續編號。\n\n如果已經有真實學生使用這個扭蛋機扭過蛋、收藏了某幾隻貼紙，他們原有的收藏會因為編號改變而對應不上（貼紙會「變成另一隻」）。如果尚未有學生正式使用過，或者你願意接受洗牌整批收藏記錄，才繼續。\n\n確定要重新編號？'))) return;
       adminGachaDraft.stickers.forEach((p, i) => { p.id = i + 1; });
       renderAdminGachaTab();
       window.showToast('已重新排序編號，請點擊「儲存全部改動」才會正式生效', '🔢');
@@ -1366,7 +1366,7 @@
     window.renderAdminRoomsTab = renderAdminRoomsTab;
 
     window.adminDeleteRoom = async function(roomId, roomName) {
-      if (!confirm(`確定要強制關閉房間「${roomName}」？裡面的同學會即時被移至大廳。`)) return;
+      if (!(await window.appConfirm(`確定要強制關閉房間「${roomName}」？裡面的同學會即時被移至大廳。`))) return;
       try {
         await window.fs.deleteDoc(window.fs.doc(window.db, 'rooms', roomId));
         await logAdminAction('強制關閉房間', { roomId, roomName });
@@ -1418,7 +1418,7 @@
     window.renderAdminQaTab = renderAdminQaTab;
 
     window.adminDeleteQaPost = async function(postId) {
-      if (!confirm('確定刪除這個提問？裡面的留言都會一齊清埋。')) return;
+      if (!(await window.appConfirm('確定刪除這個提問？裡面的留言都會一齊清埋。'))) return;
       try {
         // 先刪晒 comments 呢個 subcollection 入面嘅所有文件，先刪返個 post 本身
         // （Firestore 刪除文件唔會自動連 subcollection 一齊刪，要自己手動清）
@@ -1576,7 +1576,7 @@
 
     // v1.225.0：停權改由伺服器（moderateUser）處理，永久停權會同時停用登入帳戶
     window.adminToggleSuspendUser = async function(uid, suspend) {
-      if (!confirm(suspend ? '確定永久停用這個帳戶？用戶會即時被登出，並無法再登入。' : '確定解除這個帳戶的停權？')) return;
+      if (!(await window.appConfirm(suspend ? '確定永久停用這個帳戶？用戶會即時被登出，並無法再登入。' : '確定解除這個帳戶的停權？'))) return;
       try {
         await window.callCloudFunction('moderateUser', { uid, action: suspend ? 'permanent' : 'lift', reason: suspend ? '管理員手動停權' : '' });
         window.showToast(suspend ? '已永久停用該帳戶' : '已解除停權', suspend ? '🚫' : '✅');
@@ -1698,7 +1698,7 @@
     };
 
     window.adminResetStrikes = async function(uid) {
-      if (!confirm('確定將這個帳戶的違規次數重設為 0？')) return;
+      if (!(await window.appConfirm('確定將這個帳戶的違規次數重設為 0？'))) return;
       try {
         await window.callCloudFunction('moderateUser', { uid, action: 'resetStrikes' });
         window.showToast('已重設違規次數', '✅');
@@ -1874,7 +1874,7 @@
       const msg = severe
         ? '確定屬於嚴重違規？該帳戶會被永久封號，並無法再登入。'
         : `確定違規屬實？系統會按違規次數處理：第 1 次停權 ${m.firstDays} 日、第 2 次停權 ${m.secondDays} 日、第 3 次永久封號。`;
-      if (!confirm(msg)) return;
+      if (!(await window.appConfirm(msg))) return;
       const doc = adminReportsLoadedDocs.find(x => x.id === reportId);
       const reason = doc && doc.data().reason ? doc.data().reason : '違反使用守則';
       try {
@@ -1932,7 +1932,7 @@
     // 淨係已經處理完（已駁回／已處理）嘅舉報先俾刪，pending 嘅唔會出呢粒掣，
     // 避免管理員手快手滑刪走仲未跟進嘅證據
     window.adminDeleteReport = async function(reportId) {
-      if (!confirm('確定刪除這一則已處理的舉報紀錄？連同截圖一併刪除，刪除後將無法復原。')) return;
+      if (!(await window.appConfirm('確定刪除這一則已處理的舉報紀錄？連同截圖一併刪除，刪除後將無法復原。'))) return;
       try {
         await window.fs.deleteDoc(window.fs.doc(window.db, 'reports', reportId));
         window.showToast('已刪除舉報紀錄', '🗑️');
@@ -2283,7 +2283,7 @@
     window.renderAdminTutorsTab = renderAdminTutorsTab;
 
     window.adminApproveTutorApp = async function(uid) {
-      if (!confirm('確定批准這個導師申請？批准之後該用戶會立即獲得導師身份。')) return;
+      if (!(await window.appConfirm('確定批准這個導師申請？批准之後該用戶會立即獲得導師身份。'))) return;
       try {
         await window.callCloudFunction('approveTutorApplication', { targetUid: uid });
         await logAdminAction('批准導師申請', { uid });
@@ -2294,7 +2294,7 @@
     };
 
     window.adminRejectTutorApp = async function(uid) {
-      const reason = prompt('駁回原因（會顯示給申請人查看，可以留空）：', '');
+      const reason = (await window.appPrompt('駁回原因（會顯示給申請人查看，可以留空）：', ''));
       if (reason === null) return; // 撳咗取消
       try {
         await window.callCloudFunction('rejectTutorApplication', { targetUid: uid, rejectionReason: reason });
@@ -2306,7 +2306,7 @@
     };
 
     window.adminSuspendTutor = async function(uid) {
-      if (!confirm('確定停權這位導師？其已上架的筆記會自動下架，但已購買的學生保留下載權。')) return;
+      if (!(await window.appConfirm('確定停權這位導師？其已上架的筆記會自動下架，但已購買的學生保留下載權。'))) return;
       try {
         await window.callCloudFunction('suspendTutor', { targetUid: uid });
         await logAdminAction('停權導師', { uid });
@@ -3018,7 +3018,7 @@
     // 器端計數，唔使下載晒成批文件，比較慳。
     // v1.200.0：為所有現有用戶補建 publicProfiles（其他用戶睇資料卡用）。
     window.adminBackfillPublicProfiles = async function(btn) {
-      if (!confirm('確定要為所有用戶同步公開資料卡？用戶較多時可能需要一至兩分鐘。')) return;
+      if (!(await window.appConfirm('確定要為所有用戶同步公開資料卡？用戶較多時可能需要一至兩分鐘。'))) return;
       const original = btn ? btn.innerText : '';
       if (btn) { btn.disabled = true; btn.innerText = '同步中…'; }
       try {
@@ -3497,7 +3497,7 @@
         window.showToast('請輸入不是 0 的數值', '⚠️');
         return;
       }
-      if (!confirm(`確定要幫呢位用戶${amount > 0 ? '補發' : '扣減'} ${Math.abs(amount)} PTS？`)) return;
+      if (!(await window.appConfirm(`確定要幫呢位用戶${amount > 0 ? '補發' : '扣減'} ${Math.abs(amount)} PTS？`))) return;
       try {
         await window.fs.updateDoc(window.fs.doc(window.db, 'users', uid), { points: window.fs.increment(amount) });
         await logAdminAction('補發／扣減PTS', { uid, amount });
@@ -3530,7 +3530,7 @@
         return;
       }
       const sticker = GACHA_STICKERS.find(s => s.id === stickerId);
-      if (!confirm(`確定要幫呢位用戶補發 ${qty} 張「${sticker ? sticker.name : '#' + stickerId}」？`)) return;
+      if (!(await window.appConfirm(`確定要幫呢位用戶補發 ${qty} 張「${sticker ? sticker.name : '#' + stickerId}」？`))) return;
       try {
         const payload = {};
         payload['ownedStickers.' + stickerId] = window.fs.increment(qty);
@@ -3638,9 +3638,9 @@
       adminAdminListDraft.entries[idx].role = role;
     };
 
-    window.adminRemoveAdminListEntry = function(idx) {
+    window.adminRemoveAdminListEntry = async function(idx) {
       if (!adminAdminListDraft || !adminAdminListDraft.entries[idx]) return;
-      if (!confirm(`確定要移除「${adminAdminListDraft.entries[idx].loginId}」的管理員身份？`)) return;
+      if (!(await window.appConfirm(`確定要移除「${adminAdminListDraft.entries[idx].loginId}」的管理員身份？`))) return;
       adminAdminListDraft.entries.splice(idx, 1);
       renderAdminAdminListTab();
     };
@@ -3679,9 +3679,9 @@
       const stillAdmin = entries.some(e => e.loginId === myLoginId);
       const stillSuper = entries.some(e => e.loginId === myLoginId && e.role === 'super');
       if (!stillAdmin) {
-        if (!confirm('你將會喺呢次儲存之後移除咗自己嘅管理員身份，即刻會撳唔返入嚟Admin後台。確定要咁做？')) return;
+        if (!(await window.appConfirm('你將會喺呢次儲存之後移除咗自己嘅管理員身份，即刻會撳唔返入嚟Admin後台。確定要咁做？'))) return;
       } else if (!stillSuper) {
-        if (!confirm('儲存後你將會降為「客服／支援管理員」，並立即無法查看此頁及其他設定分頁。確定要這樣做嗎？')) return;
+        if (!(await window.appConfirm('儲存後你將會降為「客服／支援管理員」，並立即無法查看此頁及其他設定分頁。確定要這樣做嗎？'))) return;
       }
 
       const ids = entries.map(e => e.loginId);
@@ -4452,7 +4452,7 @@
 
     window.adminSaveLegalContent = async function() {
       ensureLegalDraftLoaded();
-      if (!confirm('確定要儲存嗎？此改動會即時影響全站顯示的服務條款／私隱政策內容。')) return;
+      if (!(await window.appConfirm('確定要儲存嗎？此改動會即時影響全站顯示的服務條款／私隱政策內容。'))) return;
       try {
         const ref = window.fs.doc(window.db, 'admin_config', 'legalContent');
         await window.fs.setDoc(ref, {
@@ -4713,7 +4713,7 @@
     };
 
     window.adminDeleteSnapshotBg = async function(n) {
-      if (!confirm(`確定移除 ${n} 人合照背景？移除後會使用預設背景。`)) return;
+      if (!(await window.appConfirm(`確定移除 ${n} 人合照背景？移除後會使用預設背景。`))) return;
       try {
         await window.fs.deleteDoc(window.fs.doc(window.db, 'admin_config', 'snapshotBg' + n));
         window.showToast(`已移除 ${n} 人合照背景`, '');

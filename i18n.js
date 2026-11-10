@@ -189,6 +189,7 @@
     'stream.busyStream': { 'zh-Hant': '你正在視訊溫習室，請先退出溫習室再使用直播', 'en': 'You are in a study room. Please leave it before using live streaming.', 'yue': '你而家喺視訊溫習室，請先退出溫習室再用直播' },
     'nav.stream': { 'zh-Hant': 'Study with me', 'en': 'Study with me', 'yue': 'Study with me' },
     'common.cancel': { 'zh-Hant': '取消', 'en': 'Cancel', 'yue': '取消' },
+    'common.confirm': { 'zh-Hant': '確定', 'en': 'OK', 'yue': '確定' },
     'common.save': { 'zh-Hant': '儲存', 'en': 'Save', 'yue': '儲存' },
     'common.close': { 'zh-Hant': '關閉', 'en': 'Close', 'yue': '閂返' },
     'common.loginFirst': { 'zh-Hant': '請先登入', 'en': 'Please log in first', 'yue': '要登入先得㗎' },

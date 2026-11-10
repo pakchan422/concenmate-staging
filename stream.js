@@ -289,7 +289,7 @@
 
   window.swmEnd = async function (auto) {
     if (st.mode !== 'host') return;
-    if (!auto && !confirm(t('stream.confirmEnd', '確定結束直播？'))) return;
+    if (!auto && !(await window.appConfirm(t('stream.confirmEnd', '確定結束直播？')))) return;
     const id = st.streamId;
     stopAll(auto ? t('stream.endedMax', '直播已結束') : t('stream.ended', '已結束直播'));
     try { await window.callCloudFunction('endStream', { streamId: id }); } catch (e) { console.warn(e); }
@@ -568,7 +568,7 @@
   };
   // v1.227.6：刪除前先確認；確認後即時在畫面隱藏（不用等伺服器回覆），失敗才還原
   window.swmDeleteMsg = async function (messageId) {
-    if (!confirm(t('stream.confirmDelete', '確定刪除這則留言？'))) return;
+    if (!(await window.appConfirm(t('stream.confirmDelete', '確定刪除這則留言？')))) return;
     if (!st.hiddenIds) st.hiddenIds = new Set();
     st.hiddenIds.add(messageId);
     drawChat();
@@ -576,12 +576,12 @@
     catch (e) { st.hiddenIds.delete(messageId); drawChat(); toast(errText(e), '❌'); }
   };
   window.swmBlock = async function (targetUid) {
-    if (!confirm(t('stream.confirmBlock', '確定封鎖這位觀眾？對方將被移出直播，並不能再進入。'))) return;
+    if (!(await window.appConfirm(t('stream.confirmBlock', '確定封鎖這位觀眾？對方將被移出直播，並不能再進入。')))) return;
     try { await window.callCloudFunction('moderateStream', { streamId: st.streamId, action: 'block', targetUid }); toast(t('stream.blockedDone', '已封鎖'), '✅'); }
     catch (e) { toast(errText(e), '❌'); }
   };
   window.swmAdminEnd = async function () {
-    if (!confirm(t('stream.confirmAdminEnd', '確定中止這個直播？'))) return;
+    if (!(await window.appConfirm(t('stream.confirmAdminEnd', '確定中止這個直播？')))) return;
     try { await window.callCloudFunction('endStream', { streamId: st.streamId }); }
     catch (e) { toast(errText(e), '❌'); }
   };

@@ -665,7 +665,7 @@
     // 同一間房都會俾 enterRoomSetup 擋返出去，直到呢間房執咗為止。
     window.kickParticipant = async function(targetUid, targetName) {
       if (!state.isHost || !state.currentRoomId || !window.db || !window.fs) return;
-      if (!confirm(window.t('room.kickConfirmTemplate', `確定要將「${targetName}」移出這個溫習房？他之後都不可以再加入這間房。`).replace('{name}', targetName))) return;
+      if (!(await window.appConfirm(window.t('room.kickConfirmTemplate', `確定要將「${targetName}」移出這個溫習房？他之後都不可以再加入這間房。`).replace('{name}', targetName)))) return;
       try {
         await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId), {
           bannedUids: window.fs.arrayUnion(targetUid)
@@ -685,7 +685,7 @@
     // 選項，唔使額外寫多一套同步邏輯。
     window.transferHostTo = async function(targetUid, targetName) {
       if (!state.isHost || !state.currentRoomId || !window.db || !window.fs) return;
-      if (!confirm(window.t('room.transferHostConfirmTemplate', `確定要將房主身份轉移給「${targetName}」？轉移之後你會變回普通成員，不會再有踢人／轉移房主的權限。`).replace('{name}', targetName))) return;
+      if (!(await window.appConfirm(window.t('room.transferHostConfirmTemplate', `確定要將房主身份轉移給「${targetName}」？轉移之後你會變回普通成員，不會再有踢人／轉移房主的權限。`).replace('{name}', targetName)))) return;
       try {
         await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId), {
           hostUid: targetUid,
