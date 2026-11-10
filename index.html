@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.227.1"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.227.2"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <meta charset="UTF-8">
@@ -333,6 +333,23 @@
     .swm-stage { display:grid; grid-template-columns: minmax(0, 1fr) 320px; gap:14px; align-items:start; }
     .swm-chat { background:#fff; border:1px solid var(--brand-200); border-radius:14px; display:flex; flex-direction:column; height:520px; min-width:0; }
     @media (max-width: 900px) { .swm-stage { grid-template-columns: 1fr; } .swm-chat { height:380px; } }
+    .swm-fs-btn { position:absolute; top:10px; right:10px; z-index:3; width:36px; height:36px; border:none; border-radius:10px; background:rgba(0,0,0,.55); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .swm-fs-btn svg { width:20px; height:20px; }
+    /* 全螢幕：畫面佔左邊，留言區固定右邊；窄屏時留言區疊喺畫面下半部 */
+    .swm-stage.swm-full { position:fixed; inset:0; z-index:10050; background:#000; padding:12px; gap:12px; grid-template-columns:minmax(0,1fr) 340px; align-items:stretch; height:100vh; height:100dvh; }
+    .swm-stage.swm-full .swm-left { display:flex; flex-direction:column; min-height:0; }
+    .swm-stage.swm-full .swm-video-box { flex:1; aspect-ratio:auto !important; min-height:0; }
+    .swm-stage.swm-full .swm-left > div:not(.swm-video-box) { display:none; }
+    .swm-stage.swm-full .swm-chat { height:auto; max-height:none; background:rgba(255,255,255,.96); }
+    body.swm-full-open { overflow:hidden; }
+    @media (max-width: 900px) {
+      .swm-stage.swm-full { grid-template-columns:1fr; padding:0; }
+      .swm-stage.swm-full .swm-video-box { border-radius:0; }
+      .swm-stage.swm-full .swm-chat { position:absolute; left:8px; right:8px; bottom:8px; height:42%; background:rgba(0,0,0,.45); border:none; }
+      .swm-stage.swm-full .swm-chat, .swm-stage.swm-full #swm-msgs * { color:#fff !important; text-shadow:0 1px 2px rgba(0,0,0,.6); }
+      .swm-stage.swm-full .swm-chat input { background:rgba(255,255,255,.9); color:#1F2C47; }
+      .swm-stage.swm-full #swm-pinned, .swm-stage.swm-full #swm-pinned * { color:#1F2F55 !important; text-shadow:none; }
+    }
     .nav-btn:not(.active):not(:hover) .nav-icon { color: var(--brand-600); }
 
     .auth-wall-container {

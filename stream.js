@@ -308,6 +308,8 @@
       }
       const title = document.getElementById('swm-stage-title');
       if (title) title.innerText = st.stream.title || '';
+      const newPin = (st.stream.pinned && st.stream.pinned.messageId) || '';
+      if (newPin !== st.lastPinId) { st.lastPinId = newPin; if (st.lastMsgs) startChat(); }
       renderPinned();
       const host = document.getElementById('swm-stage-host');
       if (host) host.innerText = (st.stream.hostName || '') + (st.stream.subject ? ' · ' + st.stream.subject : '');
@@ -318,7 +320,35 @@
     }, () => {});
   }
 
+  // ---------- 全螢幕：畫面加留言區一齊放大 ----------
+  window.swmToggleFullscreen = function () {
+    const stage = document.getElementById('swm-stage');
+    if (!stage) return;
+    const on = !stage.classList.contains('swm-full');
+    stage.classList.toggle('swm-full', on);
+    document.body.classList.toggle('swm-full-open', on);
+    try {
+      if (on && stage.requestFullscreen && !document.fullscreenElement) stage.requestFullscreen().catch(() => {});
+      if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    } catch (_) {}
+    const list = document.getElementById('swm-msgs');
+    if (list) list.scrollTop = list.scrollHeight;
+  };
+  document.addEventListener('fullscreenchange', () => {
+    const stage = document.getElementById('swm-stage');
+    if (!document.fullscreenElement && stage && stage.classList.contains('swm-full')) {
+      stage.classList.remove('swm-full');
+      document.body.classList.remove('swm-full-open');
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    const stage = document.getElementById('swm-stage');
+    if (e.key === 'Escape' && stage && stage.classList.contains('swm-full') && !document.fullscreenElement) window.swmToggleFullscreen();
+  });
+
   function stopAll(message) {
+    document.body.classList.remove('swm-full-open');
+    if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (_) {} }
     const room = st.room;
     clearInterval(st.heartbeat); clearTimeout(st.endTimer);
     if (chatUnsub) { chatUnsub(); chatUnsub = null; }
@@ -337,13 +367,16 @@
     const host = st.mode === 'host';
     const canModerate = host || isAdmin();
     box.innerHTML = `
-      <div class="swm-stage">
+      <div class="swm-stage" id="swm-stage">
         <div class="swm-left">
-          <div style="position:relative; background:#111; border-radius:14px; overflow:hidden; aspect-ratio:4/3;">
+          <div class="swm-video-box" style="position:relative; background:#111; border-radius:14px; overflow:hidden; aspect-ratio:4/3;">
+            <button type="button" class="swm-fs-btn" onclick="window.swmToggleFullscreen()" title="${esc(t('stream.fullscreen', '全螢幕'))}" aria-label="${esc(t('stream.fullscreen', '全螢幕'))}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            </button>
             <video id="swm-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:contain; ${host ? 'transform:scaleX(-1);' : ''}"></video>
             <div style="position:absolute; top:10px; left:10px; display:flex; gap:6px; align-items:center;">
               <span style="background:#C0392B; color:#fff; font-size:12px; font-weight:700; border-radius:6px; padding:2px 8px;">LIVE</span>
-              <span id="swm-viewers" style="background:rgba(0,0,0,.55); color:#fff; font-size:12px; border-radius:6px; padding:2px 8px;"></span>
+              <span id="swm-viewers" style="background:rgba(0,0,0,.55); color:#fff; font-size:12px; border-radius:6px; padding:2px 8px;">${esc(t('stream.viewersTemplate', '{n} 人觀看').replace('{n}', (st.stream && st.stream.viewerCount) || 0))}</span>
             </div>
             <div id="swm-audio-holder"></div>
           </div>
@@ -419,7 +452,8 @@
       list.innerHTML = snap.docs.slice().reverse().filter(d => !d.data().deleted).map(d => {
         const m = d.data();
         const actions = [];
-        if (st.mode === 'host' && m.uid === myUid) {
+        const pinnedId = st.stream && st.stream.pinned && st.stream.pinned.messageId;
+        if (st.mode === 'host' && m.uid === myUid && d.id !== pinnedId) {
           actions.push(`<button type="button" onclick="window.swmPin('${esc(d.id)}')" style="border:none; background:none; color:#8A94A8; font-size:11px; cursor:pointer; padding:0 2px;">${esc(t('stream.pin', '置頂'))}</button>`);
         }
         if (canModerate && m.uid !== myUid) {
