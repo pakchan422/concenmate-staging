@@ -107,8 +107,22 @@
     const SUPER_ADMIN_ONLY_TABS = [
       'gacha', 'level', 'icons', 'landing', 'scoring', 'roomsettings',
       'antiidle', 'announcement', 'adminlist', 'auditlog',
-      'subjects', 'districts', 'schools', 'legal', 'snapshotbg', 'navmenu', 'turn', 'streaming'
+      'subjects', 'districts', 'schools', 'legal', 'snapshotbg', 'navmenu', 'turn', 'streaming',
+      'costs', 'lists'
     ];
+    // v1.228.0：合併顯示的分頁——撳一個分頁掣，會依次顯示多個原有的分頁內容
+    const ADMIN_TAB_GROUPS = {
+      roomsettings: ['roomsettings', 'antiidle'],
+      navmenu: ['navmenu', 'icons'],
+      lists: ['subjects', 'districts', 'schools'],
+    };
+    // 舊分頁名稱 → 合併後的分頁（網址 hash 或其他地方仍然可以用舊名稱）
+    const ADMIN_TAB_ALIASES = { antiidle: 'roomsettings', scoring: 'roomsettings', icons: 'navmenu', subjects: 'lists', districts: 'lists', schools: 'lists' };
+    // 某個原有分頁的內容而家是否顯示緊（合併分頁後，不可以再只比較 currentAdminTab）
+    function adminTabShowing(name) {
+      const el = document.getElementById('admin-tab-' + name);
+      return !!(el && el.style.display === 'block');
+    }
 
     // 操作紀錄（第四階段第10項）：將重要嘅管治／高風險操作（停權、
     // 補發分數／貼紙、強制關房、審批導師、管理員名單異動等）寫一筆
@@ -145,7 +159,7 @@
     let adminUsersUnsubscribe = null;
     let adminReportsUnsubscribe = null;
     let adminReportsBadgeUnsubscribe = null;
-    let currentAdminTab = 'dashboard';
+    let currentAdminTab = null; // v1.228.0：超級管理員預設打開「營運開支」，其他管理員打開「數據總覽」
 
     // 網址 hash 路由：#admin 先顯示管理後台，離開就切返正常介面。
     // 未登入／auth 仲未 resolve 之前 window.currentUser 係 undefined，
@@ -235,13 +249,13 @@
       // 設定」「管治」呢兩組入面嘅掣全部都係super限定，『support』
       // 帳戶見唔到任何一粒，咁連個組嘅小標題都一齊隱藏埋，唔會見到
       // 得個「網站設定」四個字、下面乜掣都冇咁奇怪。
-      ['admin-tab-group-settings', 'admin-tab-group-governance'].forEach((groupId) => {
+      ['admin-tab-group-settings', 'admin-tab-group-governance', 'admin-tab-group-rewards', 'admin-tab-group-content', 'admin-tab-group-lists'].forEach((groupId) => {
         const groupEl = document.getElementById(groupId);
         if (groupEl) groupEl.style.display = isSuper ? '' : 'none';
       });
       // 如果而家記住嘅分頁係『support』見唔到嗰啲，就退返去「數據總覽」，
       // 避免見到一個冇按鈕對應、又撳唔返嘅空白分頁。
-      let startTab = currentAdminTab || 'dashboard';
+      let startTab = currentAdminTab || (isSuper ? 'costs' : 'dashboard');
       if (!isSuper && SUPER_ADMIN_ONLY_TABS.includes(startTab)) startTab = 'dashboard';
 
       switchAdminTab(startTab);
@@ -250,6 +264,7 @@
     window.addEventListener('hashchange', checkAdminHashRoute);
 
     window.switchAdminTab = function(tab) {
+      if (ADMIN_TAB_ALIASES[tab]) tab = ADMIN_TAB_ALIASES[tab];
       // 防止『support』帳戶用網址hash或者其他方式直接跳去冇按鈕對應
       // 嘅super限定分頁——退返去「數據總覽」並提示一下。
       if (SUPER_ADMIN_ONLY_TABS.includes(tab) && !isCurrentUserSuperAdmin()) {
@@ -261,11 +276,25 @@
         const active = btn.getAttribute('data-tab') === tab;
         btn.className = 'btn admin-tab-btn ' + (active ? 'btn-primary active' : 'btn-outline');
       });
+      const showPanels = ADMIN_TAB_GROUPS[tab] || [tab];
       document.querySelectorAll('.admin-tab-panel').forEach(panel => {
-        panel.style.display = (panel.id === 'admin-tab-' + tab) ? 'block' : 'none';
+        panel.style.display = showPanels.some(n => panel.id === 'admin-tab-' + n) ? 'block' : 'none';
       });
+      if (ADMIN_TAB_GROUPS[tab]) {
+        // 按指定次序排列合併分頁的內容，並逐個渲染
+        showPanels.forEach(n => {
+          const el = document.getElementById('admin-tab-' + n);
+          if (el && el.parentNode) el.parentNode.appendChild(el);
+        });
+        showPanels.forEach(n => renderSingleAdminTab(n));
+        return;
+      }
+      renderSingleAdminTab(tab);
+    };
 
-      if (tab === 'dashboard') renderAdminDashboardTab();
+    function renderSingleAdminTab(tab) {
+      if (tab === 'costs') window.renderAdminCostsTab();
+      else if (tab === 'dashboard') renderAdminDashboardTab();
       else if (tab === 'gacha') renderAdminGachaTab();
       else if (tab === 'rooms') renderAdminRoomsTab();
       else if (tab === 'qa') renderAdminQaTab();
@@ -290,7 +319,7 @@
       else if (tab === 'navmenu') renderAdminNavMenuTab();
       else if (tab === 'turn') renderAdminTurnTab();
       else if (tab === 'streaming') renderAdminStreamingTab();
-    };
+    }
 
     // ---------- 扭蛋機貼紙管理 ----------
     // 扭蛋機貼紙／收費而家改為由 Firestore（admin_config/gacha 文件）讀取，
@@ -990,7 +1019,7 @@
         // （adminGachaDraft 仲係 null，即係岩岩好卡喺「載入中...」嗰個畫面），
         // 而家攞到資料喇，即刻幫佢用返最新（剛儲存低嗰份）資料重新 render 一次，
         // 唔使佢自己撳一撳個分頁先會刷新
-        if (currentAdminTab === 'gacha' && !adminGachaDraft) {
+        if (adminTabShowing('gacha') && !adminGachaDraft) {
           const adminPanelEl = document.getElementById('admin-panel-container');
           if (adminPanelEl && adminPanelEl.style.display !== 'none') {
             renderAdminGachaTab();
@@ -1298,7 +1327,7 @@
           // 段位嘅水獺相片就係喺呢個設定入面，一齊刷新，唔使等5分鐘嗰個定時器先見到
           updateOtterDisplay();
         }
-        if (currentAdminTab === 'level' && !adminLevelDraft) {
+        if (adminTabShowing('level') && !adminLevelDraft) {
           const adminPanelEl = document.getElementById('admin-panel-container');
           if (adminPanelEl && adminPanelEl.style.display !== 'none') {
             renderAdminLevelTab();
@@ -2111,7 +2140,7 @@
         applyNavIconsToSidebar();
         // 如果管理員岩岩好打開緊「功能圖示」呢個分頁、又仲未開始編輯，
         // 而家攞到資料喇，即刻幫佢重新 render 一次，唔使自己撳一撳個分頁
-        if (currentAdminTab === 'icons' && !adminNavIconsDraft) {
+        if (adminTabShowing('icons') && !adminNavIconsDraft) {
           const adminPanelEl = document.getElementById('admin-panel-container');
           if (adminPanelEl && adminPanelEl.style.display !== 'none') {
             renderAdminNavIconsTab();
@@ -2589,7 +2618,7 @@
         // 如果管理員岩岩好打開緊「Landing page文案」呢個分頁、又仲未開始
         // 編輯（adminLandingDraft 仲係 null，卡喺「載入中...」畫面），
         // 而家攞到資料喇，即刻幫佢重新 render 一次。
-        if (currentAdminTab === 'landing' && !adminLandingDraft) {
+        if (adminTabShowing('landing') && !adminLandingDraft) {
           const adminPanelEl = document.getElementById('admin-panel-container');
           if (adminPanelEl && adminPanelEl.style.display !== 'none') {
             renderAdminLandingTab();
@@ -2698,7 +2727,7 @@
           if (typeof data.presenceCheckBonus === 'number' && data.presenceCheckBonus > 0) window.SCORING_RULES.presenceCheckBonus = data.presenceCheckBonus;
         }
         scoringConfigLoaded = true;
-        if ((currentAdminTab === 'scoring' || currentAdminTab === 'roomsettings') && !adminScoringDraft) {
+        if ((adminTabShowing('scoring') || adminTabShowing('roomsettings')) && !adminScoringDraft) {
           const adminPanelEl = document.getElementById('admin-panel-container');
           if (adminPanelEl && adminPanelEl.style.display !== 'none') {
             renderAdminScoringTab();
@@ -2869,7 +2898,7 @@
           if (typeof data.defaultDuration === 'number' && data.defaultDuration > 0) window.ROOM_SETTINGS.defaultDuration = data.defaultDuration;
         }
         roomSettingsConfigLoaded = true;
-        if (currentAdminTab === 'roomsettings' && !adminRoomSettingsDraft) {
+        if (adminTabShowing('roomsettings') && !adminRoomSettingsDraft) {
           const adminPanelEl = document.getElementById('admin-panel-container');
           if (adminPanelEl && adminPanelEl.style.display !== 'none') {
             renderAdminRoomSettingsTab();
@@ -2989,7 +3018,7 @@
           window.applyAntiIdleRules(snap.data());
         }
         antiIdleConfigLoaded = true;
-        if (currentAdminTab === 'antiidle' && !adminAntiIdleDraft) {
+        if (adminTabShowing('antiidle') && !adminAntiIdleDraft) {
           const adminPanelEl = document.getElementById('admin-panel-container');
           if (adminPanelEl && adminPanelEl.style.display !== 'none') {
             renderAdminAntiIdleTab();
@@ -3271,7 +3300,7 @@
         window.SITE_ANNOUNCEMENT_RAW = data;
         renderSiteAnnouncementBanner(data);
         announcementConfigLoaded = true;
-        if (currentAdminTab === 'announcement' && !adminAnnouncementDraft) {
+        if (adminTabShowing('announcement') && !adminAnnouncementDraft) {
           const adminPanelEl = document.getElementById('admin-panel-container');
           if (adminPanelEl && adminPanelEl.style.display !== 'none') {
             renderAdminAnnouncementTab();
@@ -3824,7 +3853,7 @@
         window.ADMIN_SUBJECT_LIST_RAW = data;
         applySubjectListAdditions(data);
         subjectListConfigLoaded = true;
-        if (currentAdminTab === 'subjects') {
+        if (adminTabShowing('subjects')) {
           const panelEl = document.getElementById('admin-panel-container');
           if (panelEl && panelEl.style.display !== 'none') renderAdminSubjectsTab();
         }
@@ -3945,7 +3974,7 @@
         window.ADMIN_DISTRICT_LIST_RAW = data;
         applyDistrictListAdditions(data);
         districtListConfigLoaded = true;
-        if (currentAdminTab === 'districts') {
+        if (adminTabShowing('districts')) {
           const panelEl = document.getElementById('admin-panel-container');
           if (panelEl && panelEl.style.display !== 'none') renderAdminDistrictsTab();
         }
@@ -4088,7 +4117,7 @@
         window.ADMIN_SCHOOL_LIST_RAW = data;
         applySchoolListAdditions(data);
         schoolListConfigLoaded = true;
-        if (currentAdminTab === 'schools') {
+        if (adminTabShowing('schools')) {
           const panelEl = document.getElementById('admin-panel-container');
           if (panelEl && panelEl.style.display !== 'none') renderAdminSchoolsTab();
         }
@@ -4371,7 +4400,7 @@
         window.LEGAL_CONTENT_RAW = snap.exists() ? snap.data() : null;
         renderLegalContentBody();
         legalContentConfigLoaded = true;
-        if (currentAdminTab === 'legal' && !adminLegalDraft) {
+        if (adminTabShowing('legal') && !adminLegalDraft) {
           const panelEl = document.getElementById('admin-panel-container');
           if (panelEl && panelEl.style.display !== 'none') renderAdminLegalTab();
         }
@@ -4765,3 +4794,191 @@
         setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       }, 'image/png');
     };
+
+// ===================== 營運開支儀表板（v1.228.0） =====================
+// 資料由 Cloud Function getCostDashboard 提供（只限超級管理員，結果快取 30 分鐘）。
+// 每個收費項目以圓形圖顯示「已用／免費額度或月費包含的用量」：
+// 未到 70% 為正常（藍色），70%–89% 需留意（黃色），90% 或以上需立即處理（紅色）。
+(function () {
+  const HKD = 7.8;
+  const LEVEL = {
+    ok: { color: '#4A68A8', label: '正常' },
+    watch: { color: '#E8B321', label: '需要留意' },
+    urgent: { color: '#C0392B', label: '立即處理' },
+    unknown: { color: '#A4B4D4', label: '未有數據' }
+  };
+  const SOURCE = { official: '官方數據', count: '系統點數', estimate: '系統估算', unavailable: '未能取得' };
+  const PIE_COLORS = ['#29395C', '#4A68A8', '#7F96C6', '#FFD84D', '#E8A33C', '#A4B4D4', '#C0392B', '#6B7894', '#344976'];
+  const esc = (s) => (window.escapeHtml ? window.escapeHtml(String(s == null ? '' : s)) : String(s == null ? '' : s));
+  const fmt = (n, d) => (n == null ? '—' : Number(n).toLocaleString('zh-HK', { maximumFractionDigits: d == null ? 1 : d }));
+  const usd = (n) => 'US$' + Number(n || 0).toFixed(2);
+  const hkd = (n) => '約 HK$' + Math.round(Number(n || 0) * HKD).toLocaleString('zh-HK');
+
+  // 圓環圖（百分比）
+  function gauge(pct, color) {
+    const r = 42, c = 2 * Math.PI * r;
+    const p = pct == null ? 0 : Math.min(100, pct);
+    return `<svg viewBox="0 0 100 100" width="110" height="110" aria-hidden="true">
+      <circle cx="50" cy="50" r="${r}" fill="none" stroke="#E9EDF5" stroke-width="12"/>
+      ${p > 0 ? `<circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round"
+        stroke-dasharray="${(p / 100 * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 50 50)"/>` : ''}
+      <text x="50" y="55" text-anchor="middle" font-size="18" font-weight="700" fill="#29395C">${pct == null ? '—' : pct + '%'}</text>
+    </svg>`;
+  }
+  // 圓形圖（開支分佈）
+  function pie(parts) {
+    const total = parts.reduce((a, b) => a + b.value, 0);
+    if (!total) return '<p style="font-size:13px; color:#6B7894; margin:0;">本月暫時沒有收費項目。</p>';
+    let acc = 0;
+    const r = 40, cx = 50, cy = 50;
+    const slices = parts.map((pt, i) => {
+      const frac = pt.value / total;
+      const color = PIE_COLORS[i % PIE_COLORS.length];
+      if (frac >= 0.999) return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"/>`;
+      const a0 = acc * 2 * Math.PI - Math.PI / 2; acc += frac;
+      const a1 = acc * 2 * Math.PI - Math.PI / 2;
+      const large = frac > 0.5 ? 1 : 0;
+      return `<path d="M${cx},${cy} L${(cx + r * Math.cos(a0)).toFixed(2)},${(cy + r * Math.sin(a0)).toFixed(2)} A${r},${r} 0 ${large} 1 ${(cx + r * Math.cos(a1)).toFixed(2)},${(cy + r * Math.sin(a1)).toFixed(2)} Z" fill="${color}"/>`;
+    }).join('');
+    const legend = parts.map((pt, i) => `<div style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--brand-800);">
+        <span style="width:12px; height:12px; border-radius:3px; background:${PIE_COLORS[i % PIE_COLORS.length]}; flex:none;"></span>
+        <span style="flex:1;">${esc(pt.name)}</span><b>${usd(pt.value)}</b><span style="color:#6B7894; width:42px; text-align:right;">${Math.round(pt.value / total * 100)}%</span></div>`).join('');
+    return `<div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+      <svg viewBox="0 0 100 100" width="150" height="150" aria-hidden="true">${slices}<circle cx="50" cy="50" r="20" fill="#fff"/></svg>
+      <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:6px;">${legend}</div></div>`;
+  }
+  // 過去 6 個月棒形圖
+  function bars(history) {
+    const max = Math.max(1, ...history.map(h => h.totalUSD || 0));
+    return `<div style="display:flex; gap:10px; align-items:flex-end; height:150px; padding-top:10px;">${history.map(h => {
+      const v = h.totalUSD;
+      const ht = v == null ? 4 : Math.max(4, Math.round(v / max * 110));
+      return `<div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0;">
+        <span style="font-size:11px; color:var(--brand-800); white-space:nowrap;">${v == null ? '—' : usd(v)}</span>
+        <div style="width:100%; max-width:46px; height:${ht}px; border-radius:6px 6px 0 0; background:${v == null ? '#E9EDF5' : '#4A68A8'};"></div>
+        <span style="font-size:11px; color:#6B7894;">${Number(h.month.slice(4))} 月</span></div>`;
+    }).join('')}</div>`;
+  }
+
+  async function load(refresh) {
+    const panel = document.getElementById('admin-tab-costs');
+    if (!panel) return;
+    if (!panel.dataset.loaded || refresh) panel.innerHTML = '<div class="card" style="padding:16px;">正在讀取用量數據…（首次約需 5 至 10 秒）</div>';
+    let d;
+    try {
+      d = await window.callCloudFunction('getCostDashboard', { refresh: !!refresh });
+    } catch (e) {
+      panel.innerHTML = `<div class="card" style="padding:16px; color:#8A2F2F;">未能讀取營運開支數據：${esc((e && e.message) || e)}</div>`;
+      return;
+    }
+    panel.dataset.loaded = '1';
+    const items = d.items || [];
+    const alerts = items.filter(it => it.level === 'urgent' || it.level === 'watch')
+      .sort((a, b) => (a.level === 'urgent' ? 0 : 1) - (b.level === 'urgent' ? 0 : 1));
+    const alertHtml = alerts.length
+      ? alerts.map(it => `<div style="display:flex; gap:10px; padding:10px 12px; border-radius:10px; margin-bottom:8px; background:${it.level === 'urgent' ? '#FDECEA' : '#FFF7DA'}; border:1px solid ${it.level === 'urgent' ? '#F1B8B1' : '#F0D98A'};">
+          <b style="color:${LEVEL[it.level].color}; white-space:nowrap;">${LEVEL[it.level].label}</b>
+          <div style="font-size:13px; color:var(--brand-800); line-height:1.6;"><b>${esc(it.name)}</b>：已用 ${it.pct}%。${esc(it.advice)}</div></div>`).join('')
+      : '<div style="padding:10px 12px; border-radius:10px; background:var(--brand-100); font-size:14px; color:var(--brand-800);">所有項目均在安全水平，暫時毋須升級。</div>';
+
+    const pieParts = items.filter(it => it.costUSD > 0).map(it => ({ name: it.name.replace(/（.*?）/g, ''), value: it.costUSD }));
+    if (d.domainUSD) pieParts.push({ name: '域名', value: d.domainUSD });
+
+    const cards = items.map(it => {
+      const lv = LEVEL[it.level] || LEVEL.unknown;
+      return `<div class="card" style="padding:14px; margin:0; display:flex; flex-direction:column; gap:8px; border-top:4px solid ${lv.color};">
+        <div style="display:flex; justify-content:space-between; gap:6px; align-items:flex-start;">
+          <b style="font-size:14px; color:var(--brand-800); line-height:1.4;">${esc(it.name)}</b>
+          <span style="font-size:11px; color:#6B7894; background:var(--brand-100); border-radius:6px; padding:2px 6px; white-space:nowrap;">${esc(SOURCE[it.source] || '')}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          ${gauge(it.pct, lv.color)}
+          <div style="font-size:13px; color:var(--brand-800); line-height:1.7;">
+            <div>${esc(it.period)}：<b>${fmt(it.used, it.unit === 'GB' ? 1 : 0)}</b> ${esc(it.unit)}</div>
+            <div style="color:#6B7894;">上限：${fmt(it.limit, 0)} ${esc(it.unit)}</div>
+            ${it.extra ? `<div style="color:#6B7894;">${esc(it.extra)}</div>` : ''}
+            <div>本月估算：<b>${usd(it.costUSD)}</b></div>
+            <div style="color:${lv.color}; font-weight:700;">${lv.label}</div>
+          </div>
+        </div>
+        <details style="font-size:12px; color:#6B7894;"><summary style="cursor:pointer;">幾時要升級？</summary><p style="margin:6px 0 0; line-height:1.6;">${esc(it.advice)}</p></details>
+      </div>`;
+    }).join('');
+
+    const errs = d.errors || {};
+    const errNotes = [];
+    if (errs.google) errNotes.push('Google 用量數據（資料庫、伺服器程式、相片儲存）未能取得：' + errs.google);
+    if (errs.vultr) errNotes.push('Vultr 數據未能取得，直播流量改用系統估算：' + errs.vultr);
+    const s = d.settings || {};
+    const updated = new Date(d.at).toLocaleString('zh-HK', { hour12: false });
+
+    panel.innerHTML = `
+      <div class="card" style="padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+          <div>
+            <h3 style="margin:0 0 4px;">營運開支</h3>
+            <p style="margin:0; font-size:13px; color:#6B7894;">本月（${Number(d.monthKey.slice(4))} 月，已過 ${d.dayOfMonth}／${d.daysInMonth} 日）全月估算開支</p>
+            <div style="font-size:28px; font-weight:800; color:var(--brand-800); margin-top:6px;">${usd(d.totalUSD)} <span style="font-size:15px; font-weight:600; color:#6B7894;">${hkd(d.totalUSD)}</span></div>
+            ${d.vultrPendingUSD != null ? `<p style="margin:4px 0 0; font-size:13px; color:#6B7894;">Vultr 本月實際累計帳單：${usd(d.vultrPendingUSD)}</p>` : ''}
+          </div>
+          <div style="text-align:right;">
+            <button type="button" class="btn btn-outline" onclick="window.renderAdminCostsTab(true)">重新整理</button>
+            <p style="margin:6px 0 0; font-size:12px; color:#8A94A8;">更新時間：${esc(updated)}<br>數據每 30 分鐘更新一次</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:12px; color:#6B7894;">
+          ${['ok', 'watch', 'urgent'].map(k => `<span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:50%; background:${LEVEL[k].color};"></span>${LEVEL[k].label}${k === 'ok' ? '（70% 以下）' : k === 'watch' ? '（70%–89%）' : '（90% 或以上）'}</span>`).join('')}
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px;">
+        <h3 style="margin:0 0 10px; font-size:16px;">需要處理的項目</h3>
+        ${alertHtml}
+        ${errNotes.length ? `<div style="font-size:12px; color:#8A6D1F; background:#FFF7E6; border:1px solid #F0D9A0; border-radius:8px; padding:8px 10px; margin-top:6px; line-height:1.6;">${errNotes.map(esc).join('<br>')}</div>` : ''}
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; margin-bottom:12px;">${cards}</div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:12px;">
+        <div class="card" style="padding:16px; margin:0;">
+          <h3 style="margin:0 0 10px; font-size:16px;">本月開支分佈</h3>
+          ${pie(pieParts)}
+        </div>
+        <div class="card" style="padding:16px; margin:0;">
+          <h3 style="margin:0 0 4px; font-size:16px;">過去 6 個月估算開支</h3>
+          <p style="margin:0; font-size:12px; color:#8A94A8;">每月數字於管理員打開此分頁時記錄</p>
+          ${bars(d.history || [])}
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px; margin-top:12px;">
+        <h3 style="margin:0 0 6px; font-size:16px;">方案設定</h3>
+        <p style="margin:0 0 12px; font-size:13px; color:#6B7894;">升級或更改方案後，請在此更新，圓形圖的上限及估算開支會隨之調整。</p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; font-size:14px;">
+          <label>Vultr 月費（US$）<input id="cost-vultr-fee" type="number" min="0" step="1" value="${esc(s.vultrMonthlyUSD)}" class="input-field" style="width:100%; box-sizing:border-box; margin-top:4px; padding:8px; border:1px solid var(--brand-200); border-radius:8px;"></label>
+          <label>Vultr 每月包含流量（GB）<input id="cost-vultr-gb" type="number" min="1" step="100" value="${esc(s.vultrIncludedGB)}" style="width:100%; box-sizing:border-box; margin-top:4px; padding:8px; border:1px solid var(--brand-200); border-radius:8px;"></label>
+          <label>直播同時觀看上限（人）<input id="cost-live-cap" type="number" min="1" step="10" value="${esc(s.liveViewerCapacity)}" style="width:100%; box-sizing:border-box; margin-top:4px; padding:8px; border:1px solid var(--brand-200); border-radius:8px;"></label>
+          <label>EmailJS 方案<select id="cost-emailjs" style="width:100%; box-sizing:border-box; margin-top:4px; padding:8px; border:1px solid var(--brand-200); border-radius:8px;">
+            ${[[200, '免費（每月 200 封）'], [2000, 'Personal（2,000 封，US$9）'], [5000, 'Professional（5,000 封，US$15）'], [25000, 'Business（25,000 封，US$40）']].map(([v, l]) => `<option value="${v}" ${Number(s.emailjsQuota) === v ? 'selected' : ''}>${l}</option>`).join('')}
+          </select></label>
+        </div>
+        <p style="margin:10px 0 0; font-size:12px; color:#8A94A8;">中轉伺服器的上限請在「中轉伺服器」分頁設定。</p>
+        <button type="button" class="btn btn-primary" style="margin-top:12px;" onclick="window.adminSaveCostSettings()">儲存方案設定</button>
+      </div>`;
+  }
+
+  window.renderAdminCostsTab = function (refresh) { load(refresh === true); };
+  window.adminSaveCostSettings = async function () {
+    const v = (id) => (document.getElementById(id) || {}).value;
+    try {
+      await window.callCloudFunction('saveCostSettings', {
+        vultrMonthlyUSD: v('cost-vultr-fee'), vultrIncludedGB: v('cost-vultr-gb'),
+        liveViewerCapacity: v('cost-live-cap'), emailjsQuota: v('cost-emailjs')
+      });
+      window.showToast('已儲存方案設定', '✅');
+      load(true);
+    } catch (e) {
+      window.showToast('儲存失敗：' + ((e && e.message) || e), '❌');
+    }
+  };
+})();

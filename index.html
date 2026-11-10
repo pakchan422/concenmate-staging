@@ -6,7 +6,7 @@
        打開檔案唔使拉就見到，方便快速核對版本）
        ======================================== -->
   <script>
-    window.APP_VERSION = "v1.227.9"; // 每次推送 GitHub 前，喺呢度改版號
+    window.APP_VERSION = "v1.228.0"; // 每次推送 GitHub 前，喺呢度改版號
   </script>
 
   <!-- v1.227.8：全站確認／輸入視窗，取代瀏覽器原生 confirm()／prompt()，外觀同資訊卡一致。
@@ -4428,14 +4428,14 @@
   })();
   </script>
 
-  <script src="i18n.js?v=1.227.9"></script>
+  <script src="i18n.js?v=1.228.0"></script>
 
-  <script src="app-features.js?v=1.227.9"></script>
+  <script src="app-features.js?v=1.228.0"></script>
 
-  <script type="module" src="app-core.js?v=1.227.9"></script>
+  <script type="module" src="app-core.js?v=1.228.0"></script>
 
-  <script src="room-video.js?v=1.227.9"></script>
-  <script src="stream.js?v=1.227.9"></script>
+  <script src="room-video.js?v=1.228.0"></script>
+  <script src="stream.js?v=1.228.0"></script>
   <!-- 房主退出房間選擇彈窗 -->
   <div class="modal-backdrop" id="modal-host-leave" style="display:none;">
     <div class="modal-box" style="text-align:center;">
@@ -4593,37 +4593,57 @@
            用嘅設定／管治分頁分開，方便搵。每組淨係加咗一個小標題
            文字，分頁掣本身嘅class、data-tab、onclick完全冇變，
            switchAdminTab()／checkAdminHashRoute()嗰套邏輯唔使改。 -->
+      <!-- v1.228.0：後台分頁重新分類（總覽／日常營運／溫習室及直播／獎勵系統／網站內容／
+           選項清單／管治）。部分相關分頁合併顯示（見 admin-panel.js 的 ADMIN_TAB_GROUPS），
+           舊分頁名稱（例如 antiidle、subjects）仍然可用，會自動轉到合併後的分頁。 -->
       <div id="admin-tab-nav">
+        <div id="admin-tab-group-overview">
+        <p class="admin-tab-group-label" style="font-size:12px; font-weight:bold; color:#999; margin:0 0 6px;">總覽</p>
+        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+          <button class="btn btn-outline admin-tab-btn" data-tab="costs" onclick="switchAdminTab('costs')">營運開支</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="dashboard" onclick="switchAdminTab('dashboard')">數據總覽</button>
+        </div>
+        </div>
         <div id="admin-tab-group-daily">
         <p class="admin-tab-group-label" style="font-size:12px; font-weight:bold; color:#999; margin:0 0 6px;">日常營運</p>
         <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-          <button class="btn btn-primary admin-tab-btn active" data-tab="dashboard" onclick="switchAdminTab('dashboard')">數據總覽</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="rooms" onclick="switchAdminTab('rooms')">房間管理</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="qa" onclick="switchAdminTab('qa')">疑難解答區</button>
           <button class="btn btn-outline admin-tab-btn" data-tab="users" onclick="switchAdminTab('users')">用戶管理</button>
           <button class="btn btn-outline admin-tab-btn" data-tab="reports" onclick="switchAdminTab('reports')">舉報處理 <span id="admin-reports-badge" style="display:none; background:#C0524A; color:#fff; border-radius:99px; font-size:13px; padding:1px 6px; margin-left:3px;">0</span></button>
           <button class="btn btn-outline admin-tab-btn" data-tab="tutors" onclick="switchAdminTab('tutors')">導師申請 <span id="admin-tutors-badge" style="display:none; background:#C0524A; color:#fff; border-radius:99px; font-size:13px; padding:1px 6px; margin-left:3px;">0</span></button>
           <button class="btn btn-outline admin-tab-btn" data-tab="support" onclick="switchAdminTab('support')">用戶支援</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="rooms" onclick="switchAdminTab('rooms')">溫習室監察</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="qa" onclick="switchAdminTab('qa')">疑難解答區管理</button>
         </div>
         </div>
         <div id="admin-tab-group-settings">
-        <p class="admin-tab-group-label" style="font-size:12px; font-weight:bold; color:#999; margin:0 0 6px;">網站設定</p>
+        <p class="admin-tab-group-label" style="font-size:12px; font-weight:bold; color:#999; margin:0 0 6px;">溫習室及直播</p>
         <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-          <button class="btn btn-outline admin-tab-btn" data-tab="gacha" onclick="switchAdminTab('gacha')">扭蛋機貼圖</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="level" onclick="switchAdminTab('level')">等級系統</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="icons" onclick="switchAdminTab('icons')">功能圖示</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="landing" onclick="switchAdminTab('landing')">Landing page文案</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="roomsettings" onclick="switchAdminTab('roomsettings')">房間設定</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="antiidle" onclick="switchAdminTab('antiidle')">防掛機參數</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="announcement" onclick="switchAdminTab('announcement')">全站公告</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="subjects" onclick="switchAdminTab('subjects')">科目清單</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="districts" onclick="switchAdminTab('districts')">地區清單</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="schools" onclick="switchAdminTab('schools')">學校名單</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="legal" onclick="switchAdminTab('legal')">條款內容</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="snapshotbg" onclick="switchAdminTab('snapshotbg')">合照背景</button>
-          <button class="btn btn-outline admin-tab-btn" data-tab="navmenu" onclick="switchAdminTab('navmenu')">功能表顯示</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="roomsettings" onclick="switchAdminTab('roomsettings')">溫習室設定</button>
           <button class="btn btn-outline admin-tab-btn" data-tab="turn" onclick="switchAdminTab('turn')">中轉伺服器</button>
           <button class="btn btn-outline admin-tab-btn" data-tab="streaming" onclick="switchAdminTab('streaming')">直播設定</button>
+        </div>
+        </div>
+        <div id="admin-tab-group-rewards">
+        <p class="admin-tab-group-label" style="font-size:12px; font-weight:bold; color:#999; margin:0 0 6px;">獎勵系統</p>
+        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+          <button class="btn btn-outline admin-tab-btn" data-tab="level" onclick="switchAdminTab('level')">等級系統</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="gacha" onclick="switchAdminTab('gacha')">扭蛋機貼圖</button>
+        </div>
+        </div>
+        <div id="admin-tab-group-content">
+        <p class="admin-tab-group-label" style="font-size:12px; font-weight:bold; color:#999; margin:0 0 6px;">網站內容</p>
+        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+          <button class="btn btn-outline admin-tab-btn" data-tab="landing" onclick="switchAdminTab('landing')">首頁介紹文案</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="announcement" onclick="switchAdminTab('announcement')">全站公告</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="legal" onclick="switchAdminTab('legal')">條款內容</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="navmenu" onclick="switchAdminTab('navmenu')">功能表及圖示</button>
+          <button class="btn btn-outline admin-tab-btn" data-tab="snapshotbg" onclick="switchAdminTab('snapshotbg')">合照背景</button>
+        </div>
+        </div>
+        <div id="admin-tab-group-lists">
+        <p class="admin-tab-group-label" style="font-size:12px; font-weight:bold; color:#999; margin:0 0 6px;">選項清單</p>
+        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+          <button class="btn btn-outline admin-tab-btn" data-tab="lists" onclick="switchAdminTab('lists')">科目、地區及學校</button>
         </div>
         </div>
         <div id="admin-tab-group-governance">
@@ -4635,6 +4655,7 @@
         </div>
       </div>
 
+      <div id="admin-tab-costs" class="admin-tab-panel" style="display:none;"></div>
       <div id="admin-tab-dashboard" class="admin-tab-panel"></div>
       <div id="admin-tab-gacha" class="admin-tab-panel" style="display:none;"></div>
       <div id="admin-tab-rooms" class="admin-tab-panel" style="display:none;"></div>
@@ -4673,7 +4694,7 @@
     </div>
   </div>
 
-  <script src="admin-panel.js?v=1.227.9"></script>
+  <script src="admin-panel.js?v=1.228.0"></script>
   <!-- pdf.js：導師教材嘅 PDF 預覽（整份文件／學生視角）同教材卡嘅第一頁
        縮圖，都用呢個 library 自己畫落 <canvas>，唔再靠瀏覽器內建嘅PDF
        viewer（手機Safari個內建viewer塞喺iframe度揭唔到第二頁）。淨係
@@ -4700,7 +4721,7 @@
       return window._pdfJsLoading;
     };
   </script>
-  <script src="tutor-panel.js?v=1.227.9"></script>
+  <script src="tutor-panel.js?v=1.228.0"></script>
 
 </body>
 </html>
