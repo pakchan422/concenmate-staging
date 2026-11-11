@@ -1925,7 +1925,7 @@
     // 淨係房入面實際專注嘅每一分鐘先會傳呢個值（1/60），其他獎勵（例如
     // 「仲喺度嗎」確認嘅額外 PTS）唔代表真正流逝咗嘅專注時間，所以預設
     // 唔會影響時數，避免將時數同「賺咗幾多分」混埋一齊。
-    window.awardStudyPoint = (p, h) => awardStudyPoint(p, h);
+    // v1.230.2：呢個檔案唔係 module，下面嘅 function awardStudyPoint 本身已經係 window.awardStudyPoint（stream.js 直接用），唔好再另外指派，否則會無限自己叫自己
     async function awardStudyPoint(pointsAmount, hoursIncrement) {
       pointsAmount = (typeof pointsAmount === 'number' && pointsAmount > 0) ? pointsAmount : 1;
       hoursIncrement = (typeof hoursIncrement === 'number' && hoursIncrement > 0) ? hoursIncrement : 0;
