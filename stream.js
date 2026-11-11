@@ -26,6 +26,7 @@
 
   // v1.227.3：直播與視訊溫習室只可以二選一
   window.swmIsBusy = function () { return st.mode !== 'lobby'; };
+  window.swmHostStreamId = function () { return st.mode === 'host' ? st.streamId : null; };
   function inStudyRoom() {
     return typeof window.isInStudyRoom === 'function' && window.isInStudyRoom();
   }
@@ -297,6 +298,13 @@
         if (id) window.callCloudFunction('endStream', { streamId: id }).catch(() => {});
       });
       st.heartbeat = setInterval(sendHeartbeat, 60 * 1000);
+      // v1.230.0：主播直播期間每分鐘計分、EXP、時數及石頭（伺服器確認直播進行中及鏡頭開住才派）
+      if (typeof window.recordStudyDayIfNeeded === 'function') window.recordStudyDayIfNeeded();
+      st.awardTimer = setInterval(() => {
+        if (st.mode !== 'host' || typeof window.awardStudyPoint !== 'function') return;
+        const rules = window.SCORING_RULES || {};
+        window.awardStudyPoint(typeof rules.ptsPerMinute === 'number' ? rules.ptsPerMinute : 1, 1 / 60);
+      }, 60 * 1000);
       st.endTimer = setTimeout(() => window.swmEnd(true), Math.max(60000, res.maxEndAt - Date.now()));
       watchStreamDoc(res.streamId);
       const modal = document.getElementById('modal-create-stream');
@@ -453,7 +461,7 @@
     document.body.classList.remove('swm-full-open');
     if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (_) {} }
     const room = st.room;
-    clearInterval(st.heartbeat); clearTimeout(st.endTimer);
+    clearInterval(st.heartbeat); clearTimeout(st.endTimer); clearInterval(st.awardTimer);
     if (chatUnsub) { chatUnsub(); chatUnsub = null; }
     if (streamDocUnsub) { streamDocUnsub(); streamDocUnsub = null; }
     if (blockedUnsub) { blockedUnsub(); blockedUnsub = null; }

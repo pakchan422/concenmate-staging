@@ -315,8 +315,8 @@
       if (!roomActive) return;
       const collapsed = roomActive.classList.toggle('controls-collapsed');
       if (btn) {
-        btn.innerText = collapsed ? '☰' : '➖';
-        btn.title = collapsed ? '顯示控制列' : '收埋控制列';
+        btn.innerHTML = window.cmIcon ? window.cmIcon(collapsed ? 'menu' : 'minus', 16) : (collapsed ? '≡' : '−');
+        btn.title = collapsed ? '顯示控制列' : '收起控制列';
       }
       // 收埋緊控制列嗰陣，背景音細面板（如果啱啱開緊）都會跟住俾隱藏
       // 咗嘅祖先元素蓋埋見唔到，順便都將個 display 狀態校正返做「關閉」，
@@ -332,7 +332,7 @@
       const roomActive = document.getElementById('room-active');
       const btn = document.getElementById('fs-room-bar-collapse-btn');
       if (roomActive) roomActive.classList.remove('controls-collapsed');
-      if (btn) { btn.innerText = '➖'; btn.title = '收埋控制列'; }
+      if (btn) { btn.innerHTML = window.cmIcon ? window.cmIcon('minus', 16) : '−'; btn.title = '收起控制列'; }
     }
 
     // 表情反應平時收埋，撳個細圓掣先彈出嚟揀（唔係成日用，冇必要成
@@ -491,7 +491,7 @@
       el.className = 'video-card-single video-slot-placeholder';
       el.innerHTML = `
         <div class="slot-empty-inner">
-          <div class="slot-empty-icon">➕</div>
+          <div class="slot-empty-icon">${window.cmIcon ? window.cmIcon('plus', 28) : '+'}</div>
           <p>${window.t('room.waitingUser', '等待用家加入...')}</p>
           <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">${window.t('room.inviteFriend', '邀請朋友')}</button>
         </div>
@@ -561,8 +561,8 @@
               <span class="video-tag video-more-menu-toggle" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}')" title="${window.t('room.moreOptions', '更多選項')}">⋮</span>
               <div class="video-more-menu-dropdown" id="video-more-menu-${uid}" style="display:none;">
                 <button type="button" class="video-more-menu-item" id="transfer-host-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.transferHostTo('${uid}', ${window.jsArg(name||'這位同學')})">${window.t('room.transferHost', '轉移房主給他')}</button>
-                <button type="button" class="video-more-menu-item danger" id="kick-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.kickParticipant('${uid}', ${window.jsArg(name||'這位同學')})">${window.t('room.kickUser', '踢走呢位同學')}</button>
-                <button type="button" class="video-more-menu-item danger" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.openReportModal('${uid}', ${window.jsArg(name||'這位同學')})">${window.t('room.reportUser', '舉報呢位同學')}</button>
+                <button type="button" class="video-more-menu-item danger" id="kick-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.kickParticipant('${uid}', ${window.jsArg(name||'這位同學')})">${window.t('room.kickUser', '將這位同學移出房間')}</button>
+                <button type="button" class="video-more-menu-item danger" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.openReportModal('${uid}', ${window.jsArg(name||'這位同學')})">${window.t('room.reportUser', '舉報這位同學')}</button>
               </div>
             </div>
           </div>
@@ -756,7 +756,7 @@
     window.openReportModal = function(targetUid, targetName) {
       if (!window.currentUser) { window.showToast(window.t('room.needLoginToInvite', '請先登入'), '⚠️'); return; }
       if (targetUid === window.currentUser.uid) { window.showToast(window.t('room.cannotReportSelf', '不可以舉報自己'), '⚠️'); return; }
-      pendingReportTarget = { uid: targetUid, name: targetName || window.t('room.reportTargetFallback', '呢位同學') };
+      pendingReportTarget = { uid: targetUid, name: targetName || window.t('room.reportTargetFallback', '這位同學') };
       pendingReportScreenshot = captureRemoteVideoFrame(targetUid);
 
       const nameEl = document.getElementById('report-target-name');
@@ -1210,8 +1210,9 @@
 
           // 檢查係咪最後一個人走：如果房入面已經冇任何人，就連房間本身都一拼
           // 刪走，唔好留低一間「0/4 人但仲顯示直播中」嘅幽靈房喺大廳。
-          const remainingSnap = await window.fs.getDocs(window.fs.collection(window.db, "rooms", roomId, "participants"));
-          if (remainingSnap.empty) {
+          // v1.230.0：離開後已不是房內成員，讀不到成員名單；改為讀房間人數
+          const roomSnap = await window.fs.getDoc(window.fs.doc(window.db, "rooms", roomId));
+          if (roomSnap.exists() && (roomSnap.data().participantCount || 0) <= 0) {
             await window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
           }
         } catch (e) {
@@ -1228,8 +1229,8 @@
         const roomId = state.currentRoomId;
         const myUid = window.currentUser.uid;
         leaveRoomBatch(roomId, myUid).then(() => {
-          return window.fs.getDocs(window.fs.collection(window.db, "rooms", roomId, "participants")).then(snap => {
-            if (snap.empty) window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
+          return window.fs.getDoc(window.fs.doc(window.db, "rooms", roomId)).then(snap => {
+            if (snap.exists() && (snap.data().participantCount || 0) <= 0) window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
           });
         }).catch(() => {});
       }
@@ -1923,6 +1924,7 @@
     // 淨係房入面實際專注嘅每一分鐘先會傳呢個值（1/60），其他獎勵（例如
     // 「仲喺度嗎」確認嘅額外 PTS）唔代表真正流逝咗嘅專注時間，所以預設
     // 唔會影響時數，避免將時數同「賺咗幾多分」混埋一齊。
+    window.awardStudyPoint = (p, h) => awardStudyPoint(p, h);
     async function awardStudyPoint(pointsAmount, hoursIncrement) {
       pointsAmount = (typeof pointsAmount === 'number' && pointsAmount > 0) ? pointsAmount : 1;
       hoursIncrement = (typeof hoursIncrement === 'number' && hoursIncrement > 0) ? hoursIncrement : 0;
@@ -2010,6 +2012,8 @@
         points: pointsAmount,
         hoursIncrement,
         roomId: state.currentRoomId || '',
+        // v1.230.0：主播直播期間計分（stream.js 設定 window.swmHostStreamId）
+        streamId: (!state.currentRoomId && typeof window.swmHostStreamId === 'function') ? (window.swmHostStreamId() || undefined) : undefined,
         isNewDay,
         todayDateStr: hoursIncrement > 0 ? getTodayDateStr() : undefined
       };
