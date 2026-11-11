@@ -3507,7 +3507,7 @@
             <div><b>學校：</b>${escapeHtml(d.school || '—')}</div>
             <div><b>年級：</b>${escapeHtml(d.grade || '—')}</div>
             <div><b>身份：</b>${d.accountType === 'tutor' ? '導師' : '學生'}</div>
-            <div><b>學校電郵：</b>${d.schoolEmail ? escapeHtml(d.schoolEmail) + '（' + ({ verified: '已驗證', pendingDomain: '待審批學校', rejected: '已拒絕' }[d.schoolEmailStatus] || '—') + '）' : '未驗證'}</div>
+            <div><b>學校電郵：</b>${d.schoolEmailStatus === 'verified' && !d.schoolEmail ? '已驗證（管理員代設）' : d.schoolEmail ? escapeHtml(d.schoolEmail) + '（' + ({ verified: '已驗證', pendingDomain: '待審批學校', rejected: '已拒絕', revoked: '已取消' }[d.schoolEmailStatus] || '—') + '）' : '未驗證'}</div>
             <div><b>本學年已確認學歷：</b>${typeof d.educationConfirmedYear === 'number' ? d.educationConfirmedYear + '/' + String(d.educationConfirmedYear + 1).slice(-2) : '未確認'}</div>
             <div><b>出生年月：</b>${d.birthYear ? escapeHtml(String(d.birthYear)) + ' 年' + (d.birthMonth ? ' ' + escapeHtml(String(d.birthMonth)) + ' 月' : '') : '未填寫'}</div>
             <div><b>現存 PTS：</b>${d.points || 0}</div>
@@ -3523,6 +3523,16 @@
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
               <input type="number" step="1" value="${adminSupportPointsGrantAmount}" style="width:120px; font-size:15px; padding:8px 10px; border:1px solid #DCE5F4; border-radius:6px;" oninput="adminUpdateSupportPointsAmount(this.value)">
               <button type="button" class="btn btn-primary" style="font-size:13px; padding:6px 16px;" onclick="adminGrantSupportPoints('${uid}')">確認</button>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid #F0F0F0; padding-top:14px; margin-bottom:14px;">
+            <h4 style="font-size:14px; font-weight:bold; color:var(--brand-700); margin-bottom:8px;">學校電郵驗證（管理員代為處理）</h4>
+            <p style="font-size:13px; color:#999; margin-bottom:8px;">只用於測試，或已用其他方式核實學生身份的特殊個案。中學生帳戶仍須同時符合：學歷為中學生、未滿 20 歲、已確認本學年學歷。</p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              ${d.schoolEmailStatus === 'verified'
+                ? `<button type="button" class="btn btn-outline" style="font-size:13px; padding:6px 16px;" onclick="adminSetSchoolVerified('${uid}', false)">取消學校電郵驗證</button>`
+                : `<button type="button" class="btn btn-primary" style="font-size:13px; padding:6px 16px;" onclick="adminSetSchoolVerified('${uid}', true)">設為已驗證</button>`}
             </div>
           </div>
 
@@ -3612,6 +3622,24 @@
     };
 
     // v1.228.4：管理員代用戶補填／更正出生年月（用戶自己改不到，見 firestore.rules selfUserUpdateOk）
+    // v1.229.2：管理員代為設定學校電郵驗證（測試或特殊個案）
+    window.adminSetSchoolVerified = async function(uid, on) {
+      if (!(await window.appConfirm(on ? '確定將這位用戶的學校電郵設為已驗證？請確認已用其他方式核實其中學生身份。' : '確定取消這位用戶的學校電郵驗證？對方將不能再進入中學生溫習室。'))) return;
+      try {
+        const upd = on
+          ? { schoolEmailStatus: 'verified', schoolEmailVerifiedAt: Date.now(), schoolEmailManualBy: (window.currentUser && window.currentUser.loginId) || null }
+          : { schoolEmailStatus: 'revoked' };
+        await window.fs.updateDoc(window.fs.doc(window.db, 'users', uid), upd);
+        await logAdminAction(on ? '代設學校電郵已驗證' : '取消學校電郵驗證', { uid });
+        const cached = adminSupportUsersCache && adminSupportUsersCache.find(u => u.uid === uid);
+        if (cached) Object.assign(cached.data, upd);
+        window.showToast('已更新', '✅');
+        renderAdminSupportTab();
+      } catch (err) {
+        window.showToast('更新失敗：' + (err.message || err), '❌');
+      }
+    };
+
     window.adminSetBirthDate = async function(uid) {
       const y = parseInt((document.getElementById('admin-birth-year-' + uid) || {}).value, 10);
       const m = parseInt((document.getElementById('admin-birth-month-' + uid) || {}).value, 10);

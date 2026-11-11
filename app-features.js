@@ -6193,7 +6193,7 @@
     } else if (!c.underAge) {
       emailBox = `<p style="font-size:14px; color:var(--brand-700); line-height:1.7; margin:0;">${esc(c.age == null ? t('verify.noBirth', '你的帳戶未有出生年月資料，請電郵 support@concenmate.com 聯絡我們補填。') : t('verify.over20', '中學生帳戶只適用於未滿 20 歲的用戶。'))}</p>`;
     } else if (c.emailVerified) {
-      emailBox = `<p style="font-size:14px; color:var(--brand-800); margin:0;">${esc(t('verify.emailDone', '已驗證學校電郵：'))}<b>${esc(u.schoolEmail || '')}</b></p>`;
+      emailBox = `<p style="font-size:14px; color:var(--brand-800); margin:0;">${esc(t('verify.emailDone', '已驗證學校電郵：'))}<b>${esc(u.schoolEmail || t('verify.manual', '已由管理員核實'))}</b></p>`;
     } else if (c.emailPending) {
       emailBox = `<p style="font-size:14px; color:var(--brand-800); line-height:1.7; margin:0;">${esc(t('verify.emailPendingDomain', '你的學校電郵已確認收到，由於這是我們第一次收到這間學校的電郵，管理員需要核實一次，一般需時一至兩個工作天，完成後會自動生效。'))}<br><b>${esc(u.schoolEmail || '')}</b></p>`;
     } else {
@@ -6288,16 +6288,31 @@
       <div class="modal-box" style="max-width:400px;" role="dialog" aria-modal="true">
         <h3 style="font-size:17px; font-weight:800; color:var(--brand-800); margin:0 0 8px;">${esc(t('edu.title', '確認本學年學歷'))}</h3>
         <p style="font-size:14px; color:var(--brand-800); line-height:1.7; margin:0 0 14px;">${esc(t('edu.body', '新學年（{y}/{y2}）開始，請確認你現時的學歷。').replace('{y}', sy).replace('{y2}', String(sy + 1).slice(-2)))}</p>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          ${canSecondary ? `<button type="button" class="btn btn-primary" style="justify-content:center; min-height:42px;" data-edu="1">${esc(t('edu.secondary', '現時為中學生'))}</button>` : ''}
-          <button type="button" class="btn btn-outline" style="justify-content:center; min-height:42px;" data-edu="0">${esc(t('edu.notSecondary', '現時為大專 / 大學 / 在職或其他（並非中學生）'))}</button>
+        <div style="display:flex; flex-direction:column; gap:8px;" role="radiogroup">
+          ${canSecondary ? `<button type="button" class="btn btn-outline" role="radio" aria-checked="false" style="justify-content:center; min-height:42px;" data-edu="1">${esc(t('edu.secondary', '現時為中學生'))}</button>` : ''}
+          <button type="button" class="btn btn-outline" role="radio" aria-checked="false" style="justify-content:center; min-height:42px;" data-edu="0">${esc(t('edu.notSecondary', '現時為大專 / 大學 / 在職或其他（並非中學生）'))}</button>
         </div>
+        <button type="button" class="btn btn-primary" id="edu-confirm-ok" disabled style="width:100%; justify-content:center; min-height:44px; margin-top:14px; opacity:.45; cursor:not-allowed;">${esc(t('common.confirm', '確定'))}</button>
         ${canSecondary ? '' : `<p style="font-size:12px; color:#6B7894; margin:10px 0 0;">${esc(age == null ? t('edu.noBirth', '帳戶未有出生年月資料，暫時只可選擇「並非中學生」；如需補填，請電郵 support@concenmate.com。') : t('edu.over20', '根據出生年月，你已滿 20 歲，屬一般帳戶。'))}</p>`}
       </div>`;
+    // v1.229.2：先揀選項（只作標示），再撳「確定」才儲存
+    let picked = null;
     wrap.addEventListener('click', async (e) => {
-      const b = e.target.closest && e.target.closest('[data-edu]');
-      if (!b) return;
-      const isSecondary = b.getAttribute('data-edu') === '1';
+      const opt = e.target.closest && e.target.closest('[data-edu]');
+      const okBtn = wrap.querySelector('#edu-confirm-ok');
+      if (opt) {
+        picked = opt.getAttribute('data-edu');
+        wrap.querySelectorAll('[data-edu]').forEach(x => {
+          const on = x === opt;
+          x.classList.toggle('btn-primary', on);
+          x.classList.toggle('btn-outline', !on);
+          x.setAttribute('aria-checked', on ? 'true' : 'false');
+        });
+        if (okBtn) { okBtn.disabled = false; okBtn.style.opacity = ''; okBtn.style.cursor = ''; }
+        return;
+      }
+      if (!(e.target.closest && e.target.closest('#edu-confirm-ok')) || picked == null) return;
+      const isSecondary = picked === '1';
       wrap.querySelectorAll('button').forEach(x => { x.disabled = true; });
       try {
         const res = await window.callCloudFunction('confirmEducation', { isSecondary });
