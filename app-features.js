@@ -6289,10 +6289,10 @@
         <h3 style="font-size:17px; font-weight:800; color:var(--brand-800); margin:0 0 8px;">${esc(t('edu.title', '確認本學年學歷'))}</h3>
         <p style="font-size:14px; color:var(--brand-800); line-height:1.7; margin:0 0 14px;">${esc(t('edu.body', '新學年（{y}/{y2}）開始，請確認你現時的學歷。').replace('{y}', sy).replace('{y2}', String(sy + 1).slice(-2)))}</p>
         <div style="display:flex; flex-direction:column; gap:8px;">
-          ${canSecondary ? `<button type="button" class="btn btn-primary" style="justify-content:center; min-height:42px;" data-edu="1">${esc(t('edu.secondary', '我現時是中學生'))}</button>` : ''}
-          <button type="button" class="btn btn-outline" style="justify-content:center; min-height:42px;" data-edu="0">${esc(t('edu.notSecondary', '我現時不是中學生（大專、大學、在職或其他）'))}</button>
+          ${canSecondary ? `<button type="button" class="btn btn-primary" style="justify-content:center; min-height:42px;" data-edu="1">${esc(t('edu.secondary', '現時為中學生'))}</button>` : ''}
+          <button type="button" class="btn btn-outline" style="justify-content:center; min-height:42px;" data-edu="0">${esc(t('edu.notSecondary', '現時為大專 / 大學 / 在職或其他（並非中學生）'))}</button>
         </div>
-        ${canSecondary ? '' : `<p style="font-size:12px; color:#6B7894; margin:10px 0 0;">${esc(age == null ? t('edu.noBirth', '帳戶未有出生年月資料，暫時只可選擇「不是中學生」；如需補填，請電郵 support@concenmate.com。') : t('edu.over20', '根據出生年月，你已滿 20 歲，屬一般帳戶。'))}</p>`}
+        ${canSecondary ? '' : `<p style="font-size:12px; color:#6B7894; margin:10px 0 0;">${esc(age == null ? t('edu.noBirth', '帳戶未有出生年月資料，暫時只可選擇「並非中學生」；如需補填，請電郵 support@concenmate.com。') : t('edu.over20', '根據出生年月，你已滿 20 歲，屬一般帳戶。'))}</p>`}
       </div>`;
     wrap.addEventListener('click', async (e) => {
       const b = e.target.closest && e.target.closest('[data-edu]');
