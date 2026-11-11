@@ -235,6 +235,7 @@
       if (typeof window.startAdminReportsBadgeListener === 'function') window.startAdminReportsBadgeListener();
       // 「🎓 導師申請」個紅點徽章同上，唔理揀緊邊個分頁都要見到
       if (typeof window.startAdminTutorsBadgeListener === 'function') window.startAdminTutorsBadgeListener();
+      if (typeof window.startAdminSchoolDomainsBadge === 'function') window.startAdminSchoolDomainsBadge();
 
       // 管理員權限分級：『support』帳戶見唔到網站設定／治理類分頁嘅
       // 按鈕（見上面 SUPER_ADMIN_ONLY_TABS）。
@@ -323,7 +324,7 @@
     // 「舉報處理」「導師申請」有待處理項目時，喺「日常營運」類別旁邊顯示紅點，
     // 即使管理員停留喺其他類別都會見到
     function syncAdminCategoryBadges() {
-      const badges = ['admin-reports-badge', 'admin-tutors-badge'].map(id => document.getElementById(id)).filter(Boolean);
+      const badges = ['admin-reports-badge', 'admin-tutors-badge', 'admin-schooldomains-badge'].map(id => document.getElementById(id)).filter(Boolean);
       const update = () => {
         adminTabGroups().forEach(g => {
           const catBtn = document.querySelector(`#admin-cat-bar .admin-cat-btn[data-group="${g.id}"]`);
@@ -393,6 +394,7 @@
       else if (tab === 'navmenu') renderAdminNavMenuTab();
       else if (tab === 'turn') renderAdminTurnTab();
       else if (tab === 'streaming') renderAdminStreamingTab();
+      else if (tab === 'schooldomains') window.renderAdminSchoolDomainsTab();
     }
 
     // ---------- 扭蛋機貼紙管理 ----------
@@ -3505,6 +3507,8 @@
             <div><b>學校：</b>${escapeHtml(d.school || '—')}</div>
             <div><b>年級：</b>${escapeHtml(d.grade || '—')}</div>
             <div><b>身份：</b>${d.accountType === 'tutor' ? '導師' : '學生'}</div>
+            <div><b>學校電郵：</b>${d.schoolEmail ? escapeHtml(d.schoolEmail) + '（' + ({ verified: '已驗證', pendingDomain: '待審批學校', rejected: '已拒絕' }[d.schoolEmailStatus] || '—') + '）' : '未驗證'}</div>
+            <div><b>本學年已確認學歷：</b>${typeof d.educationConfirmedYear === 'number' ? d.educationConfirmedYear + '/' + String(d.educationConfirmedYear + 1).slice(-2) : '未確認'}</div>
             <div><b>出生年月：</b>${d.birthYear ? escapeHtml(String(d.birthYear)) + ' 年' + (d.birthMonth ? ' ' + escapeHtml(String(d.birthMonth)) + ' 月' : '') : '未填寫'}</div>
             <div><b>現存 PTS：</b>${d.points || 0}</div>
             <div><b>累積時數：</b>${(parseFloat(d.hours) || 0).toFixed(1)}</div>
@@ -4382,6 +4386,7 @@
 （二）使用者有責任妥善保管其帳戶登入密碼，不得將帳戶資料轉讓、出借或以任何方式提供予他人；
 （三）除有證據證明帳戶遭第三方未經授權存取外，使用者帳戶下所發生之一切活動，均視為由使用者本人所為，使用者須就此負全責；
 （四）除本公司另行書面同意外，每名使用者僅可擁有一個帳戶。
+（五）學歷為中學生、未滿二十歲，並已以學校派發之電郵完成驗證之使用者，方屬「中學生帳戶」，可使用本服務指定之中學生功能（包括中學生溫習室）；其他使用者屬「一般帳戶」。使用者須於每學年（每年九月一日起）確認最新學歷。虛報學歷或年齡、或使用他人學校電郵者，本公司有權撤銷其中學生帳戶資格，並按第七條處理。
 
 # 第三條　使用守則
 使用者於使用本服務時，須遵守下列守則，不得從事下列行為：
@@ -4474,7 +4479,7 @@
 本政策適用於閣下透過 concenmate.com 及其任何相關子網域使用本服務之情況。倘若閣下未滿十八歲，本公司建議由閣下之家長或監護人陪同閱讀本政策，並就使用本服務一事給予同意。
 
 # 第二條　本公司所收集之資料類別
-本公司因提供本服務之需要，可能收集以下類別之資料：帳戶資料（登入識別碼、電郵地址、顯示暱稱、頭像選項，於帳戶註冊時收集）；學習記錄（累積溫習時數、經驗值、等級、貼紙收藏紀錄，於使用服務過程中自動記錄）；社交互動資料（好友名單、即時通訊內容、討論區發帖及留言，於使用者主動使用相關功能時收集）；溫習室及視訊相關資料（房間設定、加入及離開時間、建立視像連線所需之協調訊息，於使用視訊溫習室功能時收集）；直播相關資料（直播標題、科目、開始及結束時間、觀看人數、直播留言、封鎖紀錄，以及未成年使用者就直播取得父母或監護人同意之確認紀錄，於使用者使用直播功能時收集）；舉報資料（舉報內容及相關佐證，於使用者提交舉報時收集）；違規及停權紀錄（於本公司處理舉報時記錄）；技術資料（瀏覽器類型、裝置資訊、網際網路協定（IP）位址，於連接本服務時由基礎設施自動記錄）。
+本公司因提供本服務之需要，可能收集以下類別之資料：帳戶資料（登入識別碼、電郵地址、顯示暱稱、頭像選項，於帳戶註冊時收集）；學歷及學校電郵（學歷聲明、每學年確認紀錄，以及中學生用作核實身份之學校電郵地址；學校電郵只用作核實身份，不會公開）；學習記錄（累積溫習時數、經驗值、等級、貼紙收藏紀錄，於使用服務過程中自動記錄）；社交互動資料（好友名單、即時通訊內容、討論區發帖及留言，於使用者主動使用相關功能時收集）；溫習室及視訊相關資料（房間設定、加入及離開時間、建立視像連線所需之協調訊息，於使用視訊溫習室功能時收集）；直播相關資料（直播標題、科目、開始及結束時間、觀看人數、直播留言、封鎖紀錄，以及未成年使用者就直播取得父母或監護人同意之確認紀錄，於使用者使用直播功能時收集）；舉報資料（舉報內容及相關佐證，於使用者提交舉報時收集）；違規及停權紀錄（於本公司處理舉報時記錄）；技術資料（瀏覽器類型、裝置資訊、網際網路協定（IP）位址，於連接本服務時由基礎設施自動記錄）。
 
 關於視訊及語音資料之特別聲明：本服務之視訊溫習室功能採用點對點即時通訊技術（WebRTC），使用者之鏡頭及咪高峰畫面一般於瀏覽器之間直接傳輸；如雙方無法直接連線，則會經 Cloudflare 之中轉伺服器以加密方式轉送。本服務之直播功能則經本公司租用之直播伺服器（由 Vultr 提供，位於日本）即時轉送直播主之鏡頭畫面予觀眾。上述影像及聲音均只作即時傳送，本公司不會錄製或儲存。本公司之資料庫僅用作交換建立連線所需之協調（signaling）訊息。
 
@@ -4489,7 +4494,7 @@
 閣下之個人資料儲存於 Google Firebase（包括 Firestore 資料庫及 Cloud Storage 儲存空間），該等服務由 Google Cloud Platform 提供。資料於傳輸過程中，均以超文本傳輸安全協定（HTTPS/TLS）加密。本公司並已採取下列保安措施：（一）Firebase App Check（結合 reCAPTCHA Enterprise），用以識別及阻截非經正常途徑發出之存取請求；（二）資料庫及儲存空間存取規則，訂明使用者僅可存取屬於自己之資料，唯獲授權之管理員方可存取管理功能；（三）單次資料變更幅度限制，就學習進度等敏感數值之單次變更設有上限，以防止篡改。
 
 # 第五條　資料之披露及第三方服務提供者
-本公司不會出售或出租閣下之個人資料予任何第三方。惟為提供本服務所需之技術支援，本公司會將有限度之資料傳送予下列第三方服務提供者：（一）Google Firebase——提供資料庫、身份驗證、檔案儲存及防濫用機制等服務；（二）EmailJS——用於發送電郵驗證及重設密碼訊息，僅會接觸閣下之電郵地址；（三）Cloudflare——提供視訊溫習室之中轉伺服器，只作即時轉送加密影像及聲音；（四）Vultr——提供直播伺服器，只作即時轉送直播影像。倘若本公司因法律程序而有責任披露閣下之個人資料，本公司將依法配合，並於法律容許之範圍內事先通知閣下；如涉及懷疑刑事罪行或兒童安全，本公司可依法向執法機關披露相關資料。
+本公司不會出售或出租閣下之個人資料予任何第三方。惟為提供本服務所需之技術支援，本公司會將有限度之資料傳送予下列第三方服務提供者：（一）Google Firebase——提供資料庫、身份驗證、檔案儲存及防濫用機制等服務；（二）EmailJS——用於發送電郵驗證、學校電郵驗證及重設密碼訊息，僅會接觸相關電郵地址；（三）Cloudflare——提供視訊溫習室之中轉伺服器，只作即時轉送加密影像及聲音；（四）Vultr——提供直播伺服器，只作即時轉送直播影像。倘若本公司因法律程序而有責任披露閣下之個人資料，本公司將依法配合，並於法律容許之範圍內事先通知閣下；如涉及懷疑刑事罪行或兒童安全，本公司可依法向執法機關披露相關資料。
 
 # 第六條　Cookie 及本地儲存技術
 本服務會利用瀏覽器之本地儲存功能（localStorage）記錄閣下之登入狀態，以省卻閣下每次重新登入之需要。該等資料儲存於閣下自身之裝置內，本公司並不藉此透過第三方追蹤 Cookie 監察閣下於其他網站之瀏覽活動。
@@ -5130,6 +5135,94 @@
       load(true);
     } catch (e) {
       window.showToast('儲存失敗：' + ((e && e.message) || e), '❌');
+    }
+  };
+})();
+
+
+// ===================== 學校電郵審批（v1.229.0） =====================
+// 學生以 .edu.hk 電郵驗證時，如該域名第一次出現，會列在這裏等候管理員確認一次屬哪間中學；
+// 批准後同一域名的學生即時成為中學生帳戶（已驗證），之後同校學生驗證即時通過。
+(function () {
+  const esc = (v) => (window.escapeHtml ? window.escapeHtml(String(v == null ? '' : v)) : String(v == null ? '' : v));
+  let unsub = null;
+  window.startAdminSchoolDomainsBadge = function () {
+    if (unsub || !window.db || !window.fs) return;
+    try {
+      const q = window.fs.query(window.fs.collection(window.db, 'schoolEmailDomains'), window.fs.where('status', '==', 'pending'));
+      unsub = window.fs.onSnapshot(q, (snap) => {
+        const b = document.getElementById('admin-schooldomains-badge');
+        if (b) { b.textContent = String(snap.size); b.style.display = snap.size ? '' : 'none'; }
+        const panel = document.getElementById('admin-tab-schooldomains');
+        if (panel && panel.style.display === 'block') window.renderAdminSchoolDomainsTab();
+      }, () => { unsub = null; });
+    } catch (_) {}
+  };
+  window.renderAdminSchoolDomainsTab = async function () {
+    const panel = document.getElementById('admin-tab-schooldomains');
+    if (!panel) return;
+    let docs = [];
+    try {
+      const snap = await window.fs.getDocs(window.fs.collection(window.db, 'schoolEmailDomains'));
+      docs = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    } catch (e) {
+      panel.innerHTML = `<div class="card" style="padding:16px; color:#8A2F2F;">未能讀取：${esc(e.message || e)}</div>`;
+      return;
+    }
+    const pending = docs.filter(d => d.status === 'pending').sort((a, b) => (a.firstSeenAt || 0) - (b.firstSeenAt || 0));
+    const done = docs.filter(d => d.status !== 'pending').sort((a, b) => (b.reviewedAt || 0) - (a.reviewedAt || 0));
+    const pendHtml = pending.length ? pending.map(d => `
+      <div style="border:1px solid var(--brand-200); border-radius:10px; padding:12px; margin-bottom:10px;">
+        <div style="font-size:15px; font-weight:800; color:var(--brand-800); word-break:break-all;">@${esc(d.domain)}</div>
+        <div style="font-size:13px; color:#6B7894; margin:4px 0 8px;">學生填寫的學校：${esc((d.sampleSchools || []).join('、') || '—')}　｜　等候人數：${esc(d.pendingCount || 0)}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <input id="sd-school-${esc(d.id)}" value="${esc((d.sampleSchools || [])[0] || '')}" placeholder="這個域名屬於哪間中學" style="flex:1; min-width:180px; padding:8px 10px; border:1px solid var(--brand-300); border-radius:8px; font-size:14px;">
+          <button type="button" class="btn btn-primary" onclick="window.adminReviewSchoolDomain('${esc(d.id)}', true)">確認為中學</button>
+          <button type="button" class="btn btn-outline" onclick="window.adminReviewSchoolDomain('${esc(d.id)}', false)">不是中學</button>
+        </div>
+      </div>`).join('') : '<p style="font-size:14px; color:#6B7894; margin:0;">暫時沒有待審批的域名。</p>';
+    const doneHtml = done.length ? `<table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead><tr style="text-align:left; color:#6B7894;"><th style="padding:6px;">域名</th><th style="padding:6px;">結果</th><th style="padding:6px;">學校</th><th style="padding:6px;"></th></tr></thead>
+        <tbody>${done.map(d => `<tr style="border-top:1px solid var(--brand-100);">
+          <td style="padding:6px; word-break:break-all;">@${esc(d.domain)}</td>
+          <td style="padding:6px;">${d.status === 'approved' ? '已確認為中學' : '不是中學'}</td>
+          <td style="padding:6px;">${esc(d.school || '—')}</td>
+          <td style="padding:6px; text-align:right;">${d.status === 'approved'
+            ? `<button type="button" class="btn btn-outline" style="font-size:12px; padding:3px 8px;" onclick="window.adminReviewSchoolDomain('${esc(d.id)}', false)">撤銷</button>`
+            : `<button type="button" class="btn btn-outline" style="font-size:12px; padding:3px 8px;" onclick="window.adminReopenSchoolDomain('${esc(d.id)}', '${esc(d.domain)}')">改為中學</button>`}</td></tr>`).join('')}</tbody></table>`
+      : '<p style="font-size:14px; color:#6B7894; margin:0;">未有紀錄。</p>';
+    panel.innerHTML = `
+      <div class="card" style="padding:16px;">
+        <h3 style="margin:0 0 6px;">學校電郵審批</h3>
+        <p style="font-size:13px; color:#6B7894; line-height:1.7; margin:0;">學生用 .edu.hk 學校電郵驗證時，如果該學校的電郵域名是第一次出現，會列在這裏。請確認它屬於一間中學（例如在學校網站核對），確認後同一域名的學生會即時成為中學生帳戶，之後同校學生驗證時會即時通過。大專院校的域名系統已自動拒絕。</p>
+      </div>
+      <div class="card" style="padding:16px;"><h4 style="margin:0 0 10px;">待審批</h4>${pendHtml}</div>
+      <div class="card" style="padding:16px;"><h4 style="margin:0 0 10px;">已處理</h4>${doneHtml}</div>`;
+  };
+  window.adminReviewSchoolDomain = async function (id, approve) {
+    const input = document.getElementById('sd-school-' + id);
+    const school = input ? input.value.trim() : '';
+    const domain = id;
+    if (approve && !school) { window.showToast('請填寫學校名稱', '⚠️'); return; }
+    const msg = approve ? `確認 @${domain} 屬於「${school}」？同一域名等候中的學生會即時成為中學生帳戶。` : `確定 @${domain} 不是中學電郵？使用此域名的學生會失去中學生帳戶資格。`;
+    if (!(await window.appConfirm(msg))) return;
+    try {
+      const res = await window.callCloudFunction('reviewSchoolEmailDomain', { domain, approve, school });
+      window.showToast(`已處理，更新了 ${res && res.updated || 0} 位學生`, '✅');
+      window.renderAdminSchoolDomainsTab();
+    } catch (e) {
+      window.showToast('處理失敗：' + (window.friendlyErrorText ? window.friendlyErrorText(e) : (e.message || e)), '❌');
+    }
+  };
+  window.adminReopenSchoolDomain = async function (id, domain) {
+    const school = await window.appPrompt(`@${domain} 屬於哪間中學？`, '');
+    if (!school) return;
+    try {
+      const res = await window.callCloudFunction('reviewSchoolEmailDomain', { domain, approve: true, school: school.trim() });
+      window.showToast(`已改為中學，更新了 ${res && res.updated || 0} 位學生`, '✅');
+      window.renderAdminSchoolDomainsTab();
+    } catch (e) {
+      window.showToast('處理失敗：' + (window.friendlyErrorText ? window.friendlyErrorText(e) : (e.message || e)), '❌');
     }
   };
 })();
