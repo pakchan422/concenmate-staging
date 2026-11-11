@@ -963,6 +963,7 @@
     'acct.yes': { 'zh-Hant': '有', 'en': 'Yes', 'yue': '有' },
     'acct.no': { 'zh-Hant': '沒有', 'en': 'No', 'yue': '冇' },
     'acct.note': { 'zh-Hant': '中學生帳戶：未滿 20 歲、學歷為中學生，並以學校電郵驗證。每年 9 月 1 日後第一次登入時，需要確認一次最新學歷。', 'en': 'Secondary student account: under 20, education level secondary school, and verified with a school email. After 1 September each year, you will be asked to confirm your education level when you first log in.', 'yue': '中學生帳戶：未滿 20 歲、學歷係中學生，仲要用學校電郵驗證。每年 9 月 1 日之後第一次登入，要確認一次最新學歷。' },
+    'stream.endedBudget': { 'zh-Hant': '直播功能暫停中，直播已結束', 'en': 'Live streaming is temporarily paused. The stream has ended.', 'yue': '直播功能暫停緊，直播已經結束' },
     'profile.deleteTitle': { 'zh-Hant': '刪除帳戶', 'en': 'Delete account', 'yue': '刪除帳戶' },
     'profile.deleteDesc': { 'zh-Hant': '刪除後，你的個人資料、溫習紀錄、貼圖、好友、私訊、溫習日記相片、貼文及留言將會永久刪除，不能復原。帳號 ID 可以再被其他人註冊。如帳戶有違規紀錄，本公司會按私隱政策保留有關紀錄。', 'en': 'Your profile, study records, stickers, friends, messages, diary photos, posts and comments will be permanently deleted and cannot be restored. Your login ID may be registered by someone else. If the account has violation records, we will keep them as stated in our Privacy Policy.', 'yue': '刪除之後，你嘅個人資料、溫習紀錄、貼圖、好友、私訊、溫習日記相片、貼文同留言會永久刪除，冇得復原。帳號 ID 可以再俾其他人註冊。如果帳戶有違規紀錄，我哋會按私隱政策保留。' },
     'profile.deletePasswordPlaceholder': { 'zh-Hant': '輸入目前登入密碼以確認', 'en': 'Enter your current password to confirm', 'yue': '輸入而家嘅登入密碼確認' },

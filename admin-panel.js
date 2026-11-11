@@ -5168,6 +5168,31 @@
     if (errs.vultr) errNotes.push('Vultr 數據未能取得，直播流量改用系統估算：' + errs.vultr);
     const s = d.settings || {};
     const updated = new Date(d.at).toLocaleString('zh-HK', { hour12: false });
+    // v1.230.1：每月預算自動控制狀態
+    const g = d.budgetGuard || {};
+    const budget = Number(s.monthlyBudgetUSD) || 0;
+    const fmtTime = (ms) => ms ? new Date(ms).toLocaleString('zh-HK', { hour12: false }) : '';
+    let budgetHtml;
+    if (g.paused) {
+      budgetHtml = `<div class="card" style="padding:16px; border:2px solid #C0392B; background:#FDF1EF;">
+        <h3 style="margin:0 0 6px; font-size:16px; color:#A33A2F;">直播已自動暫停（本月開支已達預算上限）</h3>
+        <p style="margin:0; font-size:14px; line-height:1.7; color:#5A2A24;">暫停時間：${esc(fmtTime(g.pausedAt))}<br>本月估算 ${usd(d.totalUSD)}，預算上限 ${usd(budget || g.budgetUSD)}。<br>暫停期間一般用戶不能開始或觀看直播（管理員除外）。提高預算上限或關閉「自動暫停」後儲存，直播會即時恢復；下月估算回落至預算以下亦會自動恢復。</p>
+      </div>`;
+    } else if (budget > 0) {
+      const pct = Math.round(d.totalUSD / budget * 100);
+      const barColor = pct >= 90 ? '#C0392B' : pct >= 70 ? '#E0A800' : '#4A68A8';
+      budgetHtml = `<div class="card" style="padding:16px;">
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; align-items:baseline;">
+          <h3 style="margin:0; font-size:16px;">每月預算控制</h3>
+          <span style="font-size:13px; color:#6B7894;">自動暫停直播：<b>${s.budgetAutoStop ? '已開啟' : '未開啟'}</b></span>
+        </div>
+        <p style="margin:6px 0 8px; font-size:14px;">本月估算 ${usd(d.totalUSD)} ／ 預算上限 ${usd(budget)}（${pct}%）</p>
+        <div style="height:10px; background:var(--brand-100); border-radius:6px; overflow:hidden;"><div style="height:100%; width:${Math.min(100, pct)}%; background:${barColor};"></div></div>
+        ${g.resumedAt ? `<p style="margin:8px 0 0; font-size:12px; color:#8A94A8;">上次自動恢復直播：${esc(fmtTime(g.resumedAt))}</p>` : ''}
+      </div>`;
+    } else {
+      budgetHtml = `<div class="card" style="padding:16px;"><h3 style="margin:0 0 4px; font-size:16px;">每月預算控制</h3><p style="margin:0; font-size:13px; color:#6B7894;">尚未設定預算上限。可在下方「方案設定」填寫每月預算上限，並開啟「超出預算時自動暫停直播」。</p></div>`;
+    }
 
     panel.innerHTML = `
       <div class="card" style="padding:16px;">
@@ -5188,6 +5213,8 @@
         </div>
       </div>
 
+      ${budgetHtml}
+
       <div class="card" style="padding:16px;">
         <h3 style="margin:0 0 10px; font-size:16px;">需要處理的項目</h3>
         ${alertHtml}
@@ -5203,7 +5230,7 @@
         </div>
         <div class="card" style="padding:16px; margin:0;">
           <h3 style="margin:0 0 4px; font-size:16px;">過去 6 個月估算開支</h3>
-          <p style="margin:0; font-size:12px; color:#8A94A8;">每日自動記錄一次當月估算</p>
+          <p style="margin:0; font-size:12px; color:#8A94A8;">每 3 小時自動記錄一次當月估算</p>
           ${bars(d.history || [])}
         </div>
       </div>
@@ -5218,8 +5245,10 @@
           <label>EmailJS 方案<select id="cost-emailjs" style="width:100%; box-sizing:border-box; margin-top:4px; padding:8px; border:1px solid var(--brand-200); border-radius:8px;">
             ${[[200, '免費（每月 200 封）'], [2000, 'Personal（2,000 封，US$9）'], [5000, 'Professional（5,000 封，US$15）'], [25000, 'Business（25,000 封，US$40）']].map(([v, l]) => `<option value="${v}" ${Number(s.emailjsQuota) === v ? 'selected' : ''}>${l}</option>`).join('')}
           </select></label>
+          <label>每月預算上限（US$，0 為不設）<input id="cost-budget" type="number" min="0" step="1" value="${esc(s.monthlyBudgetUSD || 0)}" style="width:100%; box-sizing:border-box; margin-top:4px; padding:8px; border:1px solid var(--brand-200); border-radius:8px;"></label>
+          <label style="display:flex; align-items:center; gap:8px; margin-top:22px;"><input id="cost-budget-autostop" type="checkbox" ${s.budgetAutoStop ? 'checked' : ''}>超出預算時自動暫停直播</label>
         </div>
-        <p style="margin:10px 0 0; font-size:12px; color:#8A94A8;">中轉伺服器的上限請在「中轉伺服器」分頁設定。</p>
+        <p style="margin:10px 0 0; font-size:12px; color:#8A94A8;">系統每 3 小時檢查一次本月估算開支；達到預算上限時會結束所有進行中的直播，並暫停開播及觀看，直至估算回落至預算以下。中轉伺服器的上限請在「中轉伺服器」分頁設定。</p>
         <button type="button" class="btn btn-primary" style="margin-top:12px;" onclick="window.adminSaveCostSettings()">儲存方案設定</button>
       </div>`;
   }
@@ -5230,7 +5259,9 @@
     try {
       await window.callCloudFunction('saveCostSettings', {
         vultrMonthlyUSD: v('cost-vultr-fee'), vultrIncludedGB: v('cost-vultr-gb'),
-        liveViewerCapacity: v('cost-live-cap'), emailjsQuota: v('cost-emailjs')
+        liveViewerCapacity: v('cost-live-cap'), emailjsQuota: v('cost-emailjs'),
+        monthlyBudgetUSD: v('cost-budget'),
+        budgetAutoStop: !!(document.getElementById('cost-budget-autostop') || {}).checked
       });
       window.showToast('已儲存方案設定', '✅');
       load(true);

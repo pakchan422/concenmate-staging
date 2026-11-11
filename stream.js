@@ -412,6 +412,8 @@
     streamDocUnsub = window.fs.onSnapshot(window.fs.doc(window.db, 'streams', streamId), (snap) => {
       st.stream = snap.exists() ? snap.data() : null;
       if (!st.stream || st.stream.status !== 'live') {
+        // v1.230.1：每月預算自動控制暫停直播
+        if (st.stream && st.stream.endReason === 'budget' && st.mode) { stopAll(t('stream.endedBudget', '直播功能暫停中，直播已結束')); return; }
         if (st.mode === 'viewer') stopAll(t('stream.viewerEnded', '直播已結束'));
         else if (st.mode === 'host') stopAll(t('stream.endedByAdmin', '直播已被結束'));
         return;

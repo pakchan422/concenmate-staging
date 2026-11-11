@@ -1211,8 +1211,9 @@
           // 檢查係咪最後一個人走：如果房入面已經冇任何人，就連房間本身都一拼
           // 刪走，唔好留低一間「0/4 人但仲顯示直播中」嘅幽靈房喺大廳。
           // v1.230.0：離開後已不是房內成員，讀不到成員名單；改為讀房間人數
-          const roomSnap = await window.fs.getDoc(window.fs.doc(window.db, "rooms", roomId));
-          if (roomSnap.exists() && (roomSnap.data().participantCount || 0) <= 0) {
+          // 房間已被刪除時讀取會被規則拒絕，當作已清走
+          const roomSnap = await window.fs.getDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => null);
+          if (roomSnap && roomSnap.exists() && (roomSnap.data().participantCount || 0) <= 0) {
             await window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
           }
         } catch (e) {
