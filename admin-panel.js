@@ -114,10 +114,12 @@
     const ADMIN_TAB_GROUPS = {
       roomsettings: ['roomsettings', 'antiidle'],
       navmenu: ['navmenu', 'icons'],
+      // v1.229.3：用戶支援（搜尋＋詳情）併入用戶管理（上：搜尋及詳情；下：全部用戶表格）
+      users: ['support', 'users'],
       lists: ['subjects', 'districts', 'schools'],
     };
     // 舊分頁名稱 → 合併後的分頁（網址 hash 或其他地方仍然可以用舊名稱）
-    const ADMIN_TAB_ALIASES = { antiidle: 'roomsettings', scoring: 'roomsettings', icons: 'navmenu', subjects: 'lists', districts: 'lists', schools: 'lists' };
+    const ADMIN_TAB_ALIASES = { support: 'users', antiidle: 'roomsettings', scoring: 'roomsettings', icons: 'navmenu', subjects: 'lists', districts: 'lists', schools: 'lists' };
     // 某個原有分頁的內容而家是否顯示緊（合併分頁後，不可以再只比較 currentAdminTab）
     function adminTabShowing(name) {
       const el = document.getElementById('admin-tab-' + name);
@@ -1599,7 +1601,7 @@
         const displayEmail = u.contactEmail || u.email || '—';
         return `
           <tr style="${suspended ? 'opacity:.55;' : ''}">
-            <td>${escapeHtml(u.username || '—')}${suspensionLabelHtml(u)}</td>
+            <td><a href="javascript:void(0)" style="color:var(--brand-700); font-weight:700;" onclick="adminSelectSupportUser('${uid}', true)">${escapeHtml(u.username || '—')}</a>${suspensionLabelHtml(u)}</td>
             <td>${u.loginId ? escapeHtml(u.loginId) : '<span style="color:#c99; font-size:13px;">未設定</span>'}</td>
             <td>${escapeHtml(displayEmail)}</td>
             <td>${escapeHtml(u.school || '—')}</td>
@@ -1621,7 +1623,8 @@
 
       container.innerHTML = `
         <div class="admin-card">
-          <p style="font-size:13px; color:#888; margin-bottom:10px;">修改積分／時數／EXP 後，請記得逐行點擊「儲存」；EXP 決定用戶的溫習等級與段位，一般毋須人手修改，只有在特殊情況（例如補發）才使用。「停權」會令該用戶下次登入時被強制登出。</p>
+          <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:6px;">全部用戶</h3>
+          <p style="font-size:13px; color:#888; margin-bottom:10px;">點擊用戶名可在上方查看詳情及處理（補發、驗證、更正出生年月等）。修改積分／時數／EXP 後，請記得逐行點擊「儲存」；EXP 決定用戶的溫習等級與段位，一般毋須人手修改，只有在特殊情況（例如補發）才使用。「停權」會令該用戶下次登入時被強制登出。</p>
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
             <button type="button" class="btn ${adminUsersGradeGroup === 'school' ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="switchAdminUsersGradeGroup('school')">中學／大專／大學</button>
             <button type="button" class="btn ${adminUsersGradeGroup === 'other' ? 'btn-primary' : 'btn-outline'}" style="font-size:13px; padding:5px 12px;" onclick="switchAdminUsersGradeGroup('other')">其他／自修生</button>
@@ -1652,7 +1655,11 @@
           const tb = new Date(b.data().createdAt || 0).getTime() || 0;
           return ta - tb;
         });
+        // v1.229.3：同一份資料供上面「搜尋用戶」使用，不用另外再讀一次
+        adminSupportUsersCache = adminUsersLastSortedDocs.map(d => ({ uid: d.id, data: d.data() }));
+        adminSupportUsersCacheLoading = false;
         renderAdminUsersTable();
+        if (adminTabShowing('support')) renderAdminSupportTab();
       }, (err) => {
         container.innerHTML = `<div class="admin-card" style="color:#c0392b;">載入失敗：${err.message || err}</div>`;
       });
@@ -1730,7 +1737,7 @@
             ${num('minMinutesPerDay', '每日最少溫習', '分鐘才計一日', 1, 600)}
             ${num('minStreamAge', '最低開播年齡', '歲', 0, 99)}
           </div>
-          <p style="font-size:13px; color:#888; margin:8px 0 0;">由伺服器記錄，用戶無法自行修改。首次記錄時會按溫習日曆補回過往日數。<br>年齡按用戶註冊時填寫的出生年月計算（註冊後用戶不能自行修改）；沒有出生年月的帳戶當作未達年齡，可在「日常營運」→「用戶支援」代為補填。觀看直播不受年齡限制。設為 0 即不設年齡限制。</p>
+          <p style="font-size:13px; color:#888; margin:8px 0 0;">由伺服器記錄，用戶無法自行修改。首次記錄時會按溫習日曆補回過往日數。<br>年齡按用戶註冊時填寫的出生年月計算（註冊後用戶不能自行修改）；沒有出生年月的帳戶當作未達年齡，可在「日常營運」→「用戶管理」搜尋該用戶代為補填。觀看直播不受年齡限制。設為 0 即不設年齡限制。</p>
         </div>
         <div class="admin-card" style="margin-top:12px;">
           <h3 style="font-size:14px; font-weight:bold; margin-bottom:10px;">直播限制及畫質</h3>
@@ -3465,6 +3472,13 @@
 
     async function loadAdminSupportUsersCache() {
       if (!window.db || !window.fs) return;
+      // v1.229.3：「全部用戶」表格已在即時監聽 users，直接沿用，不重複讀取
+      if (adminUsersLastSortedDocs) {
+        adminSupportUsersCache = adminUsersLastSortedDocs.map(d => ({ uid: d.id, data: d.data() }));
+        renderAdminSupportTab();
+        return;
+      }
+      if (adminTabShowing('users')) { adminSupportUsersCacheLoading = true; return; }
       adminSupportUsersCacheLoading = true;
       renderAdminSupportTab();
       try {
@@ -3584,10 +3598,11 @@
         <div class="admin-card" style="margin-bottom:16px;">
           <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">搜尋用戶</h3>
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <input type="text" placeholder="輸入帳號ID／用戶名／Email（部分符合都得）" value="${escapeHtml(adminSupportQuery)}" style="flex:1; min-width:220px; font-size:15px; padding:8px 10px; border:1px solid #DCE5F4; border-radius:6px;" oninput="adminUpdateSupportQuery(this.value)">
-            <button type="button" class="btn btn-outline" style="font-size:13px; padding:6px 14px;" onclick="window.adminRefreshSupportUsers()">重新整理資料</button>
-          </div>
-          <p style="font-size:13px; color:#999; margin-top:8px;">資料讀取於你打開／重新整理呢頁嗰一刻，現共 ${adminSupportUsersCache.length} 位用戶。</p>
+          <form style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;" onsubmit="event.preventDefault(); adminUpdateSupportQuery(document.getElementById('admin-support-q').value);">
+            <input id="admin-support-q" type="search" enterkeyhint="search" placeholder="輸入帳號 ID／用戶名／Email（部分符合即可）" value="${escapeHtml(adminSupportQuery)}" style="flex:1; min-width:220px; font-size:15px; padding:8px 10px; border:1px solid #DCE5F4; border-radius:6px;">
+            <button type="submit" class="btn btn-primary" style="font-size:14px; padding:7px 18px;">搜尋</button>
+          </form>
+          <p style="font-size:13px; color:#999; margin-top:8px;">輸入後按「搜尋」或 Enter。現共 ${adminSupportUsersCache.length} 位用戶（資料即時更新）。</p>
           ${q ? `
             <div style="margin-top:12px; max-height:260px; overflow-y:auto;">
               ${matches.length === 0 ? '<p style="color:#999; font-size:13px;">搵唔到相關用戶</p>' : matches.map(u => `
@@ -3609,11 +3624,12 @@
       renderAdminSupportTab();
     };
 
-    window.adminSelectSupportUser = function(uid) {
+    window.adminSelectSupportUser = function(uid, scroll) {
       adminSupportSelectedUid = uid;
       adminSupportPointsGrantAmount = 0;
       adminSupportStickerGrantDraft = { stickerId: (GACHA_STICKERS[0] && GACHA_STICKERS[0].id) || null, qty: 1 };
       renderAdminSupportTab();
+      if (scroll) { const p = document.getElementById('admin-tab-support'); if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     };
 
     window.adminUpdateSupportPointsAmount = function(value) {
@@ -3773,7 +3789,7 @@
       container.innerHTML = `
         <div class="admin-card" style="margin-bottom:16px;">
           <h3 style="font-size:16px; font-weight:bold; color:var(--brand-800); margin-bottom:10px;">管理員名單</h3>
-          <p style="font-size:13px; color:#888; margin-bottom:10px;"><b>超級管理員</b>見到並用得到全部分頁同設定；<b>客服／支援管理員</b>淨係見到日常客服／巡查用得著嗰幾頁（數據總覽、房間管理、疑難解答區、用戶管理、舉報處理、導師申請、用戶支援），見唔到網站設定（扭蛋機、計分規則等）同呢兩頁管治分頁。</p>
+          <p style="font-size:13px; color:#888; margin-bottom:10px;"><b>超級管理員</b>見到並用得到全部分頁同設定；<b>客服／支援管理員</b>淨係見到日常客服／巡查用得著嗰幾頁（數據總覽、用戶管理、舉報處理、導師申請、學校電郵審批、溫習室監察、疑難解答區管理），見唔到網站設定（扭蛋機、計分規則等）同呢兩頁管治分頁。</p>
           <p style="font-size:13px; color:#c17a2e; margin-bottom:14px;">⚠️ 呢個分級目前係Admin後台「入口介面」層面嘅限制（控制畫面見唔見到、撳唔撳到嗰啲分頁），唔係Firestore資料庫層面嘅硬性保障——適合互相信任嘅細團隊減少誤觸同簡化介面，唔係防惡意內部人員嘅保安牆。</p>
           <div style="overflow-x:auto;">
             <table class="admin-table">
