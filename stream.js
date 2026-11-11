@@ -27,6 +27,33 @@
   // v1.227.3：直播與視訊溫習室只可以二選一
   window.swmIsBusy = function () { return st.mode !== 'lobby'; };
   window.swmHostStreamId = function () { return st.mode === 'host' ? st.streamId : null; };
+  // v1.230.3：主播或觀眾正在參與的直播（計分用）
+  window.swmAwardStreamId = function () { return (st.mode === 'host' || st.mode === 'viewer') ? st.streamId : null; };
+  const VIEWER_CONFIRM_MS = 25 * 60 * 1000; // 每 25 分鐘問一次「仍在溫習嗎？」
+  const VIEWER_AWARD_STALE_MS = 30 * 60 * 1000; // 伺服器 30 分鐘內要有確認
+  async function askViewerConfirm() {
+    if (st.mode !== 'viewer' || st.confirmOpen) return;
+    st.confirmOpen = true;
+    const sid = st.streamId;
+    const ok = await window.appConfirm(t('stream.stillStudying', '仍在溫習嗎？按「確定」繼續計算溫習時間及分數。'));
+    st.confirmOpen = false;
+    if (!ok || st.mode !== 'viewer' || st.streamId !== sid) return;
+    try {
+      await window.callCloudFunction('confirmStreamWatching', { streamId: sid });
+      st.lastConfirm = Date.now();
+    } catch (e) { toast(errText(e), '❌'); }
+  }
+  function startViewerAward() {
+    st.lastConfirm = Date.now();
+    if (typeof window.recordStudyDayIfNeeded === 'function') window.recordStudyDayIfNeeded();
+    st.awardTimer = setInterval(() => {
+      if (st.mode !== 'viewer' || typeof window.awardStudyPoint !== 'function') return;
+      if (Date.now() - (st.lastConfirm || 0) > VIEWER_AWARD_STALE_MS) return; // 未確認：暫停計分
+      const rules = window.SCORING_RULES || {};
+      window.awardStudyPoint(typeof rules.ptsPerMinute === 'number' ? rules.ptsPerMinute : 1, 1 / 60);
+    }, 60 * 1000);
+    st.confirmTimer = setInterval(askViewerConfirm, VIEWER_CONFIRM_MS);
+  }
   function inStudyRoom() {
     return typeof window.isInStudyRoom === 'function' && window.isInStudyRoom();
   }
@@ -386,6 +413,7 @@
       });
       await room.connect(res.url, res.token);
       watchBlocked(streamId);
+      startViewerAward();
       setTimeout(() => setLoading(false), 8000);
     } catch (e) {
       toast(t('stream.joinFailed', '未能觀看直播：') + errText(e), '❌');
@@ -463,11 +491,11 @@
     document.body.classList.remove('swm-full-open');
     if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (_) {} }
     const room = st.room;
-    clearInterval(st.heartbeat); clearTimeout(st.endTimer); clearInterval(st.awardTimer);
+    clearInterval(st.heartbeat); clearTimeout(st.endTimer); clearInterval(st.awardTimer); clearInterval(st.confirmTimer);
     if (chatUnsub) { chatUnsub(); chatUnsub = null; }
     if (streamDocUnsub) { streamDocUnsub(); streamDocUnsub = null; }
     if (blockedUnsub) { blockedUnsub(); blockedUnsub = null; }
-    Object.assign(st, { mode: 'lobby', room: null, streamId: null, stream: null, heartbeat: null, endTimer: null, micOn: false, pending: [], lastMsgs: null, hiddenIds: null });
+    Object.assign(st, { mode: 'lobby', room: null, streamId: null, stream: null, heartbeat: null, endTimer: null, awardTimer: null, confirmTimer: null, confirmOpen: false, lastConfirm: 0, micOn: false, pending: [], lastMsgs: null, hiddenIds: null });
     if (room) { try { room.disconnect(); } catch (_) {} }
     if (message) toast(message, '');
     if (isTabOpen()) renderLobby();

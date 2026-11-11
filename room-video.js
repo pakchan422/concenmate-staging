@@ -2014,7 +2014,8 @@
         hoursIncrement,
         roomId: state.currentRoomId || '',
         // v1.230.0：主播直播期間計分（stream.js 設定 window.swmHostStreamId）
-        streamId: (!state.currentRoomId && typeof window.swmHostStreamId === 'function') ? (window.swmHostStreamId() || undefined) : undefined,
+        // v1.230.3：觀看直播亦計分（伺服器按比率計）
+        streamId: (!state.currentRoomId && typeof window.swmAwardStreamId === 'function') ? (window.swmAwardStreamId() || undefined) : undefined,
         isNewDay,
         todayDateStr: hoursIncrement > 0 ? getTodayDateStr() : undefined
       };
@@ -2035,6 +2036,15 @@
       try {
         await flushAwardSyncQueue(); // 先追返之前排隊緊嘅（保住次序），先寄呢次新嘅
         const res = await window.callCloudFunction('awardStudyPoints', payload);
+        // v1.230.3：分數以伺服器回覆為準（觀看直播只計一半）
+        if (res && typeof res.points === 'number' && window.currentUser) {
+          window.currentUser.points = res.points;
+          const ptsEl2 = document.getElementById('stat-points');
+          if (ptsEl2) ptsEl2.innerText = res.points;
+          const homePts2 = document.getElementById('home-stat-pts');
+          if (homePts2) homePts2.innerText = res.points;
+          if (typeof syncGachaPtsDisplay === 'function') syncGachaPtsDisplay();
+        }
         if (res && typeof res.exp === 'number' && window.currentUser) {
           window.currentUser.exp = res.exp;
           if (typeof updateLevelDisplay === 'function') updateLevelDisplay();
