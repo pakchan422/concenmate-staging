@@ -1093,6 +1093,7 @@
         // 貼紙資料（相片）依家先攞齊，如果用家揀咗貼紙做水獺頭像，要
         // 喺呢度補叫多一次先會顯示到啱嘅相（登入嗰陣呢份資料仲未到）
         if (typeof updateOtterDisplay === 'function') updateOtterDisplay();
+        if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard(); // v1.230.6：補回圖鑑完成度
         // 如果管理員岩岩好打開緊「扭蛋機獎品」呢個分頁、又仲未開始編輯
         // （adminGachaDraft 仲係 null，即係岩岩好卡喺「載入中...」嗰個畫面），
         // 而家攞到資料喇，即刻幫佢用返最新（剛儲存低嗰份）資料重新 render 一次，
