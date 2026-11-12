@@ -1,0 +1,3850 @@
+// ConcenMate · room-video.js
+// ------------------------------------------------------------
+// Phase 5（程式碼結構化）第三步：呢個檔案原本係 index.html 入面一個
+// 普通（非 module）嘅 <script>…</script> 區塊，而家搬咗出嚟做獨立檔
+// 案，用 <script src="room-video.js"> 載入。同 app-features.js 一
+// 樣，呢個唔係 ES module，同其他普通 <script> 區塊共用全域 scope，
+// 搬檔案純粹係物理位置搬走，執行時機同全域可見度完全冇變。
+//
+// 內容包括：視訊溫習室核心——WebRTC 視像／鏡頭／咪高風控制、房間心
+// 跳／在線狀態偵測、背景白噪音、全螢幕視像格局、舉報功能、房主轉
+// 移／踢人。
+//
+// 載入次序好緊要：呢個檔案要留喺 index.html 原本嘅位置（app-core.js
+// 之後、下一個 <script> 區塊之前），因為前後都有其他區塊會直接用到
+// 呢度定義嘅函式／變數（例如 ROOM_CAPACITY）。
+
+    let state = {
+      isCameraOn: false,
+      mediaStream: null,
+      countdownTimer: null,
+      roomTotalSeconds: 0, // 呢次入房到而家嘅「總溫習時間」（順時計），閒置暫停計分期間唔會累積
+      renderFrameId: null,
+      currentRoomId: null,
+      currentRoomCapacity: 4, // 現時所在房間嘅人數上限（2 或 4，見 window.ROOM_CAPACITY_OPTIONS）；未入房或者離房之後預設返 4，等視訊格顯示邏輯有個安全嘅預設值可以跟
+      // 呢間房係咪有設密碼鎖（true/false）——真正密碼值而家已經唔再存喺前端
+      // 攞得到嘅地方（見 rooms/{roomId}/private/secret 同 firestore.rules），
+      // 呢度淨係記低「有冇」，畀房內🔒「查看密碼」掣決定顯唔顯示；撳掣嗰刻
+      // 先會即時呼叫 getRoomPassword 呢個 Cloud Function 攞返真正嘅密碼。
+      currentRoomHasPassword: false,
+      isHost: false,
+      isMicOn: false,
+      cameraToggleInProgress: false,
+      connectingTo: new Set(), // 正在進行緊 offer 流程嘅 peer UIDs，防止同時發多條 offer
+      lastProcessedOfferTs: {},
+      lastProcessedAnswerTs: {},
+      peerConnections: {},
+      peerNames: {}, // { uid: name } 記住每位遠端用家個名，畀連線斷咗要自動重連嗰陣用（createOfferTo 要有個名先叫得到用戶）
+      peerReconnectTimers: {}, // { uid: timeoutId } 連線變 disconnected 之後嘅寬限計時器，睇下會唔會自己好返
+      signalingUnsubscribe: null,
+      candidatesUnsubscribe: null,
+      pendingCandidates: {}, // { uid: [candidateInit, ...] } 尚未能加入的 ICE candidate 佇列
+      participantsUnsubscribe: null,
+      roomDocUnsubscribe: null,
+      reactionsUnsubscribe: null,
+      slotAssignments: {}, // { uid: 2|3|4 } 遠端用家目前佔用的視窗格 (格1固定留給自己)
+      creatingRoom: false, // 防止「立即建立並廣播」撳得太快／撳多次，開出多過一間房間
+      currentRoomHostUid: null, // 現時房間嘅房主 uid，方便隨時知道要喺邊一格顯示「👑 房主」牌
+      heartbeatTimer: null, // 房間心跳計時器（見 startRoomHeartbeat），畀大廳嘅幽靈房自動清理機制用
+      presenceCheckTimer: null, // 定時彈窗確認「仲喺度嗎？」嘅計時器
+      presenceTimeoutTimer: null, // 彈窗後 2 分鐘未確認就暫停計分嘅計時器
+      presenceConfirmed: true, // 呢一輪確認彈窗，用家係咪已經撳咗確認
+      awardingPaused: false, // 被判定為閒置期間，暫停 PTS/EXP 獎勵（防止掛機刷分）
+      micOpenTimer: null, // 開咪 3 分鐘上限嘅計時器，時間一到自動關咪 + 進入冷卻
+      micOpenUiTimer: null, // 開咪期間每秒刷新按鈕文字（顯示仲剩幾耐先到 3 分鐘上限）用嘅 interval
+      micOpenUntil: null, // 呢次開咪會喺幾時（ms 時間戳）撞到 3 分鐘上限，畀 UI 計倒數用
+      micUsedSeconds: 0, // 由上一次冷卻完結到而家，已經累積開咗幾多秒咪——手動關咪／再開咪唔會令佢歸零，先真正做到「連續 3 分鐘上限」
+      micSegmentStart: null, // 而家呢一段「開緊咪」係幾時開始嘅時間戳，用嚟喺手動關咪嗰刻計返呢段用咗幾多秒加落 micUsedSeconds
+      micCooldownTimer: null, // 冷卻 5 分鐘完結嘅計時器，完咗先解鎖返咪掣
+      micCooldownUiTimer: null, // 冷卻期間每秒刷新按鈕文字（顯示倒數）用嘅 interval
+      micCooldownUntil: null, // 冷卻結束嘅時間戳（ms），畀 UI 計倒數用
+      micIdleResetTimer: null, // 學生主動關咪、未撞到 3 分鐘上限之情況下，背後計緊嘅「閒置 5 分鐘就回復返成套 3 分鐘預算」計時器
+      knownParticipantUids: new Set(), // 目前已知喺房入面嘅人（唔包括自己），用嚟同下一次快照比較邊個係「新加入」
+      isFirstParticipantsSnapshot: true, // 岩啱入房嗰個最初快照唔算「新加入」（本身已經喺度嘅人），淨係之後先出現先算
+      wakeLockObj: null // Screen Wake Lock API 拎返嚟嘅 lock 物件，喺房入面攞住佢就可以擋住手機自動熄屏／鎖屏（見 requestRoomWakeLock/releaseRoomWakeLock）
+    };
+
+    // 計分規則（每分鐘PTS、確認仍在學習嘅獎勵PTS）——Admin後台「計分
+    // 規則」分頁可以改（admin_config/scoringRules 文件），呢度嘅數值
+    // 淨係起步時嘅預設值／Firestore 讀唔到嗰陣嘅後備值，真正生效嘅
+    // 數值由 loadScoringRulesFromFirestore()（admin-panel.js）讀到之
+    // 後會覆蓋呢個物件。⚠️ Cloud Function（functions/index.js 嘅
+    // awardStudyPoints）嗰邊都係讀返同一份 admin_config/scoringRules
+    // 文件做伺服器端驗證，兩邊一定要跟同一個設定嚟源，唔係管理員改
+    // 咗呢度顯示嘅分數，但伺服器因為白名單對唔上而拒絕寫入。
+    window.SCORING_RULES = { ptsPerMinute: 1, presenceCheckBonus: 2 };
+
+    // 房間設定（人數上限選項開關、預計溫習時間選項）——Admin後台「房間
+    // 設定」分頁可以改（admin_config/roomSettings 文件），呢度嘅數值
+    // 淨係起步時嘅預設值／Firestore 讀唔到嗰陣嘅後備值，真正生效嘅
+    // 數值由 loadRoomSettingsFromFirestore()（admin-panel.js）讀到之
+    // 後會覆蓋呢個物件，再由 window.renderRoomCreateOptions() 將「建立
+    // 溫習房」表格入面兩個下拉選單重畫一次。
+    // ⚠️ 人數上限淨係可以喺 2 人房／4 人房呢兩個選項度開關同揀預設值
+    // ——唔可以自訂其他數字，因為視訊格位版面（見下面 ROOM_CAPACITY_OPTIONS
+    // 註解、resetVideoSlots）寫死咗淨係支援 2x2 四格呢個排法，加其他
+    // 人數會令版面錯亂，所以呢度特登唔開放俾管理員自訂任意數字。
+    window.ROOM_SETTINGS = {
+      capacity2Enabled: true,
+      capacity4Enabled: true,
+      defaultCapacity: 4,
+      durationOptions: [15, 30, 40, 45, 60],
+      defaultDuration: 30
+    };
+
+    // 將「建立溫習房」表格入面「人數上限」／「預計溫習時間」兩個下拉
+    // 選單，跟返 window.ROOM_SETTINGS 最新數值重畫一次。每次打開
+    // modal-create-room 都會叫一次（見 app-features.js 嘅 openModal），
+    // Firestore 設定一讀到都會即時叫一次（見 admin-panel.js 嘅
+    // loadRoomSettingsFromFirestore），所以唔使擔心開 modal 嗰陣用緊
+    // 舊設定。
+    function renderRoomCreateOptions() {
+      const settings = window.ROOM_SETTINGS || {};
+      const lang = (typeof window.getAppLanguage === 'function') ? window.getAppLanguage() : 'zh-Hant';
+
+      const capacitySelectEl = document.getElementById('modal-room-capacity');
+      if (capacitySelectEl) {
+        const capacityChoices = [];
+        if (settings.capacity2Enabled !== false) capacityChoices.push(2);
+        if (settings.capacity4Enabled !== false) capacityChoices.push(4);
+        // 保險：萬一管理員兩個選項都關埋（手民之誤），依然要畀返最少
+        // 一個選項畀用戶揀，唔可以整到個下拉選單變空白
+        if (capacityChoices.length === 0) capacityChoices.push(4);
+        const defaultCapacity = capacityChoices.includes(settings.defaultCapacity) ? settings.defaultCapacity : capacityChoices[capacityChoices.length - 1];
+        capacitySelectEl.innerHTML = capacityChoices.map(n => {
+          const label = (lang === 'en') ? `${n}-person room` : `${n} 人房`;
+          return `<option value="${n}"${n === defaultCapacity ? ' selected' : ''}>${label}</option>`;
+        }).join('');
+      }
+
+      const durationSelectEl = document.getElementById('modal-room-duration');
+      if (durationSelectEl) {
+        let durationChoices = Array.isArray(settings.durationOptions) ? settings.durationOptions.filter(n => Number.isFinite(n) && n > 0) : [];
+        if (durationChoices.length === 0) durationChoices = [15, 30, 40, 45, 60];
+        const defaultDuration = durationChoices.includes(settings.defaultDuration) ? settings.defaultDuration : durationChoices[0];
+        durationSelectEl.innerHTML = durationChoices.map(n => {
+          const label = (lang === 'en') ? `${n} min` : `${n} 分鐘`;
+          return `<option value="${n}"${n === defaultDuration ? ' selected' : ''}>${label}</option>`;
+        }).join('');
+      }
+    }
+    window.renderRoomCreateOptions = renderRoomCreateOptions;
+
+    // 以下幾個防掛機參數（開咪時限、冷卻、閒置重設、確認間隔、確認回應
+    // 時限）而家可以喺 Admin後台「防掛機參數」分頁調整（見下面
+    // window.applyAntiIdleRules／admin_config/antiIdleRules），所以改成
+    // let 而唔係 const——Firestore 設定一讀到就會覆蓋返呢幾個變數嘅數
+    // 值。呢度嘅數值淨係起步時嘅預設值／Firestore 讀唔到嗰陣嘅後備值。
+    // ⚠️ 同「房間設定」一樣純粹前端生效，冇牽涉 Cloud Function：呢幾個
+    // 機制淨係負責前端「暫停計分」（state.awardingPaused），伺服器端
+    // awardStudyPoints 淨係驗證每次送嚟嘅分數數值啱唔啱（見計分規則），
+    // 唔理會送分嘅頻密程度，所以改呢幾個參數唔影響伺服器驗證邏輯。
+    let MIC_OPEN_LIMIT_SECONDS = 3 * 60; // 每次開咪最多連續 3 分鐘，避免學生掛住傾偈唔記得溫習
+    let MIC_COOLDOWN_SECONDS = 5 * 60; // 開咪上限一到，要等 5 分鐘冷卻先可以再開
+    let MIC_IDLE_RESET_SECONDS = 5 * 60; // 學生未撞到 3 分鐘上限、主動關咪之後，如果連續 5 分鐘都冇再開咪，就當佢已經完全休息返，回復返成套 3 分鐘預算（唔使一定撞晒 3 分鐘先可以歸零）
+
+    const ROOM_CAPACITY = 4; // 舊有嘅全域預設人數上限——而家改為「每間房自己揀 2 人房或
+    // 4 人房」（見建立房間彈窗嘅 #modal-room-capacity），呢個常數淨係用嚟做冇 capacity
+    // 欄位嘅舊房間（呢個功能推出之前建立）嘅後備預設值，唔再係全部房間共用嘅單一上限。
+    const ROOM_CAPACITY_OPTIONS = [2, 4]; // 建立房間嗰陣可以揀嘅人數上限選項
+    // 房間文件讀出嚟嘅 capacity 欄位一定要係 2 或 4 先當有效（防止舊資料
+    // 或者被人手改壞嘅資料令後面嘅版面／格仔分配邏輯出錯），唔啱就當
+    // 冇揀過，跌返去 ROOM_CAPACITY（4）呢個保守預設值。
+    function resolveRoomCapacity(roomData) {
+      const cap = roomData && roomData.capacity;
+      return ROOM_CAPACITY_OPTIONS.includes(cap) ? cap : ROOM_CAPACITY;
+    }
+    window.resolveRoomCapacity = resolveRoomCapacity;
+
+    // ------------------------------------------------------------
+    // Screen Wake Lock：喺視訊溫習室入面攞住個 wake lock，擋住手機／
+    // 電腦因為一段時間冇動作而自動熄屏（部分手機大約 10 分鐘就會熄
+    // 屏），熄咗屏計時器同視訊都會停咗。並非所有瀏覽器都支援（iOS 要
+    // 16.4+ 嘅 Safari），唔支援就靜靜哋跳過，唔會影響其他功能。
+    //
+    // 有兩個限制要留意：
+    // 1. 呢個 API 淨係擋到「因為冇動作而自動熄屏」，用戶自己撳掣熄屏
+    //    （或者揭蓋、鎖機掣）依然會即刻熄，呢個係瀏覽器故意設計，冇
+    //    辦法繞過。
+    // 2. 個分頁一旦被瀏覽器判斷做「唔喺前景」（例如切去第啲 App、
+    //    lock 咗畫面），瀏覽器會自動釋放個 lock；返嚟前景嗰陣要重新
+    //    攞過（見底下 visibilitychange 監聽），純粹畫面熄咗嘅一刻計時
+    //    器會短暫停頓，返到前景又會即刻補返。
+    async function requestRoomWakeLock() {
+      if (!('wakeLock' in navigator)) return; // 瀏覽器唔支援，直接跳過
+      try {
+        if (state.wakeLockObj) return; // 已經攞緊，唔使再攞
+        state.wakeLockObj = await navigator.wakeLock.request('screen');
+        state.wakeLockObj.addEventListener('release', () => {
+          state.wakeLockObj = null;
+        });
+      } catch (e) {
+        // 好多情況都會失敗（例如個分頁而家唔喺前景），唔算嚴重錯誤，
+        // 淨係 log 低就算，唔阻礙用戶用返視訊房其他功能
+        console.warn('未能取得 Wake Lock（畫面可能會自動熄屏）:', e);
+      }
+    }
+
+    function releaseRoomWakeLock() {
+      if (state.wakeLockObj) {
+        state.wakeLockObj.release().catch(() => {});
+        state.wakeLockObj = null;
+      }
+    }
+
+    // 分頁由背景返去前景，如果自己仲喺房入面，就補返個 wake lock
+    // （瀏覽器喺分頁去咗背景嗰陣已經自動釋放咗）
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && state.currentRoomId) {
+          requestRoomWakeLock();
+        }
+      });
+    }
+    window.ROOM_CAPACITY = ROOM_CAPACITY; // 開放俾其他 <script> 區塊（例如大廳房間卡片）讀取，做冇 capacity 欄位嘅舊房間後備預設值
+    window.ROOM_CAPACITY_OPTIONS = ROOM_CAPACITY_OPTIONS;
+
+    // 版面恆常都用 2 欄嘅格仔（見 CSS，唔理螢幕幾闊都唔會變 3 欄、4
+    // 欄）：4 人房會用晒 2x2 四格；2 人房淨係顯示格 1／格 2（見
+    // resetVideoSlots／getOrCreateRemoteSlot 點樣跟 state.currentRoomCapacity
+    // 決定顯唔顯示格 3／格 4），格仔一致大細。想再放到最大、睇得
+    // 更清楚，可以撳「⛶ 全螢幕」——特登連同 room-bar（開鏡頭／咪嘅
+    // 按鈕、退出房間等）一齊放大蓋晒成個畫面，唔係淨係得個視訊格，
+    // 唔係嘅話全螢幕嗰陣會撳唔到呢啲按鈕（見下面 toggleVideoFullscreenMode）。
+    // 按實際可用空間，計一個保持 4:3（跟返 getUserMedia 理想解像度
+    // 640x480 嘅比例）嘅 2x2 格仔大細，等全螢幕嗰陣唔理個螢幕幾闊幾
+    // 扁，四格都唔會被谷到變形，又盡量攞盡剩低嘅空間。淨係喺仲係全
+    // 螢幕狀態先計，唔係就乜都唔做（例如 resize 事件喺退出咗全螢幕
+    // 之後先觸發嗰種情況）。
+    function updateFullscreenGridSize() {
+      const roomActive = document.getElementById('room-active');
+      const grid = document.getElementById('video-grid-container');
+      if (!roomActive || !grid || !roomActive.classList.contains('video-fullscreen-mode')) return;
+
+      const rect = grid.getBoundingClientRect();
+      const availW = rect.width;
+      const availH = rect.height;
+      if (availW <= 0 || availH <= 0) return;
+
+      const GAP = 12; // 要同 .video-grid-container 嘅 CSS gap 一致
+      const CELL_RATIO = 4 / 3;
+
+      // 呢個格仔版面之前一律當 4 人房計（固定 2x2），2 人房嗰陣就算淨係
+      // 得返兩個鏡頭畫面，都仲係跟住「2 行」嚟計格仔高度，變相谷細咗一
+      // 半、成個畫面上下留返一大嚿冇用嘅黑位（見用家反映「二人房間時
+      // 視訊畫面應該盡量放大及置中」）。而家改跟返呢間房實際嘅人數
+      // 上限：2 人房用 1 行 2 欄（兩格並排，各自可以攞盡成個高度），
+      // 4 人房先維持原本嘅 2x2。
+      const cap = state.currentRoomCapacity || ROOM_CAPACITY;
+      const cols = cap <= 2 ? Math.max(1, cap) : 2;
+      const rows = Math.max(1, Math.ceil(cap / cols));
+
+      let cellW = (availW - GAP * (cols - 1)) / cols;
+      let cellH = cellW / CELL_RATIO;
+      if (cellH * rows + GAP * (rows - 1) > availH) {
+        cellH = (availH - GAP * (rows - 1)) / rows;
+        cellW = cellH * CELL_RATIO;
+      }
+      cellW = Math.max(40, Math.floor(cellW));
+      cellH = Math.max(30, Math.floor(cellH));
+
+      grid.style.gridTemplateColumns = `repeat(${cols}, ${cellW}px)`;
+      grid.style.gridTemplateRows = `repeat(${rows}, ${cellH}px)`;
+    }
+    // 視窗大細改變（例如手機轉方向、電腦拉闊縮窄視窗）都要重新計過
+    window.addEventListener('resize', updateFullscreenGridSize);
+    window.addEventListener('orientationchange', () => {
+      // 手機轉向嗰刻讀到嘅 viewport 尺寸有時未即刻更新，等多一個 tick
+      setTimeout(() => {
+        updateFullscreenGridSize();
+        broadcastMyCameraRotation();
+      }, 100);
+    });
+
+    window.toggleVideoFullscreenMode = function() {
+      const roomActive = document.getElementById('room-active');
+      const fsBtn = document.getElementById('video-fullscreen-btn');
+      if (!roomActive) return;
+      const willBeFullscreen = !roomActive.classList.contains('video-fullscreen-mode');
+      roomActive.classList.toggle('video-fullscreen-mode', willBeFullscreen);
+      if (fsBtn) fsBtn.innerHTML = willBeFullscreen ? window.t('room.exitFullscreen', '退出全螢幕') : window.t('room.fullscreen', '全螢幕');
+      // 全螢幕嗰陣鎖住背景頁面唔畀捲動，唔係嘅話手指喺黑色空隙度拖到
+      // 都會意外拉動咗底下嗰版，畀人覺得畫面甩晒版
+      document.body.style.overflow = willBeFullscreen ? 'hidden' : '';
+      document.body.classList.toggle('room-fullscreen-active', willBeFullscreen);
+      if (willBeFullscreen) {
+        // 等 class 切換完、CSS 已經套用、room-bar 都已經收埋咗多餘
+        // 按鈕之後，先量度可用空間嚟計格仔大細，唔係就會量到轉換前
+        // 嘅舊尺寸
+        requestAnimationFrame(() => requestAnimationFrame(updateFullscreenGridSize));
+      } else {
+        const grid = document.getElementById('video-grid-container');
+        if (grid) { grid.style.gridTemplateColumns = ''; grid.style.gridTemplateRows = ''; }
+        // 退返出全螢幕：全螢幕專用嘅背景音細面板收返埋，控制列都還原
+        // 返做「顯示緊」狀態，等下次再入全螢幕都係由呢個乾淨狀態開始
+        const fsBgNoisePanel = document.getElementById('fs-bg-noise-panel');
+        if (fsBgNoisePanel) fsBgNoisePanel.style.display = 'none';
+        resetFsRoomBarCollapse();
+      }
+    };
+    // 退房、或者第二個 <script> 區塊（doLeaveRoom）要喺唔知而家係咪
+    // 全螢幕狀態嘅情況下都安全咁強制退返出嚟，所以獨立開一個「淨係
+    // 退出」嘅版本，而唔淨係得返一個「切換」掣
+    window.exitVideoFullscreenMode = function() {
+      const roomActive = document.getElementById('room-active');
+      const fsBtn = document.getElementById('video-fullscreen-btn');
+      if (roomActive) roomActive.classList.remove('video-fullscreen-mode');
+      if (fsBtn) fsBtn.innerHTML = window.t('room.fullscreen', '全螢幕');
+      document.body.style.overflow = '';
+      document.body.classList.remove('room-fullscreen-active');
+      // 清返 inline style，唔係就會用返呢啲 px 數值蓋晒返正常（非全
+      // 螢幕）嗰個 CSS 版面規則
+      const grid = document.getElementById('video-grid-container');
+      if (grid) { grid.style.gridTemplateColumns = ''; grid.style.gridTemplateRows = ''; }
+      const fsBgNoisePanel = document.getElementById('fs-bg-noise-panel');
+      if (fsBgNoisePanel) fsBgNoisePanel.style.display = 'none';
+      resetFsRoomBarCollapse();
+    };
+
+    // 全螢幕控制列收埋／顯示：撳一下就將 room-bar 收埋到淨返呢粒掣咁大
+    // （靠 CSS .controls-collapsed 隱藏晒其他嘢、橫向嗰陣仲會將條窄
+    // 控制條由 148px 縮到 44px，畀返空間鏡頭畫面），再撳一下就還原。
+    window.toggleFsRoomBarCollapse = function() {
+      const roomActive = document.getElementById('room-active');
+      const btn = document.getElementById('fs-room-bar-collapse-btn');
+      if (!roomActive) return;
+      const collapsed = roomActive.classList.toggle('controls-collapsed');
+      if (btn) {
+        btn.innerHTML = window.cmIcon ? window.cmIcon(collapsed ? 'menu' : 'minus', 16) : (collapsed ? '≡' : '−');
+        btn.title = collapsed ? '顯示控制列' : '收起控制列';
+      }
+      // 收埋緊控制列嗰陣，背景音細面板（如果啱啱開緊）都會跟住俾隱藏
+      // 咗嘅祖先元素蓋埋見唔到，順便都將個 display 狀態校正返做「關閉」，
+      // 唔係遲啲重新顯示控制列會無啦啦見到個面板彈返出嚟
+      if (collapsed) {
+        const panel = document.getElementById('fs-bg-noise-panel');
+        if (panel) panel.style.display = 'none';
+      }
+    };
+    // 退出全螢幕／退房嗰陣還原返做「顯示緊」，唔好帶住「已收埋」嘅
+    // 狀態去下一次入返全螢幕
+    function resetFsRoomBarCollapse() {
+      const roomActive = document.getElementById('room-active');
+      const btn = document.getElementById('fs-room-bar-collapse-btn');
+      if (roomActive) roomActive.classList.remove('controls-collapsed');
+      if (btn) { btn.innerHTML = window.cmIcon ? window.cmIcon('minus', 16) : '−'; btn.title = '收起控制列'; }
+    }
+
+    // 表情反應平時收埋，撳個細圓掣先彈出嚟揀（唔係成日用，冇必要成
+    // 日霸住畫面），揀完／再撳一次掣就會自動收返
+    window.toggleEmojiReactionPanel = function() {
+      const pop = document.getElementById('emoji-reaction-popover');
+      if (!pop) return;
+      pop.style.display = (pop.style.display === 'none' || !pop.style.display) ? 'flex' : 'none';
+    };
+    window.closeEmojiReactionPanel = function() {
+      const pop = document.getElementById('emoji-reaction-popover');
+      if (pop) pop.style.display = 'none';
+    };
+
+    // 之前一直用純 STUN，喺部分網路環境（例如其中一方喺較嚴格嘅 NAT／防火牆後面）
+    // 好可能完全連唔通——訊號（Offer/Answer）交換得晒，但實際媒體流永遠過唔到，
+    // 症狀就係一直卡喺「連線中」。而家加返一個公開嘅測試用 TURN 伺服器
+    // （Metered Open Relay Project，官方公開提供嘅測試帳號，唔使自己註冊）。
+    // 除錯用：同時寫入瀏覽器 Console 同埋畫面上嘅記錄面板，
+    // 咁樣手機用戶（冇方便嘅開發者工具）都可以睇到同複製呢啲記錄
+    function wrtcLog(msg) {
+      console.log('[WebRTC] ' + msg);
+      const panel = document.getElementById('webrtc-debug-log');
+      if (!panel) return;
+      const line = document.createElement('div');
+      const time = new Date().toLocaleTimeString('zh-HK', { hour12: false });
+      line.textContent = `${time}  ${msg}`;
+      panel.appendChild(line);
+      panel.scrollTop = panel.scrollHeight;
+      while (panel.children.length > 80) panel.removeChild(panel.firstChild);
+    }
+
+    window.copyWebrtcLog = function() {
+      const panel = document.getElementById('webrtc-debug-log');
+      const text = panel ? Array.from(panel.children).map(el => el.textContent).join('\n') : '';
+      navigator.clipboard.writeText(text || '（暫時未有記錄）').then(() => {
+        window.showToast(window.t('room.debugLogCopied', '已複製除錯記錄'), '📋');
+      }).catch(() => {
+        window.showToast(window.t('room.debugLogCopyFailed', '複製失敗，請長按選取文字手動複製'), '⚠️');
+      });
+    };
+
+    // v1.209.0：中轉伺服器（TURN）改用 Cloudflare。入房前由 Cloud Function
+    // getTurnCredentials 攞一組有時限嘅臨時密碼；攞唔到（例如管理員關咗、
+    // 本月用量到咗上限、網絡問題）就沿用下面嘅後備設定。
+    let turnFetchedAt = 0;
+    // v1.211.0：俾「有新版本」提示判斷學生係咪溫習緊（溫習緊就唔好彈出打擾）
+    window.isInStudyRoom = function () { return !!state.currentRoomId; };
+    async function ensureTurnServers() {
+      if (Date.now() - turnFetchedAt < 5 * 60 * 60 * 1000 && rtcConfig._usingCloudflare) return;
+      if (typeof window.callCloudFunction !== 'function') return;
+      try {
+        const res = await Promise.race([
+          window.callCloudFunction('getTurnCredentials', {}),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
+        ]);
+        if (res && Array.isArray(res.iceServers) && res.iceServers.length) {
+          rtcConfig.iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            ...res.iceServers
+          ];
+          rtcConfig._usingCloudflare = true;
+          turnFetchedAt = Date.now();
+          wrtcLog('已取得 Cloudflare 中轉伺服器設定');
+        } else {
+          wrtcLog(`未有使用 Cloudflare 中轉伺服器（${(res && res.disabled) || '冇資料'}），沿用後備設定`);
+        }
+      } catch (e) {
+        wrtcLog(`攞中轉伺服器設定失敗（${e.message || e}），沿用後備設定`);
+      }
+    }
+
+    // v1.209.0：限制每條畫面嘅傳送速度（解像度維持 640×480），
+    // 慳學生流量，亦減低中轉伺服器用量。網絡唔好時優先保持解像度
+    // （寧願每秒少幾格），令畫面唔會變朦。
+    const VIDEO_MAX_BITRATE = 500000; // 500 kbps
+    const VIDEO_MAX_FRAMERATE = 15;
+    async function applySendLimits(pc) {
+      for (const sender of pc.getSenders()) {
+        if (!sender.track || sender.track.kind !== 'video') continue;
+        try {
+          const params = sender.getParameters();
+          if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+          const enc = params.encodings[0];
+          if (enc.maxBitrate === VIDEO_MAX_BITRATE && enc.maxFramerate === VIDEO_MAX_FRAMERATE && params.degradationPreference === 'maintain-resolution') continue;
+          enc.maxBitrate = VIDEO_MAX_BITRATE;
+          enc.maxFramerate = VIDEO_MAX_FRAMERATE;
+          params.degradationPreference = 'maintain-resolution';
+          await sender.setParameters(params);
+        } catch (e) { /* 部分瀏覽器未協商完唔俾設定，下次再試 */ }
+      }
+    }
+
+    // v1.209.0：回報連線結果（直接連線／經中轉／失敗），後台用嚟顯示比例同估算中轉用量。
+    // 淨係由 UID 較細嗰邊回報，避免同一條連線報兩次。
+    function reportRtc(payload) {
+      if (typeof window.callCloudFunction !== 'function') return;
+      window.callCloudFunction('reportRtcResult', payload).catch(() => {});
+    }
+    async function reportConnectionType(remoteUid, pc) {
+      if (pc._rtcReported || !window.currentUser || window.currentUser.uid > remoteUid) return;
+      pc._rtcReported = true;
+      try {
+        const stats = await pc.getStats();
+        let pair = null;
+        stats.forEach((r) => {
+          if (r.type === 'transport' && r.selectedCandidatePairId) pair = stats.get(r.selectedCandidatePairId);
+        });
+        if (!pair) stats.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r; });
+        const local = pair && stats.get(pair.localCandidateId);
+        const remote = pair && stats.get(pair.remoteCandidateId);
+        const relay = !!((local && local.candidateType === 'relay') || (remote && remote.candidateType === 'relay'));
+        wrtcLog(`與 ${remoteUid} 的連線方式：${relay ? '經中轉伺服器' : '直接連線'}`);
+        reportRtc({ result: relay ? 'relay' : 'direct' });
+        if (relay) {
+          pc._relayTimer = setInterval(() => {
+            if (pc.connectionState === 'connected') reportRtc({ type: 'relayTick' });
+            else if (pc.connectionState === 'closed' || pc.connectionState === 'failed') clearInterval(pc._relayTimer);
+          }, 5 * 60 * 1000);
+        }
+      } catch (e) { /* 統計唔到唔緊要 */ }
+    }
+
+    const rtcConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        {
+          urls: 'turn:openrelay.metered.ca:80',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        }
+      ]
+    };
+
+    // ===================== 四格視窗 & 房間人數上限 =====================
+
+    function getSlotElement(slotNum) {
+      return document.getElementById('video-slot-' + slotNum);
+    }
+
+    // 將格 2/3/4 還原成「等待用家加入」的黑色佔位卡片
+    function setSlotPlaceholder(slotNum) {
+      const el = getSlotElement(slotNum);
+      if (!el) return;
+      el.className = 'video-card-single video-slot-placeholder';
+      el.innerHTML = `
+        <div class="slot-empty-inner">
+          <div class="slot-empty-icon">${window.cmIcon ? window.cmIcon('plus', 28) : '+'}</div>
+          <p>${window.t('room.waitingUser', '等待用家加入...')}</p>
+          <button class="btn btn-outline" type="button" style="margin-top:8px; font-size:13px; padding:5px 10px;" onclick="openInviteFriendModal()">${window.t('room.inviteFriend', '邀請朋友')}</button>
+        </div>
+      `;
+    }
+
+    // 依家間房嘅人數上限（state.currentRoomCapacity），計返格 2/3/4
+    // 入面邊幾格應該存在——2 人房淨係格 2，4 人房就格 2/3/4 都要。
+    function getExtraSlotNums() {
+      const cap = state.currentRoomCapacity || ROOM_CAPACITY;
+      const nums = [];
+      for (let n = 2; n <= cap; n++) nums.push(n);
+      return nums;
+    }
+
+    // 重置所有格子（返回大廳 / 離開房間時使用）：跟返現時房間嘅人數
+    // 上限，超出上限嘅格（例如 2 人房嘅格 3／格 4）直接隱藏埋，唔淨係
+    // 顯示「等待用家加入」——2 人房應該淨係見到兩個視訊畫面。
+    function resetVideoSlots() {
+      const activeExtraSlots = getExtraSlotNums();
+      [2, 3, 4].forEach((n) => {
+        const el = getSlotElement(n);
+        if (activeExtraSlots.includes(n)) {
+          if (el) el.style.display = '';
+          setSlotPlaceholder(n);
+        } else if (el) {
+          el.style.display = 'none';
+        }
+      });
+      state.slotAssignments = {};
+      // 「邊個新加入咗」嘅追蹤都要一齊重置，唔係就上一次入嗰間房仲留低嘅
+      // 名單會累到落呢一次房，令啱啱入房嗰刻就即刻彈晒堆「XXX 進來了」
+      state.knownParticipantUids = new Set();
+      state.isFirstParticipantsSnapshot = true;
+    }
+
+    // 把某位遠端用家安排到一個空格，並回傳該格內的 <video> 元素供 WebRTC 串流使用
+    function getOrCreateRemoteSlot(uid, name) {
+      // 記住呢位遠端用家個名，畀之後連線斷咗要自動重連（createOfferTo 需要
+      // 一個名嚟顯示）嗰陣用，唔使當時先至去問
+      if (name) state.peerNames[uid] = name;
+      let slotNum = state.slotAssignments[uid];
+
+      if (!slotNum) {
+        const taken = Object.values(state.slotAssignments);
+        slotNum = getExtraSlotNums().find(n => !taken.includes(n));
+        if (!slotNum) return null; // 理論上不會發生，因為加入房間時已檢查人數上限
+        state.slotAssignments[uid] = slotNum;
+      }
+
+      const el = getSlotElement(slotNum);
+      if (!el) return null;
+
+      if (!el.querySelector('video')) {
+        el.className = 'video-card-single remote-video-card';
+        el.innerHTML = `
+          <video class="remote-video-element" autoplay playsinline muted></video>
+          <div class="video-overlay" style="display:none;">
+            <div class="avatar-circle" style="opacity:.6;"></div>
+            <p style="font-size:13px; color:#ccc; margin-top:6px;">${window.t('room.remoteCameraOff', '對方鏡頭已關閉')}</p>
+          </div>
+          <div class="video-header">
+            <span class="video-tag" style="cursor:pointer;" onclick="viewUserProfile('${uid}')" title="${window.t('room.viewProfile', '點擊查看資料／加好友')}">${window.escapeHtml(name || window.t('room.otherUser', '其他用家'))}<span class="video-rank" id="remote-rank-${uid}"></span><span class="video-stones" id="remote-stone-${uid}" data-n="0" data-src="assets/images/stone-1.png" data-exp="0" onclick="event.stopPropagation(); window.openStoneInfo && window.openStoneInfo({ mode: 'room', name: ${window.jsArg(name || window.t('room.otherUser', '其他用家'))}, exp: parseInt(this.dataset.exp || '0'), count: parseInt(this.dataset.n || '0') })"></span></span>
+            <span class="video-tag" id="remote-host-badge-${slotNum}" style="background:#E9EDF5; color:#29395C; display:none;">${window.t('room.hostBadge', '房主')}</span>
+            <span class="video-tag" id="stream-status-${uid}" data-conn="connecting" style="background:#3F588F; color:#fff;">${window.t('room.remoteWaitStream', '連線中...')}</span>
+            <div class="video-more-menu-wrap">
+              <span class="video-tag video-more-menu-toggle" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}')" title="${window.t('room.moreOptions', '更多選項')}">⋮</span>
+              <div class="video-more-menu-dropdown" id="video-more-menu-${uid}" style="display:none;">
+                <button type="button" class="video-more-menu-item" id="transfer-host-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.transferHostTo('${uid}', ${window.jsArg(name||'這位同學')})">${window.t('room.transferHost', '轉移房主給他')}</button>
+                <button type="button" class="video-more-menu-item danger" id="kick-btn-${uid}" style="display:none;" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.kickParticipant('${uid}', ${window.jsArg(name||'這位同學')})">${window.t('room.kickUser', '將這位同學移出房間')}</button>
+                <button type="button" class="video-more-menu-item danger" onclick="event.stopPropagation(); window.toggleVideoMoreMenu('${uid}'); window.openReportModal('${uid}', ${window.jsArg(name||'這位同學')})">${window.t('room.reportUser', '舉報這位同學')}</button>
+              </div>
+            </div>
+          </div>
+          <div class="sticker-container-box"></div>
+        `;
+        // 呢個格岩岩先建立，如果佔用呢格嘅正正就係目前嘅房主，
+        // 要即刻幫佢掛返個「👑 房主」牌，唔使等落一次房主轉移先反映到
+        updateHostBadge();
+        fillRemoteRankTag(uid);
+      }
+      return el.querySelector('video');
+    }
+
+    // v1.220.0：喺對方名牌旁邊顯示段位稱號（讀 publicProfiles 的 exp，
+    // 由伺服器同步，前端改唔到）。每位同學入房只讀一次。
+    // v1.221.0：名牌旁邊的石頭（款式跟段位，數字係今次入房磨好幾多粒）
+    function stoneTagHtml(src, n) {
+      return `<img src="${src}" alt="" width="18" height="18" style="display:block;"><b>×${n}</b>`;
+    }
+    function refreshMyStoneTag(pop) {
+      const el = document.getElementById('room-user-stone-tag');
+      if (!el || !window.currentUser) return;
+      if (!el.dataset.bound) {
+        el.dataset.bound = '1';
+        el.addEventListener('click', (e) => { e.stopPropagation(); window.openStoneInfo && window.openStoneInfo({ mode: 'room', count: state.myStones || 0 }); });
+      }
+      el.innerHTML = stoneTagHtml(window.myActiveStoneIndex ? `assets/images/stone-${window.myActiveStoneIndex()}.png` : 'assets/images/stone-1.png', state.myStones || 0);
+      if (pop) { el.classList.remove('stone-pop'); void el.offsetWidth; el.classList.add('stone-pop'); }
+    }
+    window.refreshMyStoneTag = refreshMyStoneTag;
+    function updateRemoteStoneTag(uid, n) {
+      const el = document.getElementById('remote-stone-' + uid);
+      if (!el) return;
+      const prev = parseInt(el.dataset.n || '0');
+      el.dataset.n = String(n || 0);
+      el.innerHTML = stoneTagHtml(el.dataset.src || 'assets/images/stone-1.png', n || 0);
+      if ((n || 0) > prev) { el.classList.remove('stone-pop'); void el.offsetWidth; el.classList.add('stone-pop'); }
+    }
+
+    async function fillRemoteRankTag(uid) {
+      try {
+        if (!window.db || !window.fs || typeof window.publicProfileRef !== 'function') return;
+        const snap = await window.fs.getDoc(window.publicProfileRef(uid));
+        if (!snap.exists()) return;
+        const label = typeof window.rankLabelForExp === 'function' ? window.rankLabelForExp(snap.data().exp || 0) : '';
+        const span = document.getElementById('remote-rank-' + uid);
+        if (span && label) span.innerText = label;
+        const st = document.getElementById('remote-stone-' + uid);
+        if (st && typeof window.stoneSrcForExp === 'function') {
+          st.dataset.src = window.stoneSrcForExp(snap.data().exp || 0);
+          st.dataset.exp = String(snap.data().exp || 0);
+          updateRemoteStoneTag(uid, parseInt(st.dataset.n || '0'));
+        }
+      } catch (e) { /* 讀唔到就唔顯示稱號，唔影響視訊 */ }
+    }
+
+    // 統一管理「👑 房主」牌應該掛喺邊一格：自己個格（isMyRoom）或者相應嘅
+    // 遠端格（依 state.slotAssignments 揾返邊個 uid 對應邊一格）。每次房主
+    // 轉移、有人新入房、或者岩岩開好房間嗰陣都要 call 呢個 function 重新整理一次。
+    function updateHostBadge() {
+      const hostUid = state.currentRoomHostUid;
+      const myUid = window.currentUser ? window.currentUser.uid : null;
+
+      const selfHostTag = document.getElementById('room-host-tag');
+      if (selfHostTag) {
+        if (hostUid && myUid && hostUid === myUid) {
+          selfHostTag.style.display = 'flex';
+          selfHostTag.innerText = window.t('room.youAreHost', '你是房主');
+        } else {
+          selfHostTag.style.display = 'none';
+          selfHostTag.innerText = '';
+        }
+      }
+
+      [2, 3, 4].forEach(slotNum => {
+        const badge = document.getElementById('remote-host-badge-' + slotNum);
+        if (!badge) return;
+        const uidInThisSlot = Object.keys(state.slotAssignments).find(u => state.slotAssignments[u] === slotNum);
+        badge.style.display = (hostUid && uidInThisSlot && uidInThisSlot === hostUid) ? 'flex' : 'none';
+      });
+
+      // 「🚫 踢走」同「👑 轉移房主俾佢」呢兩個選項淨係房主先睇到（每個
+      // 遠端格都有一粒，跟返 uid 唔跟 slotNum，因為換咗人入嗰格都要即刻
+      // 更新返啱嘅顯示狀態）；兩者都收埋喺「⋮」下拉選單入面
+      const amIHost = !!(state.isHost && myUid && hostUid === myUid);
+      Object.keys(state.slotAssignments).forEach(uid => {
+        const kickBtn = document.getElementById('kick-btn-' + uid);
+        if (kickBtn) kickBtn.style.display = amIHost ? 'block' : 'none';
+        const transferBtn = document.getElementById('transfer-host-btn-' + uid);
+        if (transferBtn) transferBtn.style.display = amIHost ? 'block' : 'none';
+      });
+    }
+
+    // 房主專用：將某位用家踢出房間。做法係喺房間文件加一個 bannedUids
+    // 陣列，個目標用家自己個 client 會透過已經有嘅房間文件監聽（見
+    // listenToParticipants 入面嗰個 roomDocUnsubscribe）發現自己被踢，
+    // 自動執行「離開房間」嘅流程——唔使畀房主直接刪第二人嘅 participants
+    // 文件（跨用戶寫入權限太危險，唔想開呢個口）。呢個名單會一直留喺
+    // 房間文件度（唔會自動清走），所以俾踢走嘅人之後想撳「加入」返嚟
+    // 同一間房都會俾 enterRoomSetup 擋返出去，直到呢間房執咗為止。
+    window.kickParticipant = async function(targetUid, targetName) {
+      if (!state.isHost || !state.currentRoomId || !window.db || !window.fs) return;
+      if (!(await window.appConfirm(window.t('room.kickConfirmTemplate', `確定要將「${targetName}」移出這個溫習房？他之後都不可以再加入這間房。`).replace('{name}', targetName)))) return;
+      try {
+        await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId), {
+          bannedUids: window.fs.arrayUnion(targetUid)
+        });
+        window.showToast(window.t('room.kickSuccessTemplate', `已將「${targetName}」移出房間，他不可以再加入這間房`).replace('{name}', targetName), '🚫');
+      } catch (e) {
+        window.showToast(window.t('room.kickFailedTemplate', '踢走失敗：{error}').replace('{error}', e.message || e), '❌');
+      }
+    };
+
+    // 房主專用：將房主身份轉移俾房入面另一位用家。做法同 hostLeaveKeepRoom
+    // 嗰個「自動揀最早入房嗰位」轉移邏輯一樣，都係淨係改返 rooms/{roomId}
+    // 文件嘅 hostUid／hostName，唔同之處係呢度由房主自己揀邊個、亦唔會
+    // 令房主本人離開房間——兩邊 client 都靠現有嘅 roomDocUnsubscribe
+    // listener（見 listenToParticipants）自動偵測到 hostUid 變咗，即時
+    // 更新返 state.isHost／👑 房主牌／邊個睇到「踢走、轉移房主」呢兩個
+    // 選項，唔使額外寫多一套同步邏輯。
+    window.transferHostTo = async function(targetUid, targetName) {
+      if (!state.isHost || !state.currentRoomId || !window.db || !window.fs) return;
+      if (!(await window.appConfirm(window.t('room.transferHostConfirmTemplate', `確定要將房主身份轉移給「${targetName}」？轉移之後你會變回普通成員，不會再有踢人／轉移房主的權限。`).replace('{name}', targetName)))) return;
+      try {
+        await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId), {
+          hostUid: targetUid,
+          hostName: targetName
+        });
+        window.showToast(window.t('room.transferHostSuccessTemplate', `已將房主身份轉移給「${targetName}」`).replace('{name}', targetName), '👑');
+      } catch (e) {
+        window.showToast(window.t('room.transferHostFailedTemplate', '轉移房主失敗：{error}').replace('{error}', e.message || e), '❌');
+      }
+    };
+
+    // ===================== 視訊格「⋮」更多選項選單 =====================
+    // 踢走／轉移房主（房主專用，見 updateHostBadge 點樣控制顯示）同埋
+    // 🚩 舉報（任何人都用到，為咗保障未成年用家安全）都收埋喺呢個選單
+    // 入面，唔會好似獨立大掣咁顯眼，減少誤觸。舉報撳咗之後仲要揀原因
+    // 先送到，一共要三個步驟先真正送出。
+
+    window.toggleVideoMoreMenu = function(uid) {
+      document.querySelectorAll('.video-more-menu-dropdown').forEach(el => {
+        if (el.id !== 'video-more-menu-' + uid) el.style.display = 'none';
+      });
+      const menu = document.getElementById('video-more-menu-' + uid);
+      if (menu) menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    };
+    // 撳呢粒「⋮」以外任何地方，開緊嘅選單都要自動收埋
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.video-more-menu-dropdown').forEach(el => { el.style.display = 'none'; });
+    });
+
+    let pendingReportTarget = null; // { uid, name }
+    let pendingReportScreenshot = null; // base64 data URL，或者 null（例如對方鏡頭關咗，截唔到）
+
+    // 由對方個 <video> 元素度截低目前一幀畫面，縮細到最闊 480px 並用中等
+    // 壓縮質素轉做 JPEG data URL，控制證據截圖嘅檔案大細（呢個 app 冇用
+    // Firebase Storage，截圖係直接連同舉報記錄一齊存落 Firestore 文件，
+    // 壓縮細啲可以確保穩陣噉喺 1MB 嘅文件大細上限之內）
+    function captureRemoteVideoFrame(uid) {
+      const slotNum = state.slotAssignments[uid];
+      if (!slotNum) return null;
+      const el = getSlotElement(slotNum);
+      const videoEl = el ? el.querySelector('video') : null;
+      if (!videoEl || !videoEl.videoWidth) return null;
+      try {
+        const maxWidth = 480;
+        const scale = Math.min(1, maxWidth / videoEl.videoWidth);
+        const w = Math.max(1, Math.round(videoEl.videoWidth * scale));
+        const h = Math.max(1, Math.round(videoEl.videoHeight * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        // <video> 元素本身有用 CSS transform:scaleX(-1) 校正返做自然方向
+        // 畀人睇（見 .remote-video-element），但 drawImage 讀嘅係原始未經
+        // CSS 校正嘅畫面資料，所以呢度都要用返同一個左右反轉，等截圖證據
+        // 同截圖嗰一刻畫面上實際見到嘅方向一致，唔會令管理員睇到相反畫面
+        ctx.translate(w, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, 0, 0, w, h);
+        return canvas.toDataURL('image/jpeg', 0.6);
+      } catch (e) {
+        console.error('截取舉報證據畫面失敗:', e);
+        return null;
+      }
+    }
+
+    // 撳「🚩 舉報呢位同學」嗰一刻即刻截圖（爭取第一時間留低證據，等用家
+    // 之後填緊原因期間對方畫面已經變晒都唔緊要），然後先至彈個 modal
+    // 出嚟畀用家揀舉報原因、加補充說明
+    window.openReportModal = function(targetUid, targetName) {
+      if (!window.currentUser) { window.showToast(window.t('room.needLoginToInvite', '請先登入'), '⚠️'); return; }
+      if (targetUid === window.currentUser.uid) { window.showToast(window.t('room.cannotReportSelf', '不可以舉報自己'), '⚠️'); return; }
+      pendingReportTarget = { uid: targetUid, name: targetName || window.t('room.reportTargetFallback', '這位同學') };
+      pendingReportScreenshot = captureRemoteVideoFrame(targetUid);
+
+      const nameEl = document.getElementById('report-target-name');
+      if (nameEl) nameEl.innerText = pendingReportTarget.name;
+
+      const previewWrap = document.getElementById('report-screenshot-wrap');
+      const previewImg = document.getElementById('report-screenshot-preview');
+      const missingEl = document.getElementById('report-screenshot-missing');
+      if (pendingReportScreenshot) {
+        if (previewImg) previewImg.src = pendingReportScreenshot;
+        if (previewWrap) previewWrap.style.display = 'block';
+        if (missingEl) missingEl.style.display = 'none';
+      } else {
+        if (previewWrap) previewWrap.style.display = 'none';
+        if (missingEl) missingEl.style.display = 'block';
+      }
+
+      const reasonEl = document.getElementById('report-reason');
+      const notesEl = document.getElementById('report-notes');
+      if (reasonEl) reasonEl.value = '不當／不雅行為';
+      if (notesEl) notesEl.value = '';
+
+      openModal('modal-report-user');
+    };
+
+    window.closeReportModal = function() {
+      closeModal('modal-report-user');
+      pendingReportTarget = null;
+      pendingReportScreenshot = null;
+    };
+
+    window.submitReport = async function() {
+      if (!pendingReportTarget || !window.currentUser || !window.db || !window.fs) {
+        window.showToast(window.t('room.reportDataError', '舉報資料有錯，請重新再試'), '❌'); return;
+      }
+      const btn = document.getElementById('report-submit-btn');
+      const reasonEl = document.getElementById('report-reason');
+      const notesEl = document.getElementById('report-notes');
+      const reason = (reasonEl && reasonEl.value) || '其他';
+      const notes = (notesEl && notesEl.value || '').trim();
+
+      if (btn) { btn.disabled = true; btn.innerText = window.t('room.reportSendingBtn', '傳送中...'); }
+      try {
+        // 舉報寫入而家改用 Cloud Function（submitReport）做，用 Admin
+        // SDK 寫入 reports，同時套用咗速率限制（同一舉報人 10 分鐘內
+        // 最多 5 次），防止俾人攞嚟濫發舉報滋擾對方、或者洗版管理後台
+        // 嘅舉報清單。查「被舉報用家嘅帳號 ID／Email」呢步都搬咗去伺
+        // 服器度做，前端唔使再自己查一次。
+        try {
+          await window.callCloudFunction('submitReport', {
+            reportedUid: pendingReportTarget.uid,
+            reportedName: pendingReportTarget.name,
+            roomId: state.currentRoomId || '',
+            roomName: (document.getElementById('active-room-title') || {}).innerText || '',
+            reason,
+            notes,
+            screenshot: pendingReportScreenshot || null
+          });
+        } catch (submitErr) {
+          const code = submitErr && (submitErr.code || '');
+          if (typeof code === 'string' && code.indexOf('resource-exhausted') !== -1) {
+            window.showToast(submitErr.message || window.t('room.reportTooManyAttempts', '舉報次數過多，請稍後再試'), '⏳');
+          } else {
+            window.showToast(window.t('room.reportSubmitFailedTemplate', '送出舉報失敗：{error}').replace('{error}', submitErr.message || submitErr), '❌');
+          }
+          return;
+        }
+
+        window.showToast(window.t('room.reportSubmitSuccess', '已送出舉報，管理員會盡快跟進，多謝你保障大家的安全'), '🚩');
+        window.closeReportModal();
+      } catch (e) {
+        window.showToast(window.t('room.reportSubmitFailedTemplate2', '舉報送出失敗：{error}').replace('{error}', e.message || e), '❌');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = window.t('room.reportSubmitBtn', '確認送出舉報'); }
+      }
+    };
+
+    // 依對方目前的鏡頭開關狀態，顯示／隱藏「對方鏡頭已關閉」的黑色遮罩
+    // （這樣關閉自己鏡頭的一方也不會誤以為對方畫面卡住，而是清楚顯示鏡頭已關閉）
+    function updateRemoteSlotCameraState(uid, cameraOn) {
+      const slotNum = state.slotAssignments[uid];
+      if (!slotNum) return;
+      const el = getSlotElement(slotNum);
+      if (!el) return;
+      const overlay = el.querySelector('.video-overlay');
+      if (overlay) overlay.style.display = cameraOn ? 'none' : 'flex';
+    }
+
+    // 跟返對方廣播落嚟嘅鏡頭方向角度（見 broadcastMyCameraRotation），
+    // 喺 .remote-video-element 度加返對應嘅 CSS rotate，等對方打橫
+    // 手機嗰陣，自己度睇到嘅都自動跟住轉返啱方向。
+    //
+    // 註：曾經試過畀 90／270 度加返 CSS rotate 做旋轉修正，但用戶實測
+    // 反覆推算之後發現，對呢部 iPhone 嚟講 90／270 度嗰陣根本唔使外
+    // 加任何旋轉（裝置／瀏覽器已經自行處理咗），我哋之前加嘅旋轉先係
+    // 令佢變錯嘅元兇（見 startCanvasRenderLoop 嗰邊完全一樣嘅註解）。
+    // 所以而家 90／270 度都唔再加 CSS rotate，淨係保留 180 度（倒轉）
+    // 先要特別處理。
+    function updateRemoteSlotRotation(uid, angle) {
+      const slotNum = state.slotAssignments[uid];
+      if (!slotNum) return;
+      const el = getSlotElement(slotNum);
+      if (!el) return;
+      const video = el.querySelector('.remote-video-element');
+      if (!video) return;
+      if (angle === 180) {
+        video.style.transform = 'scaleX(-1) rotate(180deg)';
+      } else {
+        video.style.transform = ''; // 跟返 CSS class 預設嘅 scaleX(-1) 就夠
+      }
+    }
+
+    // 收到對方實際的視訊畫面（track）後，把狀態標籤改成「即時串流」
+    // v1.199.3：連線狀態標籤改為反映「真正」嘅連線狀態——之前一收到對方
+    // 嘅 video track（只係完成咗協商，未必真係有畫面傳到）就顯示「即時
+    // 串流」，而對方冇開鏡頭時就一直顯示「連線中...」，兩樣都會誤導。
+    // 而家：WebRTC 真正連通（connectionState === 'connected'）先會轉，
+    // 有對方畫面就「即時串流」，未有畫面就「已連線」。data-conn 屬性
+    // 畀自動化測試（Playwright）讀取用。
+    function updateSlotConnStatus(uid) {
+      const statusTag = document.getElementById('stream-status-' + uid);
+      if (!statusTag) return;
+      const pc = state.peerConnections[uid];
+      const connected = !!(pc && pc.connectionState === 'connected');
+      if (!connected) {
+        statusTag.style.background = '#3F588F';
+        statusTag.innerText = window.t('room.remoteWaitStream', '連線中...');
+        statusTag.setAttribute('data-conn', 'connecting');
+      } else if (state.peerHasVideo && state.peerHasVideo[uid]) {
+        statusTag.style.background = '#D2C4AD';
+        statusTag.innerText = window.t('room.remoteLiveStream', '即時串流');
+        statusTag.setAttribute('data-conn', 'live');
+      } else {
+        statusTag.style.background = '#5E8F6E';
+        statusTag.innerText = window.t('room.remoteConnected', '已連線');
+        statusTag.setAttribute('data-conn', 'connected');
+      }
+    }
+    function markSlotLive(uid) {
+      if (!state.peerHasVideo) state.peerHasVideo = {};
+      state.peerHasVideo[uid] = true;
+      updateSlotConnStatus(uid);
+    }
+
+    // 用家離開房間時，釋放其佔用的格子
+    // v1.199.3：有人離開房間之後，刪走自己送畀佢嘅 offer／answer 文件，同埋
+    // 清走同佢有關嘅去重記錄，等佢之後再入返嚟時係由零開始重新連線，唔會
+    // 執到上一次留低嘅舊訊號（之前會令重新入房嘅人見唔到房主鏡頭）。
+    function forgetDepartedPeer(roomId, uid) {
+      if (!window.currentUser || !window.db || !roomId) return;
+      delete state.lastProcessedOfferTs[uid];
+      delete state.lastProcessedAnswerTs[uid];
+      delete state.pendingCandidates[uid];
+      if (state.connectingTo && state.connectingTo.delete) state.connectingTo.delete(uid);
+      window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "signals", window.currentUser.uid + "_to_" + uid)).catch(() => {});
+    }
+
+    // v1.199.3：判斷一份 offer 係咪「我今次入房之後」先送出——早過我今次
+    // 入房（預留 5 秒時鐘誤差）嘅一定係上一次留低嘅舊 offer，處理咗只會令
+    // 新連線撞車。
+    function isFreshOfferForThisSession(data) {
+      if (!state.mySessionStartTs) return true;
+      return typeof data.timestamp === 'number' && data.timestamp >= state.mySessionStartTs - 5000;
+    }
+
+    function releaseRemoteSlot(uid) {
+      if (state.peerHasVideo) delete state.peerHasVideo[uid];
+      const slotNum = state.slotAssignments[uid];
+      if (!slotNum) return;
+      delete state.slotAssignments[uid];
+      setSlotPlaceholder(slotNum);
+
+      if (state.peerConnections[uid]) {
+        state.peerConnections[uid].close();
+        delete state.peerConnections[uid];
+      }
+    }
+
+    function updateParticipantCountUI(count) {
+      const countEl = document.getElementById('room-participant-count');
+      const tagEl = document.getElementById('room-capacity-tag');
+      if (countEl) countEl.innerText = count;
+      if (tagEl) tagEl.classList.toggle('full', count >= (state.currentRoomCapacity || ROOM_CAPACITY));
+    }
+
+    // 進入房間前檢查人數上限，未滿則寫入自己的 participants 紀錄。回傳 true/false 代表能否加入
+    //
+    // ⚠️ 呢度一定要用 Firestore transaction 嚟做「讀人數 → 判斷夠唔夠位
+    // → 寫入」呢三步，唔可以拆開成兩條獨立嘅 getDocs／setDoc（舊做
+    // 法）：如果拆開，兩個同學幾乎同一時間撳「入房」，就會出現大家
+    // 都喺「讀人數」嗰一刻見到房間仲有位（例如都讀到 3/4），於是兩個
+    // 都通過檢查、都寫低自己個 participants 紀錄，結果房間變成 5 人
+    // 或以上——但畫面格仔佈局同 WebRTC mesh 連線邏輯全部係按固定 4 人
+    // 設計，超出嘅話畫面會冧、連線會錯亂。用 transaction 嘅話，
+    // Firestore 會保證同一時間淨係得一個 transaction 讀到「未過龍」嘅
+    // 狀態並成功寫入，第二個會自動重試、再讀一次已經加咗嘅新人數，
+    // 咁就唔會再過龍。
+    //
+    // 呢度信任 room 文件嘅 participantCount 呢個數字（唔再重新
+    // getDocs 成個 participants 子集合數過一次），因為呢個欄位一直以
+    // 嚟都係跟住加入／退出同步更新（見底下 leaveRoomParticipants 等
+    // 幾處 increment(-1)），而家將「讀呢個數字」同「寫入」夾埋做同一
+    // 個原子操作，先真正杜絕到競態漏洞。
+    async function joinRoomParticipants(roomId) {
+      const myUid = window.currentUser.uid;
+      const roomRef = window.fs.doc(window.db, "rooms", roomId);
+      const participantRef = window.fs.doc(window.db, "rooms", roomId, "participants", myUid);
+
+      try {
+        return await window.fs.runTransaction(window.db, async (tx) => {
+          const [roomSnap, participantSnap] = await Promise.all([tx.get(roomRef), tx.get(participantRef)]);
+          const alreadyIn = participantSnap.exists();
+          const currentCount = roomSnap.exists() ? (roomSnap.data().participantCount || 0) : 0;
+          const roomCap = resolveRoomCapacity(roomSnap.exists() ? roomSnap.data() : null);
+
+          if (!alreadyIn && currentCount >= roomCap) {
+            return false; // 房間已滿，禁止加入
+          }
+
+          tx.set(participantRef, {
+            uid: myUid,
+            name: window.currentUser.username || '同學',
+            joinedAt: Date.now(),
+            cameraOn: false,
+            // v1.204.0：「容許被合照」設定（預設唔容許 → 合照時自動打格仔）
+            allowPhoto: !!(window.currentUser && window.currentUser.allowGroupPhoto === true)
+          });
+
+          // 同步更新房間文件的人數統計，等大廳嘅房間卡片可以即時顯示「👥 X/4 人」
+          if (!alreadyIn) {
+            tx.update(roomRef, { participantCount: currentCount + 1 });
+          }
+
+          return true;
+        });
+      } catch (e) {
+        console.error("加入房間失敗:", e);
+        return false;
+      }
+    }
+
+    // 把自己目前鏡頭開／關的狀態寫回 participants 文件，讓其他人看到正確的「鏡頭已關閉」提示
+    async function updateMyCameraStatus(cameraOn) {
+      if (!window.currentUser || !state.currentRoomId || !window.db) return;
+      try {
+        await window.fs.setDoc(window.fs.doc(window.db, "rooms", state.currentRoomId, "participants", window.currentUser.uid), {
+          cameraOn
+        }, { merge: true });
+      } catch (e) {
+        console.error("更新鏡頭狀態失敗:", e);
+      }
+    }
+
+    // 廣播自己目前嘅鏡頭方向角度（見 getScreenOrientationAngle），
+    // 等其他人個瀏覽器可以喺顯示層（.remote-video-element）加返同一個
+    // CSS 旋轉，令佢哋睇你個畫面都係啱方向——特登唔改實際送出去嗰條
+    // WebRTC 視訊軌道（同 .remote-video-element 嗰個鏡像修正用返一樣
+    // 嘅思路：改顯示層，唔改軌道本身，成本低好多亦唔會影響到連線）。
+    async function broadcastMyCameraRotation() {
+      if (!window.currentUser || !state.currentRoomId || !window.db || !state.isCameraOn) return;
+      try {
+        await window.fs.setDoc(window.fs.doc(window.db, "rooms", state.currentRoomId, "participants", window.currentUser.uid), {
+          camRotation: getScreenOrientationAngle()
+        }, { merge: true });
+      } catch (e) {
+        console.error("更新鏡頭方向失敗:", e);
+      }
+    }
+
+    // 用短促「叮」一聲提示有人加入房間，純用 Web Audio 即場合成音效，
+    // 唔使額外音效檔案（唔會遇到 staging 站漏咗上傳 sound 檔嘅問題）
+    function playJoinNotificationSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        // 兩個音高（先高後更高），短促唔刺耳，聽落似「叮咚」
+        [[880, 0], [1175, 0.12]].forEach(([freq, delay]) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.001, now + delay);
+          gain.gain.exponentialRampToValueAtTime(0.18, now + delay + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + delay);
+          osc.stop(now + delay + 0.3);
+        });
+        // 播完之後將個 AudioContext 收埋，唔好一直留喺度佔資源
+        setTimeout(() => { ctx.close && ctx.close(); }, 600);
+      } catch (e) {
+        console.warn('播放加入房間提示音失敗:', e);
+      }
+    }
+
+    // 有人加入房間時，彈一個半透明嘅小提示（「XXX 進來了」），5 秒後自動消失。
+    // 特登唔用返 window.showToast（嗰個淨係得一個「位」，如果連續有多個人
+    // 幾乎同時加入會互相蓋晒），而係獨立疊加顯示，睇晒晒邊個入咗嚟。
+    function showJoinNotification(name) {
+      const roomActiveEl = document.getElementById('room-active');
+      if (!roomActiveEl) return;
+      let container = document.getElementById('join-notification-container');
+      // 掛喺 #room-active 入面（唔係成個 document.body），並且用 position:absolute
+      // 置中喺呢個房間畫面正中間——同 #room-active 本身係咪全螢幕狀態無關，
+      // 兩種情況（普通版面 / 全螢幕）都一樣會出現喺視訊房嘅正中央，唔會走去
+      // 成個瀏覽器視窗嘅頂部（見 index.html 入面 #room-active { position:relative }）。
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'join-notification-container';
+        container.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:500; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;';
+        roomActiveEl.appendChild(container);
+      } else if (container.parentElement !== roomActiveEl) {
+        roomActiveEl.appendChild(container);
+      }
+      const note = document.createElement('div');
+      note.textContent = `${name || '同學'} 進來了`;
+      note.style.cssText = 'background:rgba(20,20,20,0.72); color:#fff; padding:10px 20px; border-radius:999px; font-size:14px; font-weight:bold; box-shadow:0 4px 14px rgba(0,0,0,0.25); backdrop-filter:blur(4px); opacity:0; transform:translateY(-8px); transition:opacity .25s ease, transform .25s ease;';
+      container.appendChild(note);
+      requestAnimationFrame(() => {
+        note.style.opacity = '1';
+        note.style.transform = 'translateY(0)';
+      });
+      // 5 秒後自動消失（先淡出，再真正移除元素）
+      setTimeout(() => {
+        note.style.opacity = '0';
+        note.style.transform = 'translateY(-8px)';
+        setTimeout(() => note.remove(), 300);
+      }, 5000);
+    }
+
+    // 監聽房間目前的用家名單，動態分配 / 釋放格子，並更新人數顯示
+    function listenToParticipants(roomId) {
+      if (state.participantsUnsubscribe) state.participantsUnsubscribe();
+
+      const participantsRef = window.fs.collection(window.db, "rooms", roomId, "participants");
+      state.participantsUnsubscribe = window.fs.onSnapshot(participantsRef, (snapshot) => {
+        const myUid = window.currentUser ? window.currentUser.uid : null;
+        const others = snapshot.docs
+          .map(d => d.data())
+          .filter(p => p.uid !== myUid)
+          .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+
+        const currentUids = others.map(p => p.uid);
+        // v1.204.0：記低每位同學「容許被合照」嘅設定，影合照時用
+        state.photoAllowed = {};
+        others.forEach(p => { state.photoAllowed[p.uid] = p.allowPhoto === true; });
+        const allowCb = document.getElementById('room-allow-photo-cb');
+        if (allowCb && window.currentUser) allowCb.checked = window.currentUser.allowGroupPhoto === true;
+
+        // 有朋友加入房間嘅提示音／彈窗：淨係比較「呢次快照」同「上次已知名單」，
+        // 揾出新出現嘅 uid。特登跳過入房嗰一刻嘅第一個快照——唔係嘅話一入
+        // 房見到啲本身已經喺度嘅人，都會被當成「啱啱先加入」，彈一輪冇意義嘅提示。
+        if (!state.isFirstParticipantsSnapshot) {
+          others.forEach(p => {
+            if (!state.knownParticipantUids.has(p.uid)) {
+              playJoinNotificationSound();
+              showJoinNotification(p.name);
+            }
+          });
+        }
+        state.isFirstParticipantsSnapshot = false;
+        state.knownParticipantUids = new Set(currentUids);
+
+        // 釋放已離開的用家所佔用的格子
+        Object.keys(state.slotAssignments).forEach(uid => {
+          if (!currentUids.includes(uid)) {
+            releaseRemoteSlot(uid);
+            forgetDepartedPeer(roomId, uid);
+          }
+        });
+
+        // 為在場但尚未分配格子的用家安排格子（僅顯示佔位，鏡頭畫面待 WebRTC 連線後填入）
+        // 並同步「對方鏡頭是否開啟」的狀態，讓對方關鏡頭時能正確顯示「鏡頭已關閉」而不是卡住的畫面
+        others.forEach(p => {
+          if (!state.slotAssignments[p.uid]) getOrCreateRemoteSlot(p.uid, p.name);
+          updateRemoteSlotCameraState(p.uid, !!p.cameraOn);
+          updateRemoteSlotRotation(p.uid, p.camRotation || 0);
+          updateRemoteStoneTag(p.uid, p.stones || 0);
+        });
+
+        // 保險起見再掃一次：格子分配一有變動（新人入房／有人走咗），
+        // 就重新確認「👑 房主」牌仍然掛喺啱嘅格度
+        updateHostBadge();
+
+        updateParticipantCountUI(snapshot.size);
+      });
+
+      // 同時監聽房間文件本身：若房主選擇「關閉房間」刪咗個文件，
+      // 其他仍然在房的成員會即時被踢返大廳
+      if (state.roomDocUnsubscribe) state.roomDocUnsubscribe();
+      const roomDocRef = window.fs.doc(window.db, "rooms", roomId);
+      let isFirstRoomSnapshot = true;
+      state.roomDocUnsubscribe = window.fs.onSnapshot(roomDocRef, (docSnap) => {
+        if (isFirstRoomSnapshot) { isFirstRoomSnapshot = false; return; }
+        if (!docSnap.exists()) {
+          // 房間文件被刪除（房主關閉房間）
+          cleanupRoomConnections();
+          document.getElementById('room-active').style.display = 'none';
+          document.getElementById('room-lobby').style.display = 'block';
+          window.showToast(window.t('room.hostClosedRoomToast', '房主已關閉房間，你已被移至大廳'), '🚪');
+        } else {
+          // 房主轉移：更新邊個係房主，「👑 房主」牌會由 updateHostBadge()
+          // 自動掛去返正確嗰一格（自己個格或者相應嘅遠端格）
+          const data = docSnap.data();
+          if (data && data.hostUid) {
+            state.isHost = !!(window.currentUser && data.hostUid === window.currentUser.uid);
+            state.currentRoomHostUid = data.hostUid;
+            updateHostBadge();
+          }
+
+          // 檢查自己係咪俾房主踢咗出嚟（見 window.kickParticipant）。
+          // bannedUids 呢個名單唔會自動清走，所以之後想撳「加入」返嚟都會
+          // 俾 enterRoomSetup 嗰個檢查擋返出去，唔可以再入返嚟。
+          const myUid = window.currentUser ? window.currentUser.uid : null;
+          if (myUid && data && Array.isArray(data.bannedUids) && data.bannedUids.includes(myUid)) {
+            doLeaveRoom(false, window.t('room.kickedOutToast', '你已被房主移出這個溫習房，之後都不可以再加入'));
+          }
+        }
+      });
+    }
+
+    // v1.199.0：離開房間＝刪自己 participants 紀錄＋房間人數 -1，用同一個
+    // batch 原子寫入（Firestore 規則而家會核對「人數 -1 嘅人真係啱啱離開
+    // 咗間房」，防止外人亂改人數）。如果房間文件已經唔存在（例如房主啱啱
+    // 刪咗房），batch 會失敗，就退返淨係刪自己紀錄。
+    async function leaveRoomBatch(roomId, myUid) {
+      const participantRef = window.fs.doc(window.db, "rooms", roomId, "participants", myUid);
+      try {
+        const batch = window.fs.writeBatch(window.db);
+        batch.delete(participantRef);
+        batch.update(window.fs.doc(window.db, "rooms", roomId), { participantCount: window.fs.increment(-1) });
+        await batch.commit();
+      } catch (e) {
+        await window.fs.deleteDoc(participantRef).catch(() => {});
+      }
+    }
+
+    // 離開房間時，移除自己的 participants 紀錄並停止監聽
+    async function leaveRoomParticipants() {
+      if (state.participantsUnsubscribe) {
+        state.participantsUnsubscribe();
+        state.participantsUnsubscribe = null;
+      }
+      if (state.currentRoomId && window.currentUser && window.db && window.fs) {
+        const roomId = state.currentRoomId;
+        try {
+          await leaveRoomBatch(roomId, window.currentUser.uid);
+
+          // 檢查係咪最後一個人走：如果房入面已經冇任何人，就連房間本身都一拼
+          // 刪走，唔好留低一間「0/4 人但仲顯示直播中」嘅幽靈房喺大廳。
+          // v1.230.0：離開後已不是房內成員，讀不到成員名單；改為讀房間人數
+          // 房間已被刪除時讀取會被規則拒絕，當作已清走
+          const roomSnap = await window.fs.getDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => null);
+          if (roomSnap && roomSnap.exists() && (roomSnap.data().participantCount || 0) <= 0) {
+            await window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
+          }
+        } catch (e) {
+          console.error("移除房間人數紀錄失敗:", e);
+        }
+      }
+    }
+
+    // 分頁關閉 / 重新整理時盡量清理自己的 participants 紀錄（同上面一樣用
+    // batch）。beforeunload 入面嘅 async 操作瀏覽器唔保證行得完，所以只係
+    // 盡做，大廳嘅 gcStaleRooms 同 5 分鐘冇心跳清理機制會做後備。
+    window.addEventListener('beforeunload', () => {
+      if (state.currentRoomId && window.currentUser && window.db && window.fs) {
+        const roomId = state.currentRoomId;
+        const myUid = window.currentUser.uid;
+        leaveRoomBatch(roomId, myUid).then(() => {
+          return window.fs.getDoc(window.fs.doc(window.db, "rooms", roomId)).then(snap => {
+            if (snap.exists() && (snap.data().participantCount || 0) <= 0) window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId)).catch(() => {});
+          });
+        }).catch(() => {});
+      }
+    });
+
+    // ---------- 溫習室密碼鎖 ----------
+    // 彈出 #modal-room-password-check、等用戶輸入密碼（或者撳取消），
+    // 用 Promise 包住畀 enterRoomSetup() 用 await 接住個結果：
+    // - 撳「確認加入」：resolve 返用戶打嘅字串（可能係空字串，交返
+    //   俾外面同真正密碼比較，交俾外面判斷岩唔岩）
+    // - 撳「取消」：resolve(null)，外面睇到 null 就知係用戶主動放棄
+    let roomPasswordCheckResolve = null;
+    function promptRoomPassword() {
+      return new Promise(resolve => {
+        roomPasswordCheckResolve = resolve;
+        const input = document.getElementById('room-password-check-input');
+        if (input) input.value = '';
+        openModal('modal-room-password-check');
+        setTimeout(() => { if (input) input.focus(); }, 50);
+      });
+    }
+    window.confirmRoomPasswordCheck = function() {
+      const input = document.getElementById('room-password-check-input');
+      const val = input ? input.value.trim() : '';
+      closeModal('modal-room-password-check');
+      if (roomPasswordCheckResolve) {
+        const resolveFn = roomPasswordCheckResolve;
+        roomPasswordCheckResolve = null;
+        resolveFn(val);
+      }
+    };
+    window.cancelRoomPasswordCheck = function() {
+      closeModal('modal-room-password-check');
+      if (roomPasswordCheckResolve) {
+        const resolveFn = roomPasswordCheckResolve;
+        roomPasswordCheckResolve = null;
+        resolveFn(null);
+      }
+    };
+
+    // 房間工具列嗰粒🔒掣：撳一下就喺視訊溫習室正中間彈一個提示視窗，顯示返
+    // 呢間房嘅密碼，3 秒後自動消失（房主同已經入到房嘅參加者，都算「已經
+    // 知道密碼」，純粹方便隨時查返、或者複製俾其他想入嚟嘅朋友，唔使再問
+    // 房主一次）。
+    // ⚠️ 呢度而家改成 async：真正嘅密碼值前端已經完全攞唔到（見
+    // rooms/{roomId}/private/secret 個 Firestore 規則），撳掣嗰刻先即時
+    // 呼叫 getRoomPassword 呢個 Cloud Function（伺服器端會核實你係房主
+    // 或者已經喺 participants 名單度，先會俾你睇），攞返嚟先顯示。
+    // 特登唔用 window.showToast（嗰個掛喺成個瀏覽器視窗右下角／頂部，全螢幕
+    // 模式入面未必留意到），改用同 showJoinNotification 一樣嘅做法：掛喺
+    // #room-active 入面、用 position:absolute 置中喺呢個房間畫面正中間——
+    // 同 #room-active 本身係咪全螢幕狀態無關，兩種情況都一樣會出現喺視訊房
+    // 嘅正中央（見 index.html 入面 #room-active { position:relative }）。
+    window.showRoomPasswordPopup = async function() {
+      if (!state.currentRoomHasPassword || !state.currentRoomId) return; // 冇密碼嘅房，粒掣本身都會隱藏，呢度係保險檢查
+
+      const roomActiveEl = document.getElementById('room-active');
+      if (!roomActiveEl) return;
+
+      let password;
+      try {
+        const result = await window.callCloudFunction('getRoomPassword', { roomId: state.currentRoomId });
+        password = result && result.password;
+      } catch (e) {
+        window.showToast(window.t('room.readPasswordFailedTemplate', '讀取密碼失敗：{error}').replace('{error}', e.message || e), '❌');
+        return;
+      }
+      if (!password) {
+        window.showToast(window.t('room.readPasswordFailedRetry', '讀取密碼失敗，請再試一次'), '❌');
+        return;
+      }
+
+      // 每次撳都清走上一個未消失嘅提示，避免連撳幾下疊埋一齊顯示
+      const existing = document.getElementById('room-password-popup-overlay');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'room-password-popup-overlay';
+      overlay.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:600; pointer-events:none; opacity:0; transition:opacity .25s ease, transform .25s ease;';
+      overlay.innerHTML = `
+        <div style="background:rgba(20,20,20,0.85); color:#fff; padding:22px 32px; border-radius:16px; text-align:center; box-shadow:0 6px 24px rgba(0,0,0,0.35); backdrop-filter:blur(4px);">
+          <div style="margin-bottom:8px; display:flex; justify-content:center; color:#fff;"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <div style="font-size:14px; opacity:0.85; margin-bottom:6px;">此溫習室的密碼為</div>
+          <div style="font-size:32px; font-weight:bold; letter-spacing:10px;">${window.escapeHtml(password)}</div>
+        </div>
+      `;
+      roomActiveEl.appendChild(overlay);
+      requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        overlay.style.transform = 'translate(-50%, -50%) scale(1)';
+      });
+
+      // 3 秒後自動消失（先淡出，再真正移除元素）
+      setTimeout(() => {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 300);
+      }, 3000);
+    };
+
+    window.handleCreateRoomSubmit = async function(e) {
+      e.preventDefault();
+      // v1.227.3：直播或觀看直播期間不可以同時使用視訊溫習室
+      if (typeof window.swmIsBusy === 'function' && window.swmIsBusy()) {
+        window.showToast(window.t('stream.busyRoom', '你正在直播或觀看直播，請先離開直播再使用視訊溫習室'), '⚠️');
+        return;
+      }
+
+      // 防止撳「立即建立並廣播」撳得太快／連撳幾下：第一下撳落嗰陣，
+      // setDoc 仲未完成（await 緊）之前，畫面上個掣睇落去同平時冇分別，
+      // 好易再撳多一兩下，每一下都各自跑一次呢個 function、各自建立多一間
+      // 房間，於是大廳度就會同時出現幾間內容一模一樣嘅房。而家加返個鎖，
+      // 建立緊嗰陣期間嘅任何額外呼叫都直接忽略；同時將個掣停用並改文字，
+      // 等使用者都睇得出「已經處理緊，唔使再撳」。
+      if (state.creatingRoom) {
+        return;
+      }
+
+      if (!window.currentUser || !window.db || !window.fs) {
+        window.showToast(window.t('room.needLoginMember', '請先登入'), "⚠️");
+        return;
+      }
+
+      state.creatingRoom = true;
+      const submitBtn = document.getElementById('btn-create-room-submit');
+      const originalBtnText = submitBtn ? submitBtn.innerText : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = window.t('room.creatingRoomBtn', '建立中…');
+      }
+
+      try {
+        const roomName = document.getElementById('modal-room-name').value.trim();
+        const subject = document.getElementById('modal-room-subject').value;
+        const durationMins = parseInt(document.getElementById('modal-room-duration').value, 10);
+
+        // 密碼鎖：留空代表唔設密碼；有輸入嘅話一定要係啱啱好 4 位數字，
+        // 唔係就擋住唔畀提交，並且提早解返鎖／還原個掣（跟返呢個
+        // function 最尾 finally 嗰套邏輯）。
+        const roomPasswordRaw = (document.getElementById('modal-room-password').value || '').trim();
+        if (roomPasswordRaw && !/^\d{4}$/.test(roomPasswordRaw)) {
+          window.showToast(window.t('room.passwordMustBe4Digits', '密碼鎖必須是 4 位數字，或者留空代表不設密碼'), '⚠️');
+          return;
+        }
+
+        // 房間人數上限：房主開房嗰陣揀 2 人房定 4 人房，寫死落房間文件
+        // 之後就唔會再改（同 roomPool 一樣一開始定咗就定咗）。如果讀到
+        // 唔識嘅值（例如 modal 冇揀好），就當 4 人房，同舊有行為一致。
+        const capacitySelectEl = document.getElementById('modal-room-capacity');
+        const chosenCapacityRaw = capacitySelectEl ? parseInt(capacitySelectEl.value, 10) : ROOM_CAPACITY;
+        const chosenCapacity = ROOM_CAPACITY_OPTIONS.includes(chosenCapacityRaw) ? chosenCapacityRaw : ROOM_CAPACITY;
+
+        const roomId = 'room_' + Date.now();
+        const createdAt = Date.now();
+        const roomData = {
+          name: roomName,
+          subject: subject,
+          duration: durationMins,
+          hostUid: window.currentUser.uid,
+          hostName: window.currentUser.username || '匿名同學',
+          participantCount: 0,
+          capacity: chosenCapacity,
+          createdAt: createdAt,
+          lastActiveAt: createdAt, // 心跳時間戳，畀幽靈房自動清理機制用（見 gcStaleRooms）
+          // 兩池公開溫習室：房間一開始建立就跟房主自己所屬嗰池（「中學
+          // 溫習室」／「公開溫習室」）標記死，之後唔會再改（見
+          // firestore.rules 嘅 allow update 規則），令公開大廳嘅瀏覽同
+          // 加入都自動限制喺同一個池入面——見 window.getViewerRoomPool()
+          // 同 firestore.rules 嘅 viewerRoomPool()，兩邊判斷邏輯要一致。
+          // v1.223.1：管理員跟大廳而家睇緊嗰邊開房（上面兩粒掣切換）
+          roomPool: (typeof window.getLobbyViewPool === 'function') ? window.getLobbyViewPool()
+            : ((typeof window.getViewerRoomPool === 'function') ? window.getViewerRoomPool() : 'public')
+        };
+        // ⚠️ 真正嘅密碼值而家唔再存落主文件（rooms/{roomId}）度——嗰份
+        // 文件人人讀得到，放密碼落去等於冇鎖。主文件淨係記低 hasPassword
+        // 呢個布林值（畀大廳列表、房內🔒掣決定顯唔顯示用），真正密碼另外
+        // 寫落 rooms/{roomId}/private/secret，個 Firestore 規則寫死前端
+        // 完全讀唔返（見 firestore.rules），之後入房驗證／房主查看，都要
+        // 經 Cloud Functions（verifyRoomPassword／getRoomPassword）先做到。
+        if (roomPasswordRaw) { roomData.hasPassword = true; }
+
+        await window.fs.setDoc(window.fs.doc(window.db, "rooms", roomId), roomData);
+        if (roomPasswordRaw) {
+          await window.fs.setDoc(window.fs.doc(window.db, "rooms", roomId, "private", "secret"), {
+            password: roomPasswordRaw,
+            hostUid: window.currentUser.uid
+          });
+        }
+        closeModal('modal-create-room');
+
+        await enterRoomSetup(roomId, roomName, subject, durationMins, window.currentUser.username || window.t('room.anonymousStudent', '匿名同學'), true, createdAt, window.currentUser.uid);
+        window.showToast(window.t('room.createRoomSuccess', '溫習房建立成功並已廣播至公開大廳！'), "✨");
+      } catch (err) {
+        window.showToast(window.t('room.createRoomFailedTemplate', '建立房間失敗: {error}').replace('{error}', err.message), "❌");
+      } finally {
+        state.creatingRoom = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = originalBtnText || '立即建立並廣播';
+        }
+      }
+    };
+
+    // btnEl：大廳房間卡片嗰粒「🚪 加入房間」掣本身（可以冇——例如經分享
+    // 連結、或者接受朋友邀請入房嗰兩條路徑，冧㨂冇對應嘅掣可以擋）。
+    // enterRoomSetup 入面要驗證密碼、核對 bannedUids 等，一律要等
+    // verifyRoomPassword 呢個 Cloud Function 回應（見下面），如果啱啱
+    // 冇人用過呢個 function（冷啟動），可能要等幾秒先有反應；擋住個掣
+    // 兼改文字，等用戶知道網站有反應緊、唔係當機。
+    window.isInStudyRoom = function() { return !!state.currentRoomId; };
+    window.joinPublicRoom = async function(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid, btnEl) {
+      if (typeof window.swmIsBusy === 'function' && window.swmIsBusy()) {
+        window.showToast(window.t('stream.busyRoom', '你正在直播或觀看直播，請先離開直播再使用視訊溫習室'), '⚠️');
+        return;
+      }
+      let originalBtnHtml = null;
+      if (btnEl) {
+        originalBtnHtml = btnEl.innerHTML;
+        btnEl.disabled = true;
+        btnEl.innerHTML = window.t('room.joiningRoomBtn', '加入緊…');
+      }
+      try {
+        const success = await enterRoomSetup(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid);
+        if (success) {
+          window.showToast(window.t('room.joinRoomSuccessTemplate', `成功加入「${roomName}」！`).replace('{room}', roomName), "🦦");
+        }
+      } finally {
+        // 成功入到房之後，呢張房間卡片好快會隨住大廳列表重新渲染而消失，
+        // 所以呢度照舊還原返個掣都冇問題；主要係防止加入失敗／密碼錯之
+        // 類情況之下，個掣一直卡喺「加入緊…」冇得再撳。
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = originalBtnHtml;
+        }
+      }
+    };
+
+    async function enterRoomSetup(roomId, roomName, subject, durationMins, hostName, isMyRoom, createdAt, hostUid) {
+      if (typeof window.swmIsBusy === 'function' && window.swmIsBusy()) {
+        window.showToast(window.t('stream.busyRoom', '你正在直播或觀看直播，請先離開直播再使用視訊溫習室'), '⚠️');
+        return false;
+      }
+      if (!window.currentUser || !window.db || !window.fs) {
+        window.showToast(window.t('room.needLoginMember', '請先登入'), "⚠️");
+        return false;
+      }
+
+      // 即刻俾個提示，等用戶知道撳完掣網站有反應緊：入房要核對密碼／
+      // 黑名單，呢一步一律要呼叫 verifyRoomPassword 呢個 Cloud Function
+      // （見下面），如果啱啱冇人用過呢個 function（冷啟動），可能要等
+      // 幾秒先有回應。冇呢句提示嘅話，等候期間畫面完全冇變化，好易俾人
+      // 誤會網站壞咗。
+      window.showToast(window.t('room.preparingRoom', '正在準備溫習房，請稍等…'), '⏳');
+
+      // 曾經俾房主踢走過嘅用家唔可以再加入返呢間房（bannedUids 名單一直
+      // 留喺房間文件度，唔會自動清走，見 window.kickParticipant）；
+      // 同時順便喺呢一次讀取一併檢查房間密碼鎖（roomPassword）。
+      // roomCheckData 特登攞出嚟做上一層嘅變數（唔淨係喺 try 入面），
+      // 等下面「記低呢個房嘅密碼、畀房內嗰粒🔒查看掣用」嗰段都攞得到。
+      let roomCheckData = null;
+      try {
+        const roomCheckSnap = await window.fs.getDoc(window.fs.doc(window.db, 'rooms', roomId));
+        roomCheckData = roomCheckSnap.exists() ? roomCheckSnap.data() : null;
+
+        // 密碼輸入框：房主本人（isMyRoom）唔使輸入自己岩岩設定嘅密碼；
+        // 其他人（包括透過分享連結或者大廳撳「加入房間」）如果房間有
+        // hasPassword，就要彈窗輸入啱先真正入到房。取消都直接擋住，
+        // 唔會扣住房間座位（joinRoomParticipants 仲未叫）。
+        let enteredPassword = '';
+        if (roomCheckData && roomCheckData.hasPassword && !isMyRoom) {
+          // v1.203.0：輸入密碼期間暫時收起「進入溫習室」嘅 loading 畫面，唔好遮住輸入框
+          if (window.pauseLoading) window.pauseLoading();
+          const entered = await promptRoomPassword();
+          if (window.resumeLoading) window.resumeLoading();
+          if (entered === null) {
+            return false; // 用戶自己撳咗「取消」，唔使額外提示錯誤
+          }
+          enteredPassword = entered;
+        }
+
+        // ⚠️ 安全修補（見 docs/PROGRESS.md）：呢個 Cloud Function 而家一律
+        // 要呼叫——唔理間房有冇密碼鎖。密碼核對、bannedUids 核對，全部
+        // 改喺伺服器端一次過做晒，通過先會簽發一張短效「入場證」，
+        // firestore.rules 之後會要求 participants／signals／candidates
+        // 嘅寫入一定要先有呢張入場證（或者已經係合法 participants）先
+        // 得——即係話密碼、踢人名單而家喺 WebRTC 訊令呢一層都真正有約
+        // 束力，唔再可以靠 devtools 直接打 Firestore SDK 完全繞過。
+        let verifyResult;
+        try {
+          verifyResult = await window.callCloudFunction('verifyRoomPassword', { roomId, password: enteredPassword });
+        } catch (verifyErr) {
+          // 伺服器而家加咗速率限制（見 functions/index.js 嘅
+          // checkRateLimit），短時間內試太多次密碼會拋
+          // resource-exhausted，呢種情況要話畀用戶知係「試得太密」，
+          // 唔係網絡問題，唔好誤導佢去檢查網絡連線
+          const code = verifyErr && (verifyErr.code || '');
+          if (typeof code === 'string' && code.indexOf('resource-exhausted') !== -1) {
+            window.showToast(verifyErr.message || window.t('room.tooManyAttempts', '嘗試次數過多，請稍後再試'), '⏳');
+          } else if (typeof code === 'string' && code.indexOf('permission-denied') !== -1) {
+            window.showToast(verifyErr.message || window.t('room.alreadyRemovedCannotRejoin', '你已經被移出這間房，不可以再加入'), '🚫');
+          } else {
+            window.showToast(window.t('room.verifyEntryFailed', '驗證入房資格失敗，請檢查網絡連線後再試'), '❌');
+          }
+          return false;
+        }
+        if (!verifyResult || !verifyResult.ok) {
+          window.showToast(window.t('room.wrongPasswordCannotJoin', '密碼錯誤，未能加入這個溫習室'), '🚫');
+          return false;
+        }
+      } catch (e) {
+        // ⚠️ 呢度之前靜靜哋 catch 咗就照樣行落去（fail-open）——而家改
+        // 成擋住入房：入房驗證呢步係唯一嘅安全防線，攞唔到入場證嘅話
+        // 之後 joinRoomParticipants() 一樣會俾 firestore.rules 擋返
+        // 出嚟，不如喺呢度就清楚話畀用戶知，唔好等到後面先見到一個
+        // 冇解釋嘅失敗。
+        console.error('入房驗證失敗:', e);
+        window.showToast(window.t('room.entryVerifyFailed', '入房驗證失敗，請檢查網絡連線後再試'), '❌');
+        return false;
+      }
+
+      // 記低呢間房係咪有密碼鎖（畀房內嗰粒🔒「查看密碼」掣決定顯唔顯示
+      // 用）——真正密碼值而家唔再存喺呢度，撳掣嗰刻先即時呼叫
+      // getRoomPassword 呢個 Cloud Function 現攞現用（見 showRoomPasswordPopup）。
+      state.currentRoomHasPassword = !!(roomCheckData && roomCheckData.hasPassword);
+      const lockBtn = document.getElementById('room-password-lock-btn');
+      if (lockBtn) lockBtn.style.display = state.currentRoomHasPassword ? 'inline-flex' : 'none';
+
+      // 房間人數上限檢查：跟返呢間房自己揀嘅人數上限（2 或 4 人），
+      // 而唔係一律當 4 人房——要喺 joinRoomParticipants／resetVideoSlots
+      // 呢兩步之前就設定好 state.currentRoomCapacity，等視訊格顯示邏輯
+      // 同底下嘅「已滿」提示都跟返正確嘅數字。
+      const roomCapacityForThisRoom = resolveRoomCapacity(roomCheckData);
+      state.currentRoomCapacity = roomCapacityForThisRoom;
+
+      const canJoin = await joinRoomParticipants(roomId);
+      if (!canJoin) {
+        window.showToast(window.t('room.roomFullTemplate', `房間已滿（${roomCapacityForThisRoom}/${roomCapacityForThisRoom}），暫時無法加入`).replace(/\{count\}|\{max\}/g, roomCapacityForThisRoom), "🚫");
+        return false;
+      }
+
+      // 呢一刻即係真正「入咗視訊溫習室」——唔理房主定參加者、唔理留幾耐，
+      // 溫習日曆同「連續溫習日」都當今日有溫習
+      if (typeof window.recordStudyDayIfNeeded === 'function') window.recordStudyDayIfNeeded();
+
+      // 入咗房就即刻攞 wake lock，擋住手機因閒置一段時間自動熄屏令計時停頓
+      requestRoomWakeLock();
+
+      state.currentRoomId = roomId;
+      state.isHost = isMyRoom;
+      // 「👑 房主」牌而家改為掛喺真正房主本人嗰一格（自己或者遠端），
+      // 唔再淨係得自己個格出現一句固定文字，見返 updateHostBadge()
+      state.currentRoomHostUid = isMyRoom ? window.currentUser.uid : (hostUid || null);
+
+      document.getElementById('active-room-title').innerText = roomName;
+      // 科目名要跟翻譯系統轉返做英文／廣東話官方名，唔可以淨係塞返
+      // 原文（同大廳房間卡片、QA帖子等其他顯示科目名嘅地方做法一致，
+      // 見 window.translateSubjectName，i18n.js）——之前漏咗呢個位，
+      // 導致房入面個科目標籤（例如「中國語文」）無論揀咩UI語言都
+      // keep住顯示中文（Alvis截圖發現）。額外set埋data-subject屬性，
+      // 等用家入咗房之後先切換語言，applyAppLanguage()嘅
+      // [data-subject]querySelectorAll邏輯都執到呢個位，即時跟住轉。
+      const activeRoomSubjectEl = document.getElementById('active-room-subject');
+      if (activeRoomSubjectEl) {
+        activeRoomSubjectEl.setAttribute('data-subject', subject);
+        activeRoomSubjectEl.innerText = window.translateSubjectName ? window.translateSubjectName(subject) : subject;
+      }
+      updateHostBadge();
+
+      // 番茄鐘（專注／小休自動循環）呢個功能已經整個移除——房入面而家
+      // 淨係一個好簡單嘅「順時計」總溫習時間，由入房嗰刻開始由 0 計起，
+      // 冇自動小休、都唔會停，一直計到退房為止。durationMins（房主建
+      // 立房間時揀嘅目標時間）而家淨係用嚟喺大廳房間列表度顯示畀人參
+      // 考，唔會再驅動任何計時器邏輯。
+      state.roomStoneSeconds = 0;
+      state.roomTotalSeconds = 0; // 每次新入房，「呢間房總溫習時間」由 0 開始順時計
+      state.myStones = 0;
+      refreshMyStoneTag(false);
+      updateTimerDisplay();
+
+      resetVideoSlots();
+      document.getElementById('room-lobby').style.display = 'none';
+      document.getElementById('room-active').style.display = 'block';
+      // 「視訊溫習室」呢個畫面本身淨係喺「視訊溫習室」分頁入面，如果用家係
+      // 喺第二個分頁（例如撳咗朋友邀請彈窗）先接受入房，一定要連埋分頁都
+      // 一齊切返去，唔係個房間狀態變咗但畫面仲留喺原本嗰頁，睇落好似冇反應
+      if (typeof window.switchTab === 'function') window.switchTab('room');
+      // 一入房就自動全螢幕（好似 Google Meet 咁），唔使學生自己再撳「⛶ 全螢幕」
+      // 先識用。淨係 UI 層面嘅「放大版面」全螢幕（見 toggleVideoFullscreenMode），
+      // 唔係瀏覽器嗰種真．全螢幕（唔想無端端搶走瀏覽器控制項／要求額外權限）。
+      // 等返一個 tick 等個畫面真正切換咗去 room-active 之後先觸發，唔係就
+      // 量唔到啱嘅可用空間（同 toggleVideoFullscreenMode 入面個做法一致）。
+      requestAnimationFrame(() => {
+        const roomActiveEl = document.getElementById('room-active');
+        if (roomActiveEl && !roomActiveEl.classList.contains('video-fullscreen-mode')) {
+          window.toggleVideoFullscreenMode();
+        }
+      });
+
+      await ensureTurnServers();
+      startTimer();
+      listenToRoomSignaling(roomId);
+      listenToParticipants(roomId);
+      listenToReactions(roomId);
+      startRoomHeartbeat();
+      startPresenceCheckLoop();
+
+      // 一入房就廣播上線通知並接駁現有用家，唔再要求「一定要開咗鏡頭先可以睇到人」
+      await broadcastPresenceAndConnect();
+      await connectToExistingPeers(roomId);
+      return true;
+    }
+
+    // 房間心跳：每 45 秒更新一次 lastActiveAt，等大廳嗰邊嘅幽靈房自動清理
+    // 機制（gcStaleRooms）識別到「呢間房仲有人喺度」，唔會誤刪。就算冇人特登
+    // 用鏡頭／做嘢，只要個分頁仲開住喺房入面，心跳就會繼續跳。
+    const ROOM_HEARTBEAT_INTERVAL_MS = 45 * 1000;
+    function startRoomHeartbeat() {
+      if (state.heartbeatTimer) clearInterval(state.heartbeatTimer);
+      state.heartbeatTimer = setInterval(async () => {
+        if (!state.currentRoomId || !window.db || !window.fs) return;
+        try {
+          await window.fs.updateDoc(window.fs.doc(window.db, "rooms", state.currentRoomId), {
+            lastActiveAt: Date.now()
+          });
+        } catch (e) { /* 房間可能已經被刪走，忽略 */ }
+      }, ROOM_HEARTBEAT_INTERVAL_MS);
+    }
+
+    window.deleteRoomQuick = async function(roomId) {
+      if (!window.db || !window.fs) return;
+      try {
+        await window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId));
+        window.showToast(window.t('room.deleteRoomSuccess', '已刪除該溫習房'), "🗑️");
+      } catch (err) {
+        window.showToast(window.t('common.deleteFailed', '刪除失敗'), "❌");
+      }
+    };
+
+    // ===================== 專注背景音（真實錄音 MP3，循環播放）=====================
+    // 之前用 Web Audio API 即時合成雜訊，後來改用管理員提供嘅 ElevenLabs
+    // 錄音（放喺 assets/sounds/ 資料夾），音質靚好多，所以呢度改用簡單嘅
+    // <audio loop> 方式播放，唔再需要濾波器/雜訊合成嗰套邏輯。
+    const BG_SOUND_FILES = {
+      white: { label: '白噪音',        file: 'assets/sounds/white-noise.mp3' },
+      rain1: { label: '雨聲 1',        file: 'assets/sounds/rain-1.mp3' },
+      rain2: { label: '雨聲 2',        file: 'assets/sounds/rain-2.mp3' },
+      cafe1: { label: '咖啡室環境聲 1', file: 'assets/sounds/cafe-1.mp3' },
+      cafe2: { label: '咖啡室環境聲 2', file: 'assets/sounds/cafe-2.mp3' },
+      train1: { label: '火車聲 1',      file: 'assets/sounds/train-1.mp3' },
+      train2: { label: '火車聲 2',      file: 'assets/sounds/train-2.mp3' }
+    };
+
+    let bgAudioEl = null;
+
+    // 背景音而家有兩組控制項會同時存在喺畫面度：一組喺正常（非全螢幕）
+    // room-bar 度（id 前綴 bg-noise-），一組喺全螢幕專用嘅細面板度（id
+    // 前綴 fs-bg-noise-，平時收埋，撳「🔊 背景音」先打開）。兩組控制項
+    // 揀嘅嘢一定要保持一致，唔理你喺邊一組度操作，所以呢度用呢個共用
+    // helper 揸住呢兩組 id，逐樣同步返個值/狀態。
+    const BG_NOISE_SELECT_IDS = ['bg-noise-select', 'fs-bg-noise-select'];
+    const BG_NOISE_VOLUME_IDS = ['bg-noise-volume', 'fs-bg-noise-volume'];
+    const BG_NOISE_PAUSE_BTN_IDS = ['bg-noise-pause-btn', 'fs-bg-noise-pause-btn'];
+
+    function stopBgNoise() {
+      if (bgAudioEl) {
+        bgAudioEl.pause();
+        bgAudioEl.src = '';
+        bgAudioEl = null;
+      }
+      updateBgNoisePauseBtn();
+    }
+
+    // 暫停／繼續已經在播緊嘅背景音，唔會好似之前咁樣完全停咗再要重新
+    // 揀一次先再播（會由頭開始播），保留返播放緊嗰個位置。
+    window.toggleBgNoisePause = function() {
+      if (!bgAudioEl) return;
+      if (bgAudioEl.paused) {
+        bgAudioEl.play().catch((err) => {
+          console.warn('背景音繼續播放失敗：', err);
+        });
+      } else {
+        bgAudioEl.pause();
+      }
+      updateBgNoisePauseBtn();
+    };
+
+    function updateBgNoisePauseBtn() {
+      const hasSound = !!bgAudioEl;
+      const isPaused = hasSound && bgAudioEl.paused;
+      BG_NOISE_PAUSE_BTN_IDS.forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = !hasSound;
+        btn.innerText = isPaused ? '▶️' : '⏸️';
+        btn.style.opacity = hasSound ? '1' : '.4';
+      });
+    }
+
+    window.setBgNoiseType = function(type) {
+      stopBgNoise();
+      // 兩組背景音控制項嘅揀選狀態要同步——例如喺全螢幕細面板度揀咗
+      // 「雨聲 1」，退返出全螢幕之後，正常嗰組 select 都應該顯示緊
+      // 「雨聲 1」，唔應該打回「關閉」
+      BG_NOISE_SELECT_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = type;
+      });
+      if (type === 'off') return;
+      const preset = BG_SOUND_FILES[type];
+      if (!preset) return;
+
+      bgAudioEl = new Audio(preset.file);
+      bgAudioEl.loop = true;
+      const volEl = document.getElementById('bg-noise-volume');
+      bgAudioEl.volume = volEl ? parseFloat(volEl.value) : 0.39;
+      // play() 係 async，未必即刻 resolve/reject，先即刻更新一次暫停掣
+      // 狀態（呢個時候 bgAudioEl 已經存在，暫停掣應該即刻變得撳）,
+      // 等 play() 真正有結果之後、下面 .then()/.catch() 再校正返
+      // 播放中／暫停緊嘅圖示
+      updateBgNoisePauseBtn();
+      bgAudioEl.play().then(() => {
+        updateBgNoisePauseBtn();
+      }).catch((err) => {
+        // 大部分瀏覽器要求音頻播放一定要響用戶手動操作（呢度即係揀 select）
+        // 入面觸發先得，正常情況呢度唔會撞到，但都保留錯誤處理以防萬一
+        console.warn('背景音播放失敗：', err);
+        window.showToast(window.t('room.bgNoisePlayFailed', '背景音播放失敗，請再揀一次'), '⚠️');
+        updateBgNoisePauseBtn();
+      });
+    };
+
+    window.setBgNoiseVolume = function(vol) {
+      BG_NOISE_VOLUME_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = vol;
+      });
+      if (bgAudioEl) bgAudioEl.volume = parseFloat(vol);
+    };
+
+    // 全螢幕入面「🔊 背景音」呢粒掣：平時（唔係全螢幕）呢個位置收埋
+    // 晒，一入到全螢幕先現形（見 CSS .fs-bg-noise-only）；掣本身撳一下
+    // 就開／關個細面板，等用戶有需要至打開嚟揀，唔會成塊全螢幕視訊畫面
+    // 都長期霸住呢個控制列位置。
+    //
+    // 面板用 position:fixed（見 HTML 度個註解），所以要用 JS 計實際
+    // 座標——按「🔊 背景音」呢粒掣而家喺畫面邊度（getBoundingClientRect），
+    // 揀返貼近掣、又唔會出晒螢幕邊界嘅位置（橫向全螢幕嗰陣 room-bar
+    // 喺右手邊窄條，面板應該向左伸展；直向全螢幕 room-bar 喺頂部，面板
+    // 應該喺掣下面伸展），先至唔會好似之前咁樣一部分俾窄條裁走、顯示唔晒。
+    function positionFsBgNoisePanel() {
+      const btn = document.getElementById('fs-bg-noise-toggle-btn');
+      const panel = document.getElementById('fs-bg-noise-panel');
+      if (!btn || !panel) return;
+      const margin = 8;
+      const btnRect = btn.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      const panelW = panelRect.width || 170;
+      const panelH = panelRect.height || 120;
+
+      // 先試「貼喺掣個右邊」，出晒界先改做「貼喺掣個左邊」；
+      // 兩邊都唔夠位（例如窄手機直向）就索性同螢幕右邊界留返個 margin
+      let left = btn.getBoundingClientRect().right + margin;
+      if (left + panelW > window.innerWidth - margin) {
+        left = btnRect.left - panelW - margin;
+      }
+      if (left < margin) left = Math.max(margin, window.innerWidth - panelW - margin);
+
+      // 垂直方向：先試同粒掣頂對齊，出晒螢幕下邊界先向上挪返
+      let top = btnRect.top;
+      if (top + panelH > window.innerHeight - margin) {
+        top = window.innerHeight - panelH - margin;
+      }
+      if (top < margin) top = margin;
+
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
+    }
+
+    window.toggleFsBgNoisePanel = function() {
+      const panel = document.getElementById('fs-bg-noise-panel');
+      if (!panel) return;
+      const willOpen = panel.style.display !== 'flex';
+      if (willOpen) {
+        // 要先擺出嚟先量到 panelRect 嘅實際闊高，所以分兩步：
+        // 隱形咁擺出嚟度尺 → 計位 → 先真正顯示
+        panel.style.visibility = 'hidden';
+        panel.style.display = 'flex';
+        positionFsBgNoisePanel();
+        panel.style.visibility = 'visible';
+      } else {
+        panel.style.display = 'none';
+      }
+    };
+
+    // 轉螢幕方向／窗口大細變咗（例如手機由直向轉橫向）嗰陣，如果個
+    // 背景音面板啱啱好開緊，要即時重新計位，唔係就會停留喺轉向之前
+    // 嗰個已經唔啱嘅座標
+    window.addEventListener('resize', () => {
+      const panel = document.getElementById('fs-bg-noise-panel');
+      if (panel && panel.style.display === 'flex') positionFsBgNoisePanel();
+    });
+    window.addEventListener('orientationchange', () => {
+      const panel = document.getElementById('fs-bg-noise-panel');
+      if (panel && panel.style.display === 'flex') setTimeout(positionFsBgNoisePanel, 100);
+    });
+
+    function startTimer() {
+      if (state.countdownTimer) clearInterval(state.countdownTimer);
+
+      // 番茄鐘（專注／小休自動循環）呢個功能已經整個移除。房入面而家淨
+      // 係一個好簡單嘅順時計時器：一直計一直計，唔會自動停低小休，都
+      // 冇「幾多輪」嘅概念。淨係喺無被判定為閒置（awardingPaused）嘅
+      // 時候先計時、先計分，每滿真正嘅 60 秒就畀 1 PTS + 1/60 小時嘅
+      // 累積溫習時數。
+      let secondsSinceLastAward = 0;
+
+      state.countdownTimer = setInterval(async () => {
+        if (!state.awardingPaused) {
+          state.roomTotalSeconds = (state.roomTotalSeconds || 0) + 1;
+          secondsSinceLastAward++;
+          // v1.221.0：每滿 15 分鐘磨好一粒石頭；v1.224.0：黃金時段按倍數加快
+          const gNow = typeof window.currentGoldenHour === 'function' ? window.currentGoldenHour() : null;
+          state.roomStoneSeconds = (state.roomStoneSeconds || 0) + (gNow ? gNow.stoneMultiplier : 1);
+          const stonesNow = Math.floor(state.roomStoneSeconds / (60 * (window.STONE_MINUTES || 15)));
+          if (stonesNow !== (state.myStones || 0)) {
+            state.myStones = stonesNow;
+            refreshMyStoneTag(true);
+            if (window.currentUser && state.currentRoomId && window.db) {
+              window.fs.setDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId, 'participants', window.currentUser.uid), { stones: stonesNow }, { merge: true }).catch(() => {});
+            }
+            if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard();
+          }
+        }
+        updateTimerDisplay();
+
+        if (secondsSinceLastAward >= 60 && !state.awardingPaused) {
+          secondsSinceLastAward = 0;
+          // 每滿 60 秒真正嘅溫習時間，除咗畀 N PTS（可以喺Admin後台
+          // 「計分規則」分頁調整，見 window.SCORING_RULES），仲要累加
+          // 1/60 小時到「累積溫習時數」度，等個時數可以同視訊房嘅實際
+          // 溫習時間掛鈎
+          awardStudyPoint(window.SCORING_RULES.ptsPerMinute, 1 / 60);
+        }
+      }, 1000);
+    }
+
+    // 積分／時數寫入 Firestore 失敗（例如視訊房頻寬緊張）嗰陣，唔再靜雞雞
+    // 掉咗嗰次請求：排入呢個隊，留返轉頭重試。因為伺服器嗰邊每次淨係識
+    // 加返「呢一格」嘅固定增量（1 PTS／1/60 小時，見 ALLOWED_AWARD_POINTS／
+    // ALLOWED_AWARD_HOURS_INCREMENTS 白名單），唔係話畫面樂觀更新到幾多
+    // 就補返差額嗰種「追落後」，所以一定要保住每一次冇寫成功嘅請求本身，
+    // 逐個重試，先至真係追得返（唔係淨係等「下次」新嗰次順利就當數）。
+    let awardSyncQueue = [];
+    // 伺服器嘅 failed-precondition／invalid-argument 代表「呢次唔會再成功」，
+    // 同網絡斷線（可以重試）分開處理。
+    function isAwardRejectedError(e) {
+      const code = (e && e.code) ? String(e.code) : '';
+      return code.indexOf('failed-precondition') !== -1 || code.indexOf('invalid-argument') !== -1;
+    }
+    let awardSyncInFlight = false;
+    let awardSyncRetryTimer = null;
+
+    async function flushAwardSyncQueue() {
+      if (awardSyncInFlight || awardSyncQueue.length === 0) return;
+      awardSyncInFlight = true;
+      try {
+        while (awardSyncQueue.length > 0) {
+          const payload = awardSyncQueue[0];
+          try {
+            await window.callCloudFunction('awardStudyPoints', payload);
+            awardSyncQueue.shift();
+          } catch (e) {
+            // v1.199.0：伺服器明確拒絕（例如已經離開咗間房、派分太密），
+            // 重試都冇用，直接放棄呢次，唔好塞住成條隊。
+            if (isAwardRejectedError(e)) { awardSyncQueue.shift(); continue; }
+            console.warn('積分／時數補寫仍然失敗，遲啲再試（畫面已經顯示緊最新狀態，唔影響使用）:', e);
+            break; // 呢次都仲係唔得，唔使再逐個試落去，等下個重試週期先再嚟
+          }
+        }
+      } finally {
+        awardSyncInFlight = false;
+      }
+    }
+
+    // 每 20 秒check 一次隊入面仲有冇未補寫成功嘅請求，全個 session 淨係
+    // 起一次呢個計時器就夠（唔使跟住個別房間開／關）。
+    if (!awardSyncRetryTimer) {
+      awardSyncRetryTimer = setInterval(flushAwardSyncQueue, 20000);
+    }
+
+    // hoursIncrement：呢次要累加幾多小時到「累積溫習時數」（users.hours），
+    // 淨係房入面實際專注嘅每一分鐘先會傳呢個值（1/60），其他獎勵（例如
+    // 「仲喺度嗎」確認嘅額外 PTS）唔代表真正流逝咗嘅專注時間，所以預設
+    // 唔會影響時數，避免將時數同「賺咗幾多分」混埋一齊。
+    // v1.230.2：呢個檔案唔係 module，下面嘅 function awardStudyPoint 本身已經係 window.awardStudyPoint（stream.js 直接用），唔好再另外指派，否則會無限自己叫自己
+    async function awardStudyPoint(pointsAmount, hoursIncrement) {
+      pointsAmount = (typeof pointsAmount === 'number' && pointsAmount > 0) ? pointsAmount : 1;
+      hoursIncrement = (typeof hoursIncrement === 'number' && hoursIncrement > 0) ? hoursIncrement : 0;
+
+      // 更新畫面
+      const ptsEl = document.getElementById('stat-points');
+      if (ptsEl) {
+        const current = parseInt(ptsEl.innerText || '0');
+        ptsEl.innerText = current + pointsAmount;
+        syncGachaPtsDisplay();
+        const homePts = document.getElementById('home-stat-pts');
+        if (homePts) homePts.innerText = current + pointsAmount;
+      }
+
+      // 簡短閃亮提示（唔彈 toast 避免騷擾）
+      if (ptsEl) {
+        ptsEl.style.transition = 'color .3s';
+        ptsEl.style.color = '#D9C9B5';
+        setTimeout(() => { ptsEl.style.color = ''; }, 800);
+      }
+
+      if (!window.currentUser || !window.db || !window.fs) return;
+
+      const expPerPoint = (LEVEL_CONFIG && typeof LEVEL_CONFIG.expPerMinute === 'number') ? LEVEL_CONFIG.expPerMinute : 1;
+      // v1.224.0：黃金時段本機先按倍數顯示，伺服器回覆後再以伺服器數字為準
+      const goldenNow = (hoursIncrement > 0 && typeof window.currentGoldenHour === 'function') ? window.currentGoldenHour() : null;
+      // 小數倍數：本機用累積餘數估算，最後以伺服器回覆的 exp 為準
+      const rawGain = expPerPoint * pointsAmount * (goldenNow ? goldenNow.expMultiplier : 1) + (state.localExpFrac || 0);
+      const expGain = Math.floor(rawGain + 1e-9);
+      state.localExpFrac = rawGain - expGain;
+      // 「今日目標」同一次處理埋：如果 todayDate 仲係今日就當「今日累積」加多
+      // 1 分鐘，如果隔咗一日（或者未設過）就當呢分鐘係新一日嘅第一分鐘。
+      const isNewDay = hoursIncrement > 0 && window.currentUser.todayDate !== getTodayDateStr();
+
+      // 先喺本機即刻更新（唔等 Firestore 寫入成功先至反映畫面）——同 PTS 顯示
+      // 用返一致嘅「樂觀更新」做法。之前呢部份寫喺 await 寫入成功之後先做，
+      // 一旦嗰次寫入因為網絡問題（例如視訊房用緊頻寬）而失敗，「今日目標」
+      // 同「累積時數」就會靜靜雞停咗，睇落好似溫咗好耐都冇進度，但實際上
+      // 個問題係個更新本身冧咗、唔係冇儲夠鐘。而家改為本機狀態即時更新，
+      // Firestore 淨係負責喺背景盡量同步返（失敗都唔會擋住畫面）。
+      window.currentUser.points = (window.currentUser.points || 0) + pointsAmount;
+      const prevLevel = calcLevelInfo(window.currentUser.exp || 0).level;
+      window.currentUser.exp = (window.currentUser.exp || 0) + expGain;
+      updateLevelDisplay();
+      const newLevel = calcLevelInfo(window.currentUser.exp).level;
+      const leveledUpLocally = newLevel > prevLevel;
+      if (hoursIncrement > 0) {
+        const newHours = (parseFloat(window.currentUser.hours) || 0) + hoursIncrement;
+        window.currentUser.hours = newHours;
+        const hoursDisplay = newHours.toFixed(1);
+        const statHoursEl = document.getElementById('stat-hours');
+        if (statHoursEl) statHoursEl.innerText = hoursDisplay;
+        const homeHoursEl = document.getElementById('home-stat-hours');
+        if (homeHoursEl) homeHoursEl.innerText = formatHoursMinutes(newHours);
+
+        if (isNewDay) {
+          window.currentUser.todayMinutes = 1;
+          window.currentUser.todayDate = getTodayDateStr();
+        } else {
+          window.currentUser.todayMinutes = (window.currentUser.todayMinutes || 0) + 1;
+        }
+        updateGoalBarDisplay();
+
+        // 「本月排行榜」本機樂觀更新：真正決定月份歸零嘅係伺服器（見
+        // functions/index.js 嘅 awardStudyPoints，用伺服器時間判斷，唔
+        // 信任前端），呢度純粹即時更新返本機顯示／自己名次計算用，等
+        // 「本月」own-rank 都可以喺未攞新資料之前都準確返。
+        const curMonthStr = getCurrentMonthStr();
+        if (window.currentUser.monthlyPeriod !== curMonthStr) {
+          window.currentUser.monthlyHours = hoursIncrement;
+          window.currentUser.monthlyPeriod = curMonthStr;
+        } else {
+          window.currentUser.monthlyHours = (parseFloat(window.currentUser.monthlyHours) || 0) + hoursIncrement;
+        }
+      }
+
+      // 寫入伺服器：而家改用 Cloud Function（awardStudyPoints）做，用
+      // Admin SDK + Firestore transaction 原子咁加分，同時將「呢次可以
+      // 攞幾多分」鎖死喺伺服器嘅白名單入面，唔再單靠前端話寫幾多就幾
+      // 多——同扭蛋扣分（spendGachaPoints）一樣嘅硬化模式。呢度純粹係
+      // 背景持久化，就算失敗都唔會影響用家而家見到嘅畫面（本機已經即
+      // 時更新咗）；如果失敗就排入 awardSyncQueue 等遲啲重試（唔可以淨係
+      // 拋棄咗就算，唔係嘅話「累積時數」／排行榜會永遠追唔返呢一格）。
+      const payload = {
+        points: pointsAmount,
+        hoursIncrement,
+        roomId: state.currentRoomId || '',
+        // v1.230.0：主播直播期間計分（stream.js 設定 window.swmHostStreamId）
+        // v1.230.3：觀看直播亦計分（伺服器按比率計）
+        streamId: (!state.currentRoomId && typeof window.swmAwardStreamId === 'function') ? (window.swmAwardStreamId() || undefined) : undefined,
+        isNewDay,
+        todayDateStr: hoursIncrement > 0 ? getTodayDateStr() : undefined
+      };
+      // v1.223.0：用戶揀咗磨邊款石頭（0 = 自動跟最新段位）
+      if (hoursIncrement > 0 && typeof window.getChosenStone === 'function') payload.activeStone = window.getChosenStone();
+      // v1.220.0：升級提示等伺服器回覆先顯示，咁就可以連埋升級獎勵一齊講
+      const showLevelUpToast = (reward) => {
+        const rank = getRankTitle(newLevel);
+        let msg = window.t('room.levelUpTemplate', `升級了！現在是 Lv.${newLevel} ${rank.title}！`).replace('{level}', newLevel).replace('{title}', window.rankTitle ? window.rankTitle(rank) : rank.title);
+        if (reward && (reward.tickets > 0 || reward.fragments > 0)) {
+          const parts = [];
+          if (reward.tickets > 0) parts.push(window.t('level.rewardTicketsTemplate', '免費扭蛋券 {n} 張').replace('{n}', reward.tickets));
+          if (reward.fragments > 0) parts.push(window.t('level.rewardFragmentsTemplate', '碎片 {n} 個').replace('{n}', reward.fragments));
+          msg += ' ' + window.t('level.rewardPrefix', '獎勵：') + parts.join('、');
+        }
+        window.showToast(msg, '⬆️');
+      };
+      try {
+        await flushAwardSyncQueue(); // 先追返之前排隊緊嘅（保住次序），先寄呢次新嘅
+        const res = await window.callCloudFunction('awardStudyPoints', payload);
+        // v1.230.3：分數以伺服器回覆為準（觀看直播只計一半）
+        if (res && typeof res.points === 'number' && window.currentUser) {
+          window.currentUser.points = res.points;
+          const ptsEl2 = document.getElementById('stat-points');
+          if (ptsEl2) ptsEl2.innerText = res.points;
+          const homePts2 = document.getElementById('home-stat-pts');
+          if (homePts2) homePts2.innerText = res.points;
+          if (typeof syncGachaPtsDisplay === 'function') syncGachaPtsDisplay();
+        }
+        if (res && typeof res.exp === 'number' && window.currentUser) {
+          window.currentUser.exp = res.exp;
+          if (typeof updateLevelDisplay === 'function') updateLevelDisplay();
+        }
+        if (res && res.stoneInfo) {
+          window.currentUser.stones = res.stoneInfo.stones;
+          window.currentUser.stoneMinutes = res.stoneInfo.stoneMinutes;
+          if (typeof res.stoneInfo.activeStone === 'number' && typeof window.confirmChosenStone === 'function') window.confirmChosenStone(res.stoneInfo.activeStone);
+          if (typeof window.updateOtterStatsCard === 'function') window.updateOtterStatsCard();
+        }
+        const reward = res && res.levelReward;
+        if (reward) {
+          window.currentUser.freeGachaTickets = reward.freeGachaTickets;
+          window.currentUser.stickerFragments = reward.stickerFragments;
+          if (typeof window.refreshGachaTicketUI === 'function') window.refreshGachaTicketUI();
+        }
+        if (leveledUpLocally || reward) showLevelUpToast(reward);
+      } catch (e) {
+        if (leveledUpLocally) showLevelUpToast(null);
+        if (isAwardRejectedError(e)) { console.warn('伺服器拒絕今次積分（唔會重試）:', e && e.message); return; }
+        console.warn("積分同步到 Firestore 失敗，已排隊等遲啲重試（畫面已經即時更新，唔影響使用）:", e);
+        awardSyncQueue.push(payload);
+      }
+    }
+
+    // 將秒數格式化做「順時」顯示：唔夠 1 小時就 MM:SS，夠鐘就變 H:MM:SS，
+    // 等總溫習時間就算計耐咗都睇得清楚（唔會淨係得兩位數字爆晒格）。
+    function formatElapsedClock(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds || 0));
+      const hrs = Math.floor(s / 3600);
+      const mins = Math.floor((s % 3600) / 60);
+      const secs = s % 60;
+      if (hrs > 0) {
+        return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+      // 番茄鐘（專注／小休自動循環）呢個功能已經整個移除，房入面而家淨
+      // 係顯示一個順時計嘅「本房總溫習時間」，冇任何階段／輪數嘅概念。
+      const totalTimeEl = document.getElementById('room-total-time');
+      if (totalTimeEl) {
+        totalTimeEl.innerText = formatElapsedClock(state.roomTotalSeconds || 0);
+      }
+    }
+
+    // ===================== 防「開房掛機刷分」：定時確認用家是否真係喺度 =====================
+    // 每 15 分鐘彈窗問一次「仲喺度嗎？」，5 分鐘內冇撳確認就暫停計分（PTS/EXP／
+    // 本房總時間都唔再累積），彈窗本身唔會自動閂——會一直留喺度，直至用家
+    // 自己撳「是，我仍在學習」先恢復累積、先真正閂返個彈窗。
+    //
+    // 特登唔會因為「開緊鏡頭」就跳過呢個檢查：單純開住鏡頭唔代表個人真係
+    // 坐喺鏡頭前專心溫緊書（例如鏡頭可以擺住影住空凳、或者對住鏡頭做第二
+    // 樣嘢），如果淨係憑鏡頭開住就當佢在場、跳過確認，會令人可以一開鏡頭
+    // 就掛住唔理攞盡計分，變相冇咗呢個防刷分機制原本嘅意義。所以唔理有冇
+    // 開鏡頭，都要定期主動撳一下確認先算數。
+    // 同樣可以喺Admin後台「防掛機參數」分頁調整，見上面 MIC_OPEN_LIMIT_SECONDS
+    // 嗰段註解。
+    let ROOM_PRESENCE_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 每 30 分鐘check 一次
+    let ROOM_PRESENCE_RESPONSE_MS = 5 * 60 * 1000;        // 彈窗後 5 分鐘內要確認
+
+    // 防掛機參數目前生效中嘅數值（分鐘），畀 Admin後台「防掛機參數」分頁
+    // 顯示用。真正生效嘅計時器數值睇返上面 MIC_OPEN_LIMIT_SECONDS 等
+    // let 變數本身——呢個物件淨係畀 UI 顯示「而家生效緊邊組數值」用，
+    // 兩邊會由 applyAntiIdleRules() 同步更新，唔使擔心睇到舊數值。
+    window.ANTI_IDLE_RULES = {
+      presenceCheckIntervalMin: ROOM_PRESENCE_CHECK_INTERVAL_MS / 60000,
+      presenceResponseMin: ROOM_PRESENCE_RESPONSE_MS / 60000,
+      micOpenLimitMin: MIC_OPEN_LIMIT_SECONDS / 60,
+      micCooldownMin: MIC_COOLDOWN_SECONDS / 60,
+      micIdleResetMin: MIC_IDLE_RESET_SECONDS / 60
+    };
+
+    // 由 Firestore（admin_config/antiIdleRules）讀到嘅最新設定，覆蓋返
+    // 以上幾個計時器用緊嘅 let 變數，同時同步更新 window.ANTI_IDLE_RULES
+    // 畀 Admin 後台顯示。⚠️ 已經開始緊嘅計時器（例如用戶已經喺房入面）
+    // 唔會即時被打斷重設，新數值會喺下一次相關計時器重新開始嗰陣（例如
+    // 下次入房、下次開咪）先生效，同「計分規則」嗰套30秒緩存生效時間
+    // 嘅道理類似——唔使擔心手動同步問題。
+    function applyAntiIdleRules(data) {
+      if (!data) return;
+      if (typeof data.presenceCheckIntervalMin === 'number' && data.presenceCheckIntervalMin > 0) {
+        ROOM_PRESENCE_CHECK_INTERVAL_MS = data.presenceCheckIntervalMin * 60 * 1000;
+        window.ANTI_IDLE_RULES.presenceCheckIntervalMin = data.presenceCheckIntervalMin;
+      }
+      if (typeof data.presenceResponseMin === 'number' && data.presenceResponseMin > 0) {
+        ROOM_PRESENCE_RESPONSE_MS = data.presenceResponseMin * 60 * 1000;
+        window.ANTI_IDLE_RULES.presenceResponseMin = data.presenceResponseMin;
+      }
+      if (typeof data.micOpenLimitMin === 'number' && data.micOpenLimitMin > 0) {
+        MIC_OPEN_LIMIT_SECONDS = data.micOpenLimitMin * 60;
+        window.ANTI_IDLE_RULES.micOpenLimitMin = data.micOpenLimitMin;
+      }
+      if (typeof data.micCooldownMin === 'number' && data.micCooldownMin > 0) {
+        MIC_COOLDOWN_SECONDS = data.micCooldownMin * 60;
+        window.ANTI_IDLE_RULES.micCooldownMin = data.micCooldownMin;
+      }
+      if (typeof data.micIdleResetMin === 'number' && data.micIdleResetMin > 0) {
+        MIC_IDLE_RESET_SECONDS = data.micIdleResetMin * 60;
+        window.ANTI_IDLE_RULES.micIdleResetMin = data.micIdleResetMin;
+      }
+    }
+    window.applyAntiIdleRules = applyAntiIdleRules;
+
+    function startPresenceCheckLoop() {
+      if (state.presenceCheckTimer) clearInterval(state.presenceCheckTimer);
+      state.presenceConfirmed = true;
+      state.awardingPaused = false;
+      state.presenceCheckTimer = setInterval(() => {
+        triggerPresenceCheck();
+      }, ROOM_PRESENCE_CHECK_INTERVAL_MS);
+    }
+
+    function stopPresenceCheckLoop() {
+      if (state.presenceCheckTimer) { clearInterval(state.presenceCheckTimer); state.presenceCheckTimer = null; }
+      if (state.presenceTimeoutTimer) { clearTimeout(state.presenceTimeoutTimer); state.presenceTimeoutTimer = null; }
+      closeModal('modal-presence-check');
+      state.awardingPaused = false;
+    }
+
+    function triggerPresenceCheck() {
+      if (!state.currentRoomId) return;
+      state.presenceConfirmed = false;
+      openModal('modal-presence-check');
+      if (state.presenceTimeoutTimer) clearTimeout(state.presenceTimeoutTimer);
+      // 逾時唔會自動閂返個彈窗——個彈窗會一直留喺度，等用家自己撳
+      // 「是，我仍在學習」先閂，先算真正確認咗返嚟
+      state.presenceTimeoutTimer = setTimeout(() => {
+        if (!state.presenceConfirmed) {
+          handlePresenceTimeout();
+        }
+      }, ROOM_PRESENCE_RESPONSE_MS);
+    }
+
+    function handlePresenceTimeout() {
+      // 淨係暫停計分，唔會自動幫佢退房、都唔會自動閂彈窗——房間同彈窗都會
+      // 一直等到用家自己撳「是，我仍在學習」為止先恢復
+      state.awardingPaused = true;
+      updateTimerDisplay();
+      window.showToast(window.t('room.presenceAutoSuspended', '偵測到你可能不在，已暫停計分。按「是，我仍在學習」即可恢復'), '⏸️');
+    }
+
+    // 淨係解除暫停狀態、閂返彈窗，唔會有額外 +2 PTS 獎勵——畀開返鏡頭
+    // 自動觸發嗰種情況用（見 toggleCamera），因為嗰種唔算用家主動撳確認
+    function resumePresenceSilently() {
+      state.presenceConfirmed = true;
+      state.awardingPaused = false;
+      if (state.presenceTimeoutTimer) { clearTimeout(state.presenceTimeoutTimer); state.presenceTimeoutTimer = null; }
+      closeModal('modal-presence-check');
+      updateTimerDisplay();
+    }
+
+    window.confirmStillHere = function() {
+      resumePresenceSilently();
+      // 主動確認「仲喺度」都算係一種投入專注嘅表現，順手獎分鼓勵一下
+      // （獎勵PTS數值可以喺Admin後台「計分規則」分頁調整）
+      const bonus = window.SCORING_RULES.presenceCheckBonus;
+      awardStudyPoint(bonus);
+      window.showToast(window.t('room.presenceBonusTemplate', `讚！繼續加油溫習，額外送你 +${bonus} PTS`).replace('{bonus}', bonus), '💪');
+    };
+
+    window.leaveRoom = async function() {
+      // 房主特別處理：先彈出選擇視窗，問佢想保留定係關閉房間
+      if (state.isHost) {
+        const participantsRef = window.fs.collection(window.db, "rooms", state.currentRoomId, "participants");
+        const snap = await window.fs.getDocs(participantsRef);
+        const othersCount = snap.docs.filter(d => d.id !== window.currentUser.uid).length;
+
+        if (othersCount > 0) {
+          // 仲有其他人喺房：問房主點處理
+          openModal('modal-host-leave');
+          return;
+        }
+        // 冇其他人：直接刪除房間同退出（唔使問）
+        await hostLeaveDeleteRoom();
+        return;
+      }
+
+      // 普通成員：直接退出
+      await doLeaveRoom(false);
+    };
+
+    // 房主選擇：保留房間，自己退出並轉移房主身份
+    window.hostLeaveKeepRoom = async function() {
+      closeModal('modal-host-leave');
+
+      try {
+        // 找出除自己以外加入最早嘅用家，升佢做新房主
+        const participantsRef = window.fs.collection(window.db, "rooms", state.currentRoomId, "participants");
+        const snap = await window.fs.getDocs(participantsRef);
+        const others = snap.docs
+          .map(d => d.data())
+          .filter(p => p.uid !== window.currentUser.uid)
+          .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+
+        if (others.length > 0) {
+          const newHost = others[0];
+          await window.fs.setDoc(window.fs.doc(window.db, "rooms", state.currentRoomId), {
+            hostName: newHost.name,
+            hostUid: newHost.uid
+          }, { merge: true });
+          window.showToast(window.t('room.hostTransferredAutoTemplate', `房主已移交給 ${newHost.name}，房間繼續開放`).replace('{name}', newHost.name), '👑');
+        }
+      } catch (e) {
+        console.error("移交房主失敗:", e);
+      }
+
+      await doLeaveRoom(false);
+    };
+
+    // 房主選擇：關閉房間，踢走所有人
+    window.hostLeaveDeleteRoom = async function() {
+      closeModal('modal-host-leave');
+      await doLeaveRoom(true);
+    };
+
+    // 共用嘅退出邏輯
+    async function doLeaveRoom(deleteRoom, customToastMsg) {
+      if (deleteRoom && state.currentRoomId && window.fs && window.db) {
+        try {
+          await window.fs.deleteDoc(window.fs.doc(window.db, "rooms", state.currentRoomId));
+        } catch(e) { console.error("刪除房間失敗", e); }
+      }
+      await cleanupRoomConnections();
+      document.getElementById('room-active').style.display = 'none';
+      document.getElementById('room-lobby').style.display = 'block';
+      // 退房一定要順手退埋全螢幕：唔係嘅話個全螢幕黑色遮罩仲蓋住成個
+      // 畫面，用戶會以為個 app 死咗機
+      if (typeof window.exitVideoFullscreenMode === 'function') window.exitVideoFullscreenMode();
+      // 自己主動撳「退出房間」/「關閉房間」唔再彈 toast——畫面已經即時
+      // 由房間切返去大廳，結果好明顯，唔使再額外講一次。但如果係俾人
+      // 踢走／房主移交呢啲對方主動觸發、用戶未必預期到嘅情況，
+      // customToastMsg 會帶住明確原因傳入嚟，呢啲仍然要顯示（唔係
+      // 用戶會唔知發生咗咩事）。
+      if (customToastMsg) window.showToast(customToastMsg, '🚪');
+    }
+
+    async function cleanupRoomConnections() {
+      releaseRoomWakeLock(); // 離開房間就放返個 wake lock，唔使成部機一直唔熄得屏
+      if (state.renderFrameId) cancelAnimationFrame(state.renderFrameId);
+      if (state.countdownTimer) clearInterval(state.countdownTimer);
+      if (state.heartbeatTimer) { clearInterval(state.heartbeatTimer); state.heartbeatTimer = null; }
+      stopPresenceCheckLoop();
+
+      // 離開房間就要停止背景白噪音，唔可以帶去大廳／其他分頁繼續播；
+      // 兩組控制項（正常 + 全螢幕細面板）嘅 select 都要打返去「關閉」，
+      // 全螢幕嗰個細面板亦都要收埋返，等下次入返房、開全螢幕都係由
+      // 收埋狀態開始
+      stopBgNoise();
+      ['bg-noise-select', 'fs-bg-noise-select'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = 'off';
+      });
+      const fsBgNoisePanel = document.getElementById('fs-bg-noise-panel');
+      if (fsBgNoisePanel) fsBgNoisePanel.style.display = 'none';
+      if (typeof resetFsRoomBarCollapse === 'function') resetFsRoomBarCollapse();
+
+      // 完整結束鏡頭＋麥克風（離開房間跟單純「關閉鏡頭」不同，要整個釋放掉）
+      // 注意釋放次序：先斷開 P2P 連線入面 sender 對軌道嘅參照 → 解除 <video>
+      // 元素嘅綁定 → 先至停止軌道本身。部分手機瀏覽器要全部「消費者」都釋放
+      // 咗先會真正放開鏡頭／咪硬件，如果次序調轉，重新開鏡頭好易失敗。
+      Object.values(state.peerConnections).forEach(pc => {
+        pc.getSenders().forEach(sender => {
+          if (sender.track) {
+            try { sender.replaceTrack(null); } catch (e) { /* 連線可能已經斷咗，忽略 */ }
+          }
+        });
+      });
+
+      const videoElForCleanup = document.getElementById('behind-video-engine');
+      if (videoElForCleanup) {
+        videoElForCleanup.pause();
+        videoElForCleanup.srcObject = null;
+      }
+      if (state.mediaStream) {
+        state.mediaStream.getTracks().forEach(track => track.stop());
+        state.mediaStream = null;
+      }
+      state.isCameraOn = false;
+      state.isMicOn = false;
+
+      // 離開房間就清埋開咪上限／冷卻嘅計時器，唔好帶落去下一次入房
+      if (state.micOpenTimer) { clearTimeout(state.micOpenTimer); state.micOpenTimer = null; }
+      if (state.micOpenUiTimer) { clearInterval(state.micOpenUiTimer); state.micOpenUiTimer = null; }
+      state.micOpenUntil = null;
+      state.micUsedSeconds = 0;
+      state.micSegmentStart = null;
+      if (state.micCooldownTimer) { clearTimeout(state.micCooldownTimer); state.micCooldownTimer = null; }
+      if (state.micCooldownUiTimer) { clearInterval(state.micCooldownUiTimer); state.micCooldownUiTimer = null; }
+      state.micCooldownUntil = null;
+      if (state.micIdleResetTimer) { clearTimeout(state.micIdleResetTimer); state.micIdleResetTimer = null; }
+
+      const videoEl = document.getElementById('behind-video-engine');
+      const canvasEl = document.getElementById('canvas-stream-display');
+      const overlayEl = document.getElementById('self-overlay');
+      const statusTag = document.getElementById('camera-status-tag');
+      const btn = document.getElementById('btn-camera');
+      if (canvasEl) canvasEl.style.display = 'none';
+      if (overlayEl) overlayEl.style.display = 'flex';
+      if (statusTag) statusTag.style.display = 'none';
+      if (btn) { btn.innerText = window.t('room.cameraOn', '開啟鏡頭'); btn.className = 'btn btn-primary'; }
+      updateMicButtonUI();
+
+      if (state.signalingUnsubscribe) {
+        state.signalingUnsubscribe();
+        state.signalingUnsubscribe = null;
+      }
+      if (state.candidatesUnsubscribe) {
+        state.candidatesUnsubscribe();
+        state.candidatesUnsubscribe = null;
+      }
+      if (state.reactionsUnsubscribe) {
+        state.reactionsUnsubscribe();
+        state.reactionsUnsubscribe = null;
+      }
+      if (state.roomDocUnsubscribe) {
+        state.roomDocUnsubscribe();
+        state.roomDocUnsubscribe = null;
+      }
+      state.pendingCandidates = {};
+      state.lastProcessedOfferTs = {};
+      state.lastProcessedAnswerTs = {};
+      state.connectingTo = new Set();
+      state.mySessionStartTs = null;
+
+      // 主動清走自己嘅 presence 同已經送出嘅 offer/answer 文件，
+      // 等其他人之後重新入返嚟嗰陣，唔會執到自己呢次留低嘅舊訊號資料
+      // v1.199.3：一定要「等」呢啲刪除完成先離開 participants——Firestore
+      // 規則要求仲係房內參與者先刪得 signals，之前冇等，好多時 participants
+      // 紀錄已經刪咗、signals 先送到伺服器，結果被拒絕，舊 offer／上線文件
+      // 一直留喺房入面，下次有人入房就執到呢啲舊資料，連線卡喺「連線中...」。
+      if (state.currentRoomId && window.currentUser) {
+        const myUid = window.currentUser.uid;
+        const roomId = state.currentRoomId;
+        const deletions = Object.keys(state.peerConnections).map(remoteUid =>
+          window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "signals", myUid + "_to_" + remoteUid)).catch(() => {})
+        );
+        deletions.push(window.fs.deleteDoc(window.fs.doc(window.db, "rooms", roomId, "signals", myUid)).catch(() => {}));
+        await Promise.all(deletions);
+      }
+
+      Object.values(state.peerConnections).forEach(pc => pc.close());
+      state.peerConnections = {};
+
+      await leaveRoomParticipants();
+      // 離開房間之後將人數上限還原做預設值 4，等下次入返一間普通（冇特別
+      // 指定）嘅房或者仲未入房嗰段空檔，視訊格顯示邏輯有個穩陣嘅預設可跟；
+      // 一定要喺 resetVideoSlots() 之前做，佢先會攞返啱嘅上限嚟顯示。
+      state.currentRoomCapacity = ROOM_CAPACITY;
+      resetVideoSlots();
+
+      state.currentRoomId = null;
+      state.isHost = false;
+      state.currentRoomHostUid = null;
+      state.currentRoomHasPassword = false;
+      const lockBtnOnLeave = document.getElementById('room-password-lock-btn');
+      if (lockBtnOnLeave) lockBtnOnLeave.style.display = 'none';
+    }
+
+    window.wakeVideoEngine = function() {
+      const video = document.getElementById('behind-video-engine');
+      if (video && video.srcObject && video.paused) {
+        video.play().catch(e => console.log(e));
+      }
+    };
+
+    // 讀返手機／裝置而家嘅螢幕方向角度（0／90／180／270）。
+    // 大部分 Android 裝置用 screen.orientation.angle 就讀到；iOS Safari
+    // 對呢個 API 支援唔完整，退而求其次用返舊式、已棄用但仍然可用嘅
+    // window.orientation（注意佢淨係得 -90／0／90／180 呢幾個值）。
+    // 讀唔到就當 0 度（即係冇特別打橫，唔使做任何修正）。
+    function getScreenOrientationAngle() {
+      try {
+        if (screen.orientation && typeof screen.orientation.angle === 'number') {
+          return ((screen.orientation.angle % 360) + 360) % 360;
+        }
+      } catch (e) { /* 忽略 */ }
+      if (typeof window.orientation === 'number') {
+        return ((window.orientation % 360) + 360) % 360;
+      }
+      return 0;
+    }
+
+    function startCanvasRenderLoop() {
+      const video = document.getElementById('behind-video-engine');
+      const canvas = document.getElementById('canvas-stream-display');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      // 曾經試過用 canvas.captureStream() 攞一條「已經做咗方向修正」嘅
+      // 畫面串流，改為送呢條去對方（唔再送原始鏡頭 track），等對方都
+      // 見到啱方向。但實測發現部分裝置／瀏覽器用呢個方法會令對方個
+      // WebRTC 連線收唔到畫面、卡喺「連線中...」（核心嘅睇到對方鏡頭
+      // 功能反而壞咗），所以已經還原返送原始鏡頭 track 呢個做法
+      // （見 getOutgoingMediaTracks），寧願方向修正暫時只做到自己個
+      // 預覽，都唔想累到基本嘅視訊連線都用唔到。
+
+      function drawFrame() {
+        if (!state.isCameraOn) return;
+        if (video.paused && video.srcObject) video.play().catch(() => {});
+
+        if (video.readyState >= 2 && video.videoWidth > 0) {
+          const vw = video.videoWidth, vh = video.videoHeight;
+          // 手機喺拍緊嘅過程中打橫，鏡頭嘅原始畫面唔會自動跟住轉向
+          // （呢個係好多瀏覽器/裝置嘅共同限制），所以要自己靠螢幕方向
+          // 角度，喺畫落 canvas 之前手動旋轉返啱，令自己個預覽睇落去
+          // 都係啱方向。
+          // 注意：呢度改嘅淨係自己個預覽（canvas-stream-display）畫面，
+          // 冇改實際送俾對方嗰條 WebRTC track（見 getOutgoingMediaTracks
+          // 嘅註解——曾經試過連埋送出去嗰條都轉正，但會累到部分裝置嘅
+          // 視訊連線斷晒，所以還原返送原始 track）。想令對方都睇到啱
+          // 方向，係靠 broadcastMyCameraRotation() 將呢個角度寫入
+          // participants 文件，等對方個瀏覽器喺顯示層（.remote-video-
+          // element）加返 CSS rotate 嚟做（見 updateRemoteSlotRotation），
+          // 唔會影響到 WebRTC 軌道本身。
+          const angle = getScreenOrientationAngle();
+          // 註：曾經試過畀 angle===90／270 分別加返 ±90 度旋轉，但用戶
+          // 實測（連同佢描述「而家張相要再轉番右 90 度先啱」）反覆推
+          // 算之後發現：對呢部 iPhone 嚟講，90／270 度嗰陣其實根本唔
+          // 使外加任何旋轉——即係話呢部裝置個瀏覽器／鏡頭本身喺打橫嗰
+          // 陣已經自行處理咗方向，我哋之前額外加嘅旋轉先係令佢變錯嘅
+          // 元兇。所以而家 90／270 度都當正常（唔轉），淨係保留 180
+          // 度（倒轉）先要特別處理。如果之後發現原來仲係唔啱，
+          // 唔好再憑估旋轉方向，應該直接攞返除錯提示嘅角度數值同用戶
+          // 核對返實際畫面對唔對得上。
+          if (canvas.width !== vw || canvas.height !== vh) {
+            canvas.width = vw;
+            canvas.height = vh;
+          }
+          ctx.save();
+          if (angle === 180) {
+            ctx.translate(canvas.width, canvas.height);
+            ctx.rotate(Math.PI);
+            ctx.drawImage(video, 0, 0, vw, vh);
+          } else {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }
+          ctx.restore();
+        }
+        state.renderFrameId = requestAnimationFrame(drawFrame);
+      }
+
+      state.renderFrameId = requestAnimationFrame(drawFrame);
+    }
+
+    // 揀返而家真正應該送俾其他人嘅 track：聲音、畫面都直接用麥克風／
+    // 鏡頭原始 track（曾經試過改用 canvas.captureStream() 嚟做埋方向
+    // 修正，但會累到部分裝置嘅 WebRTC 連線收唔到對方畫面，所以還原返
+    // 送原始 track，保住基本嘅視訊連線可靠）。
+    function getOutgoingMediaTracks() {
+      const tracks = [];
+      if (!state.mediaStream) return tracks;
+      state.mediaStream.getTracks().forEach(t => tracks.push(t));
+      return tracks;
+    }
+
+    // 當自己開咗鏡頭／咪，需要讓對方知道「我依家有 track 可以送」。
+    // 之前嘗試用 replaceTrack 直接修改現有 transceiver 嘅 sender，
+    // 但因為 offerer 同 answerer 兩邊嘅 transceiver 次序唔一定一樣，
+    // 配對容易出錯，令軌道塞唔進去。
+    //
+    // 正確做法：直接重新協商（renegotiate）——把新嘅軌道加入現有連線後，
+    // 再走一次 Offer/Answer，讓對方嘅 SDP 重新描述晒最新嘅媒體狀態。
+    // 呢樣嘢 WebRTC 本身已經設計支援，唔需要斷開舊連線。
+    async function renegotiateWithPeers() {
+      if (!state.mediaStream || !state.currentRoomId) return;
+      const roomId = state.currentRoomId;
+      const myUid = window.currentUser.uid;
+
+      for (const [remoteUid, pc] of Object.entries(state.peerConnections)) {
+        if (pc.connectionState === 'closed' || pc.connectionState === 'failed') continue;
+
+        // 將本地媒體軌道加入連線（如果未加過嘅話）。
+        //
+        // 注意：關鏡頭嗰陣（toggleCameraInner）淨係用 videoSender.replaceTrack(null)
+        // 停用個 sender，並冇真正 removeTrack，所以嗰個 sender 仍然存在於
+        // pc.getSenders() 入面，只不過 .track 變咗 null。舊邏輯淨係用
+        // 「s.track 存在先計」嚟判斷「有冇加過呢種 kind」，結果重開鏡頭嗰陣會
+        // 誤判做「未加過 video」，於是又 pc.addTrack() 多一次——喺同一個
+        // peer connection 度整多咗一條新嘅 video m-line，令對方個 SDP 出現
+        // 重複／衝突嘅 transceiver，永遠都收唔到重開返嘅鏡頭畫面。
+        //
+        // 修正：如果揾到一個「同種 kind、但而家冇 track」嘅舊 transceiver，
+        // 就用 replaceTrack 重用返佢（見返 receiver.track.kind 嚟辨認種類，
+        // 呢個唔會因為自己 sender track 變 null 而受影響），先至喺真係冇
+        // 任何相關 transceiver 嘅情況先用 addTrack 開一條新嘅。
+        const existingSenderKinds = new Set(pc.getSenders().filter(s => s.track).map(s => s.track.kind));
+        for (const track of getOutgoingMediaTracks()) {
+          if (existingSenderKinds.has(track.kind)) continue;
+
+          const reusableTransceiver = pc.getTransceivers().find(t =>
+            !t.stopped && t.sender && !t.sender.track &&
+            t.receiver && t.receiver.track && t.receiver.track.kind === track.kind
+          );
+
+          if (reusableTransceiver) {
+            try {
+              await reusableTransceiver.sender.replaceTrack(track);
+              // replaceTrack 唔會自動調返 transceiver 嘅方向，要手動確保
+              // 方向包含「send」，唔係方向唔啱、track 都送唔出去俾對方
+              if (reusableTransceiver.direction === 'recvonly') {
+                reusableTransceiver.direction = 'sendrecv';
+              } else if (reusableTransceiver.direction === 'inactive') {
+                reusableTransceiver.direction = 'sendonly';
+              }
+              wrtcLog(`重複使用與 ${remoteUid} 的舊 ${track.kind} transceiver（避免重複 m-line）`);
+            } catch (e) {
+              console.warn(`replaceTrack 失敗，改用 addTrack (${remoteUid}, ${track.kind}):`, e);
+              pc.addTrack(track, state.mediaStream);
+              wrtcLog(`加入 ${track.kind} track 到與 ${remoteUid} 的連線`);
+            }
+          } else {
+            pc.addTrack(track, state.mediaStream);
+            wrtcLog(`加入 ${track.kind} track 到與 ${remoteUid} 的連線`);
+          }
+        }
+
+        // 判斷呢條連線係咪仲有「本機已經加咗 track 做 sender，但從未真正經
+        // Offer/Answer 協商過」嘅情況。呢個唔淨止喺岩岩呢次 call 先會出現——
+        // 例如喺 handleIncomingOffer／createPeerConnection 建立新連線嗰陣，
+        // 如果自己已經開咗鏡頭，會將現有 track 自動 addTrack 落新連線，但如果
+        // 嗰次負責主動發 Offer 嘅係對方（而對方仲未開自己鏡頭，Offer 入面
+        // 根本冇對應嘅 media m-line），咁自己呢邊自動加落嘅 track 就會停留喺
+        // 「已加咗 sender，但 transceiver.currentDirection 仍然係 null（未曾
+        // 出現喺任何一次完整協商入面）」嘅狀態，對方永遠都收唔到。所以呢度
+        // 唔可以淨係睇「岩岩呢次 call 咗 addTrack 冇」，要直接睇返 transceiver
+        // 本身有冇真正協商過先準確。
+        const needsRenegotiation = pc.getTransceivers().some(t =>
+          t.sender && t.sender.track &&
+          (t.currentDirection === null || t.currentDirection === 'recvonly' || t.currentDirection === 'inactive')
+        );
+        if (!needsRenegotiation) continue;
+
+        // 之前呢度用「只有 UID 字母序較細嘅一方先可以重新協商」嚟避免雙方同時
+        // 發起造成衝突，但呢個做法有個致命 bug：如果 UID 較細嗰位之後一直冇
+        // 再開／關過自己嘅鏡頭或咪，佢就永遠都唔會再送 Offer，於是 UID 較大
+        // 嗰位新加入嘅視訊／音訊軌道就會永遠停留喺未協商嘅狀態——對方會永遠
+        // 見唔到呢個人嘅畫面（呢個正正就係「房主見唔到某位同學鏡頭」嘅成因）。
+        // 而家改為雙方都可以主動發起重新協商，只用 signalingState 嚟避免喺
+        // 傾緊嘢嗰陣重複再發一次；如果兩邊真係撞正同時發 Offer，就交俾
+        // handleIncomingOffer 嗰邊嘅 polite/impolite 邏輯去化解（一方讓步、
+        // 一方堅持）。
+        if (pc.signalingState !== 'stable') {
+          wrtcLog(`與 ${remoteUid} 的連線暫時未 stable（${pc.signalingState}），跳過這次重新協商`);
+          continue;
+        }
+
+        try {
+          pc._makingOffer = true;
+          const offer = await pc.createOffer();
+          if (pc.signalingState !== 'stable') { pc._makingOffer = false; continue; }
+          await pc.setLocalDescription(offer);
+          pc._makingOffer = false;
+          await window.fs.setDoc(window.fs.doc(window.db, "rooms", roomId, "signals", myUid + "_to_" + remoteUid), {
+            from: myUid,
+            to: remoteUid,
+            offer: JSON.parse(JSON.stringify(offer)),
+            timestamp: Date.now()
+          });
+          wrtcLog(`重新協商 Offer 已送出 → ${remoteUid}`);
+        } catch (err) {
+          pc._makingOffer = false;
+          console.error(`重新協商失敗 (${remoteUid}):`, err);
+        }
+      }
+    }
+
+    // 將秒數格式化做 M:SS 嘅倒數顯示（例如 185 秒 → "3:05"）
+    function formatMicCountdown(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${m}:${String(sec).padStart(2, '0')}`;
+    }
+
+    window.updateMicButtonUI = function updateMicButtonUI() {
+      const micBtn = document.getElementById('btn-mic');
+      const micTag = document.getElementById('mic-status-tag');
+      if (!micBtn) return;
+
+      // 冷卻中：咪掣鎖住，用實時倒數顯示仲需幾耐先可以再開咪
+      // （用 micCooldownUntil 呢個時間戳嚟判斷，唔靠 micCooldownTimer 個 id，
+      // 因為 startMicCooldown() 入面設 micCooldownUntil 同攞到個新 timer id
+      // 有先後之分，如果淨係睇 timer id，中間嗰一刻 updateMicButtonUI() 會判斷錯）
+      if (state.micCooldownUntil && Date.now() < state.micCooldownUntil) {
+        const remainSec = Math.ceil((state.micCooldownUntil - Date.now()) / 1000);
+        const countdown = formatMicCountdown(remainSec);
+        micBtn.disabled = true;
+        micBtn.innerText = window.t('room.micCooldownBtn', '冷卻中 {n}').replace('{n}', countdown);
+        micBtn.className = 'btn btn-outline';
+        if (micTag) {
+          micTag.style.display = state.isCameraOn ? 'flex' : 'none';
+          micTag.innerText = window.t('room.micCooldownTag', '咪冷卻中 {n}').replace('{n}', countdown);
+          micTag.style.background = 'rgba(164,180,212,0.7)';
+        }
+        return;
+      }
+      micBtn.disabled = false;
+
+      if (state.isMicOn) {
+        // 顯示仲有幾耐先撞到 3 分鐘開咪上限（實時倒數）；統一同其他計時器（例如
+        // 房間嘅番茄鐘）一樣淨係用空格分隔，唔加括號
+        const remainSec = state.micOpenUntil ? Math.ceil((state.micOpenUntil - Date.now()) / 1000) : null;
+        const countdown = remainSec !== null ? ` ${formatMicCountdown(remainSec)}` : '';
+        micBtn.innerText = window.t('room.micOnBtn', '已開咪{n}').replace('{n}', countdown);
+        micBtn.className = 'btn btn-outline';
+        if (micTag) {
+          micTag.style.display = state.isCameraOn ? 'flex' : 'none';
+          micTag.innerText = window.t('room.micOnTag', '已開啟麥克風{n}').replace('{n}', countdown);
+          micTag.style.background = 'rgba(134,239,172,0.9)';
+        }
+      } else {
+        micBtn.innerText = window.t('room.micMuted', '已靜音');
+        micBtn.className = 'btn btn-red';
+        if (micTag) {
+          micTag.style.display = state.isCameraOn ? 'flex' : 'none';
+          micTag.innerText = window.t('room.micMuted', '已靜音');
+          micTag.style.background = 'rgba(164,180,212,0.7)';
+        }
+      }
+    }
+
+    // 包裝 getUserMedia：如果裝置暫時「忙緊」（常見於剛關閉鏡頭/咪就馬上重開，
+    // 手機裝置釋放鏡頭硬件有時需要多過半秒），會分階段延遲重試多次先俾使用者見到失敗。
+    async function getUserMediaSafe(constraints, retries = 3, delayMs = 500) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          return await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+          const isBusy = err.name === 'NotReadableError' || err.name === 'TrackStartError';
+          if (!isBusy || attempt === retries) throw err;
+          console.warn(`裝置暫時忙緊，${delayMs}ms 後重試（第 ${attempt + 1} 次）:`, err);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    // 統一將 getUserMedia 的錯誤代碼轉做用家睇得明嘅訊息
+    function describeMediaError(err) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        return window.t('room.mediaPermissionDenied', '權限被拒絕。請到瀏覽器／系統設定允許這個網站使用鏡頭與麥克風後再試一次。');
+      }
+      if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        return window.t('room.mediaDeviceNotFound', '未偵測到鏡頭或麥克風裝置。');
+      }
+      if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        return window.t('room.mediaDeviceBusy', '鏡頭或麥克風正被其他 App／分頁佔用，請關閉後再試一次（或重新整理網頁）。');
+      }
+      return window.t('room.mediaAccessFailedGeneric', '無法存取鏡頭／麥克風，請檢查瀏覽器權限設定。');
+    }
+
+    window.toggleCamera = async function() {
+      // 防止手機上快速連撳兩下（或者其他原因觸發嘅重複呼叫）：
+      // 開鏡頭嘅過程中 state.isCameraOn 仲未變成 true 之前，
+      // 兩次呼叫都會行入「開鏡頭」呢個分支，各自建立多一次連線，
+      // 令同一位用家出現兩條互相衝突嘅 P2P 連線。加返呢個鎖之後，
+      // 呼叫緊嗰陣其他呼叫會直接被忽略。
+      if (state.cameraToggleInProgress) {
+        wrtcLog('⚠️ 開/關鏡頭操作進行緊，忽略重複的呼叫');
+        return;
+      }
+      state.cameraToggleInProgress = true;
+
+      try {
+        await toggleCameraInner();
+      } finally {
+        state.cameraToggleInProgress = false;
+      }
+    };
+
+    async function toggleCameraInner() {
+      const videoEl = document.getElementById('behind-video-engine');
+      const canvasEl = document.getElementById('canvas-stream-display');
+      const overlayEl = document.getElementById('self-overlay');
+      const statusTag = document.getElementById('camera-status-tag');
+      const btn = document.getElementById('btn-camera');
+
+      if (state.isCameraOn) {
+        // 只關閉「鏡頭」本身：停止視訊軌道，但刻意不去關閉 P2P 連線、
+        // 不呼叫 resetVideoSlots()。不然自己會連帶看不到其他人本來就開著的鏡頭畫面。
+        if (state.renderFrameId) cancelAnimationFrame(state.renderFrameId);
+
+        // 同全面離開房間一樣：先斷開 sender 對視訊軌道嘅參照，先至停止軌道本身
+        Object.values(state.peerConnections).forEach(pc => {
+          const videoSender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (videoSender) {
+            try { videoSender.replaceTrack(null); } catch (e) { /* 忽略 */ }
+          }
+        });
+
+        videoEl.pause();
+        videoEl.srcObject = null;
+
+        if (state.mediaStream) {
+          state.mediaStream.getVideoTracks().forEach(track => {
+            track.stop();
+            state.mediaStream.removeTrack(track);
+          });
+        }
+
+        state.isCameraOn = false;
+        canvasEl.style.display = 'none';
+        overlayEl.style.display = 'flex';
+        statusTag.style.display = 'none';
+        btn.innerText = window.t('room.cameraOn', '開啟鏡頭');
+        btn.className = 'btn btn-primary';
+        updateMicButtonUI();
+
+        updateMyCameraStatus(false);
+      } else {
+        btn.innerText = window.t('room.cameraStarting', '鏡頭啟動中...');
+
+        try {
+          let videoTrack;
+
+          if (state.mediaStream) {
+            // 已經有現成的媒體串流（例如之前已經開過麥克風，或只是重新開鏡頭），
+            // 這次只需要另外取得視訊畫面即可
+            const videoOnlyStream = await getUserMediaSafe({
+              video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
+            });
+            videoTrack = videoOnlyStream.getVideoTracks()[0];
+            state.mediaStream.addTrack(videoTrack);
+          } else {
+            // 全新啟動：嘗試一次過取得鏡頭＋麥克風（麥克風權限失敗則退回純鏡頭畫面）
+            let stream;
+            try {
+              stream = await getUserMediaSafe({
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+              });
+            } catch (mediaErr) {
+              console.warn("同時取得鏡頭與麥克風失敗，改為僅開啟鏡頭:", mediaErr);
+              stream = await getUserMediaSafe({
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+                audio: false
+              });
+              window.showToast(window.t('room.micAccessFailedCameraOnly', '未能存取麥克風，僅開啟鏡頭畫面'), '⚠️');
+            }
+
+            state.mediaStream = stream;
+            videoTrack = stream.getVideoTracks()[0];
+
+            // 麥克風預設保持靜音，需要按「開咪」才會出聲
+            if (stream.getAudioTracks().length > 0) {
+              stream.getAudioTracks().forEach(t => t.enabled = false);
+              state.isMicOn = false;
+              updateMicButtonUI();
+            }
+          }
+
+          state.isCameraOn = true;
+
+          videoEl.muted = true;
+          videoEl.volume = 0;
+          videoEl.setAttribute('playsinline', 'true');
+          videoEl.srcObject = state.mediaStream;
+          await videoEl.play().catch(e => console.log(e));
+
+          canvasEl.style.display = 'block';
+          overlayEl.style.display = 'none';
+          statusTag.style.display = 'flex';
+          btn.innerText = window.t('room.cameraOff', '關閉鏡頭');
+          btn.className = 'btn btn-red';
+          updateMicButtonUI();
+
+          startCanvasRenderLoop();
+
+          // 開咗鏡頭之後，通知所有已連線嘅 peer 重新協商，
+          // 令佢哋嘅 SDP 包含到我哋新加入嘅視訊軌道
+          await renegotiateWithPeers();
+
+          // 如果仲未有任何連線（例如係第一個入房嘅人），先補一次廣播+掃描
+          if (Object.keys(state.peerConnections).length === 0 && state.currentRoomId) {
+            await broadcastPresenceAndConnect();
+            await connectToExistingPeers(state.currentRoomId);
+          }
+
+          updateMyCameraStatus(true);
+          broadcastMyCameraRotation();
+          // 開鏡頭成功唔再彈 toast——掣本身已經由「📹 開啟鏡頭」變咗做
+          // 「🔴 關閉鏡頭」、畫面亦已經即時見到自己個鏡頭預覽，呢個結果
+          // 已經好清楚，唔使再額外彈一個字幕重複講一次，減少每次撳掣
+          // 都有嘢彈出嚟嘅視覺干擾
+        } catch (err) {
+          console.error("相機存取失敗:", err);
+          window.showToast(describeMediaError(err), '❌');
+          btn.innerText = window.t('room.cameraOn', '開啟鏡頭');
+          btn.className = 'btn btn-primary';
+        }
+      }
+    }
+
+    // 靜音 / 開咪：跟鏡頭開關互相獨立，就算未開鏡頭也可以先按這顆掣。
+    // 第一次按下且尚未有任何音訊軌道時，會另外請求麥克風權限；
+    // 已經切換過的話，只是單純切換音軌的 enabled 狀態（不會中斷 P2P 連線）。
+    window.toggleMic = async function() {
+      const micBtn = document.getElementById('btn-mic');
+
+      // 開咪冷卻中：直接擋咗，唔畀重新開咪（防止學生掛住傾偈唔記得溫習）
+      if (!state.isMicOn && state.micCooldownUntil && Date.now() < state.micCooldownUntil) {
+        const remainSec = Math.max(0, Math.ceil((state.micCooldownUntil - Date.now()) / 1000));
+        const mins = Math.ceil(remainSec / 60);
+        window.showToast(window.t('room.micCoolingDownTemplate', `麥克風仍在冷卻中，大約 ${mins} 分鐘後才可以再開啟`).replace('{mins}', mins), '⏳');
+        return;
+      }
+
+      if (!state.mediaStream || state.mediaStream.getAudioTracks().length === 0) {
+        if (micBtn) micBtn.innerText = window.t('room.gettingMicBtn', '取得麥克風中...');
+        try {
+          let audioStream;
+          try {
+            audioStream = await getUserMediaSafe({
+              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+            });
+          } catch (constrainedErr) {
+            // 部分手機瀏覽器對進階音訊限制較敏感，改用最簡單的 audio:true 再試一次
+            console.warn("進階麥克風設定取得失敗，改用預設設定重試:", constrainedErr);
+            audioStream = await getUserMediaSafe({ audio: true });
+          }
+
+          const audioTrack = audioStream.getAudioTracks()[0];
+
+          if (!state.mediaStream) {
+            state.mediaStream = audioStream;
+          } else {
+            state.mediaStream.addTrack(audioTrack);
+          }
+
+          await renegotiateWithPeers();
+        } catch (err) {
+          console.error("取得麥克風失敗:", err);
+          window.showToast(describeMediaError(err), '❌');
+          updateMicButtonUI();
+          return;
+        }
+      }
+
+      state.isMicOn = !state.isMicOn;
+      state.mediaStream.getAudioTracks().forEach(track => track.enabled = state.isMicOn);
+
+      // 3 分鐘開咪上限：用 micUsedSeconds 累積「呢個冷卻循環入面總共開咗幾耐咪」，
+      // 手動關咪只係停止計時，唔會令個累積數歸零——所以熄咗再開返，剩返嘅
+      // 時間會接住計落去，唔會變相攞到無限開咪時間。累積夠 3 分鐘先會真正
+      // 觸發自動收咪 + 冷卻；累積數要等冷卻完成先歸零，開始新一個循環。
+      if (state.micOpenTimer) { clearTimeout(state.micOpenTimer); state.micOpenTimer = null; }
+      if (state.micOpenUiTimer) { clearInterval(state.micOpenUiTimer); state.micOpenUiTimer = null; }
+      state.micOpenUntil = null;
+
+      if (state.isMicOn) {
+        // 學生喺閒置期間未夠 5 分鐘就再開返咪：即係未回復到預算，
+        // 取消返個「閒置回復」計時器（唔使真係等到佢完），跟住正常接住計落去。
+        if (state.micIdleResetTimer) { clearTimeout(state.micIdleResetTimer); state.micIdleResetTimer = null; }
+
+        // 開返咪：將呢段開始嘅時間戳記低，計返仲有幾多預算未用完
+        state.micSegmentStart = Date.now();
+        const remainingSeconds = Math.max(0, MIC_OPEN_LIMIT_SECONDS - (state.micUsedSeconds || 0));
+
+        if (remainingSeconds <= 0) {
+          // 理論上唔應該發生（冇用盡預算前應該已經俾冷卻擋咗），保險起見
+          // 直接當即刻用晒，收返咪、入冷卻
+          state.isMicOn = false;
+          state.mediaStream.getAudioTracks().forEach(track => track.enabled = false);
+          state.micSegmentStart = null;
+          startMicCooldown();
+          updateMicButtonUI();
+          return;
+        }
+
+        state.micOpenUntil = Date.now() + remainingSeconds * 1000;
+        state.micOpenUiTimer = setInterval(updateMicButtonUI, 1000);
+        state.micOpenTimer = setTimeout(() => {
+          state.micOpenTimer = null;
+          if (state.micOpenUiTimer) { clearInterval(state.micOpenUiTimer); state.micOpenUiTimer = null; }
+          state.micOpenUntil = null;
+          state.micSegmentStart = null;
+          state.micUsedSeconds = MIC_OPEN_LIMIT_SECONDS;
+          if (state.isMicOn && state.mediaStream) {
+            state.isMicOn = false;
+            state.mediaStream.getAudioTracks().forEach(track => track.enabled = false);
+            window.showToast(window.t('room.micAutoOffAfter3Min', '開啟麥克風已滿 3 分鐘，已為你自動關閉，請專心繼續溫習！麥克風按鈕進入 5 分鐘冷卻'), '⏳');
+            // 額外彈出一個唔會自動關閉嘅提示視窗（書面語），確保學生真正留意到，
+            // 唔止係一閃即逝嘅 toast——要學生主動按掣確認先關得閉。
+            openModal('modal-mic-limit-reminder');
+            startMicCooldown();
+          } else {
+            updateMicButtonUI();
+          }
+        }, remainingSeconds * 1000);
+      } else {
+        // 主動關咪：將呢段用咗幾耐計落 micUsedSeconds，落次再開咪會接住計
+        if (state.micSegmentStart) {
+          const elapsedSeconds = (Date.now() - state.micSegmentStart) / 1000;
+          state.micUsedSeconds = Math.min(MIC_OPEN_LIMIT_SECONDS, (state.micUsedSeconds || 0) + elapsedSeconds);
+        }
+        state.micSegmentStart = null;
+
+        // 「閒置回復」機制：呢度嘅主動關咪，係喺未撞到 3 分鐘上限之前發生
+        // （撞到上限嗰個情況由上面 setTimeout 個分支處理，唔會行到呢度）。
+        // 如果學生手動關咪之後，連續 5 分鐘都冇再開返咪，就當佢已經完全
+        // 休息返，將 micUsedSeconds 回復做 0，等佢下次開咪可以攞返成套
+        // 3 分鐘，唔使因為之前用剩嘅零碎時間而畀「累積咗幾多」拖累。
+        if (state.micIdleResetTimer) { clearTimeout(state.micIdleResetTimer); state.micIdleResetTimer = null; }
+        if ((state.micUsedSeconds || 0) > 0 && (state.micUsedSeconds || 0) < MIC_OPEN_LIMIT_SECONDS) {
+          state.micIdleResetTimer = setTimeout(() => {
+            state.micIdleResetTimer = null;
+            // 保險檢查：如果呢段時間內因為其他途徑（例如撞咗上限入咗冷卻）已經
+            // 歸零或者已進入冷卻，就唔使畫蛇添足再處理一次
+            if (!state.isMicOn && !state.micCooldownUntil) {
+              state.micUsedSeconds = 0;
+            }
+          }, MIC_IDLE_RESET_SECONDS * 1000);
+        }
+      }
+
+      updateMicButtonUI();
+    };
+
+    // 開始 5 分鐘咪冷卻：鎖住咪掣、每秒刷新倒數顯示，時間到自動解鎖，
+    // 並且將 micUsedSeconds 歸零，開始新一個 3 分鐘預算循環
+    function startMicCooldown() {
+      if (state.micCooldownTimer) { clearTimeout(state.micCooldownTimer); state.micCooldownTimer = null; }
+      if (state.micCooldownUiTimer) { clearInterval(state.micCooldownUiTimer); state.micCooldownUiTimer = null; }
+      // 一旦真正撞上限入咗冷卻，「閒置回復」計時器就冇意義（冷卻本身完咗
+      // 就會歸零），取消佢，唔使兩個計時器同時running。
+      if (state.micIdleResetTimer) { clearTimeout(state.micIdleResetTimer); state.micIdleResetTimer = null; }
+
+      state.micCooldownUntil = Date.now() + MIC_COOLDOWN_SECONDS * 1000;
+      updateMicButtonUI();
+      state.micCooldownUiTimer = setInterval(updateMicButtonUI, 1000);
+      state.micCooldownTimer = setTimeout(() => {
+        state.micCooldownTimer = null;
+        state.micCooldownUntil = null;
+        state.micUsedSeconds = 0;
+        if (state.micCooldownUiTimer) { clearInterval(state.micCooldownUiTimer); state.micCooldownUiTimer = null; }
+        updateMicButtonUI();
+        window.showToast(window.t('room.micCooldownDone', '麥克風冷卻完成，可以重新開啟'), '✅');
+      }, MIC_COOLDOWN_SECONDS * 1000);
+    }
+
+    async function broadcastPresenceAndConnect() {
+      if (!window.currentUser || !state.currentRoomId || !window.db) return;
+      const myUid = window.currentUser.uid;
+      const presenceRef = window.fs.doc(window.db, "rooms", state.currentRoomId, "signals", myUid);
+      if (!state.mySessionStartTs) state.mySessionStartTs = Date.now();
+
+      await window.fs.setDoc(presenceRef, {
+        uid: myUid,
+        name: window.currentUser.username || '同學',
+        timestamp: Date.now()
+      }, { merge: true });
+      wrtcLog(`已廣播上線通知（我的 UID: ${myUid}）`);
+    }
+
+    // 開鏡頭當下，主動掃描房內「早已存在」的其他用家並嘗試建立連線。
+    // 若只靠監聽器被動反應，會漏掉兩種情況：
+    // (1) 對方比我早開鏡頭 → 對方的 presence 文件不會再變動，我方監聽器不會再被觸發
+    // (2) 對方已經送來 Offer，但當時我的鏡頭還沒開 → Offer 被略過後就永久錯過了
+    //     （Firestore 的 "added" 事件對同一份文件只會觸發一次）
+    async function connectToExistingPeers(roomId) {
+      if (!window.currentUser || !window.db || !roomId) return;
+      const myUid = window.currentUser.uid;
+
+      try {
+        const signalsRef = window.fs.collection(window.db, "rooms", roomId, "signals");
+        const snapshot = await window.fs.getDocs(signalsRef);
+        wrtcLog(`掃描房內現有用家，共讀到 ${snapshot.docs.length} 份 signals 文件`);
+
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+
+          // (a) 對方的上線通知（presence）→ 依 UID 排序決定是否由我方主動發起 Offer
+          if (data.uid && data.uid !== myUid) {
+            wrtcLog(`發現房內用家: ${data.uid}（我 ${myUid < data.uid ? '負責發起' : '等他發起'}）`);
+            getOrCreateRemoteSlot(data.uid, data.name);
+            if (myUid < data.uid && !state.peerConnections[data.uid]) {
+              await createOfferTo(roomId, data.uid, data.name);
+            }
+            continue;
+          }
+
+          // (b) 指名給我、但之前鏡頭未開而被略過的 Offer → 現在補上 Answer
+          if (data.to === myUid && data.offer && state.lastProcessedOfferTs[data.from] !== data.timestamp && isFreshOfferForThisSession(data)) {
+            wrtcLog(`發現一份之前錯過的 Offer ← ${data.from}，補上處理`);
+            state.lastProcessedOfferTs[data.from] = data.timestamp;
+            await handleIncomingOffer(roomId, data.from, data.offer);
+          }
+        }
+      } catch (err) {
+        console.error("掃描現有房內用家失敗:", err);
+        wrtcLog(`⚠️ 掃描房內用家失敗: ${err.message || err}`);
+      }
+    }
+
+    function listenToRoomSignaling(roomId) {
+      if (state.signalingUnsubscribe) state.signalingUnsubscribe();
+
+      const signalsRef = window.fs.collection(window.db, "rooms", roomId, "signals");
+      state.signalingUnsubscribe = window.fs.onSnapshot(signalsRef, (snapshot) => {
+        if (!window.currentUser) return;
+        const myUid = window.currentUser.uid;
+
+        snapshot.docChanges().forEach(async (change) => {
+          const data = change.doc.data();
+
+          // v1.199.1：有人離開房間時，佢個「上線」訊令文件會被刪除——之前
+          // 呢度連「刪除」呢種變化都當成「有人上線」處理，即刻幫已經走咗嘅
+          // 人重新開返一格，令畫面一直顯示「連線中...」。而家任何「刪除」
+          // 變化都唔再當新訊令處理；如果嗰個人已經唔喺 participants 名單，
+          // 就順手釋放佢嗰格。
+          if (change.type === 'removed') {
+            if (data.uid && data.uid !== myUid && !state.knownParticipantUids.has(data.uid)) {
+              releaseRemoteSlot(data.uid);
+            }
+            return;
+          }
+
+          // (a) 用家上線通知（presence）：發現房內其他人，並安排到四格視窗其中一格
+          if (data.uid && data.uid !== myUid) {
+            const remoteUid = data.uid;
+            getOrCreateRemoteSlot(remoteUid, data.name);
+
+            // 只由 UID 字母序較小的一方主動發起 Offer，避免雙方同時發起造成衝突
+            if (myUid < remoteUid && !state.peerConnections[remoteUid]) {
+              wrtcLog(`（監聽器）偵測到 ${remoteUid} 上線，我負責發起連線`);
+              await createOfferTo(roomId, remoteUid, data.name);
+            }
+            return;
+          }
+
+          // offer / answer：用時間戳去重，唔再淨係睇 change.type === 'added'。
+          // 之前淨係處理 'added' 會有個race condition：如果一開始執到嘅係
+          // 舊版本嘅 offer/answer（例如同一時間對方啱啱又覆寫緊份文件），
+          // 之後嗰個帶住新內容嘅 'modified' 事件會被完全忽略，永遠停留喺舊嘅、
+          // 唔啱嘅 SDP 度。而家改用 timestamp 判斷「呢份係咪已經處理過」，
+          // 咁樣就算一開始執到舊版本，之後嗰個新版本都會被正確處理返。
+
+          // (b) 收到指名給自己的 Offer → 建立連線並回覆 Answer
+          if (data.to === myUid && data.offer) {
+            if (state.lastProcessedOfferTs[data.from] === data.timestamp) return;
+            if (!isFreshOfferForThisSession(data)) return;
+            state.lastProcessedOfferTs[data.from] = data.timestamp;
+            await handleIncomingOffer(roomId, data.from, data.offer);
+            return;
+          }
+
+          // (c) 收到指名給自己的 Answer → 完成連線協商
+          if (data.to === myUid && data.answer) {
+            if (state.lastProcessedAnswerTs[data.from] === data.timestamp) return;
+            state.lastProcessedAnswerTs[data.from] = data.timestamp;
+            await handleIncomingAnswer(data.from, data.answer);
+            return;
+          }
+        });
+      });
+
+      listenToIceCandidates(roomId);
+    }
+
+    async function createOfferTo(roomId, remoteUid, remoteName) {
+      // 防止監聽器同掃描同時對同一個 peer 發起多條 offer
+      if (state.connectingTo.has(remoteUid)) {
+        wrtcLog(`⚠️ 已經在向 ${remoteUid} 發起連線的途中，跳過重複請求`);
+        return;
+      }
+      state.connectingTo.add(remoteUid);
+
+      wrtcLog(`主動發起連線 → ${remoteUid}`);
+
+      const existing = state.peerConnections[remoteUid];
+      if (existing) {
+        wrtcLog(`與 ${remoteUid} 已經有舊連線，捨棄並重新建立`);
+        existing.close();
+        delete state.peerConnections[remoteUid];
+      }
+
+      const pc = createPeerConnection(remoteUid, remoteName);
+      state.peerConnections[remoteUid] = pc;
+
+      // v1.199.5（自動化測試捉到）：自己未開鏡頭時，條連線入面一條媒體
+      // 通道（m-line）都冇，WebRTC 根本唔會開始連線，所以兩邊都冇開鏡頭
+      // 時會一直卡喺「連線中...」，要等有人開鏡頭先臨時協商，經常出事。
+      // 而家發起連線嗰邊一定預留「只收」嘅影像同聲音通道，入房即刻連通；
+      // 之後開鏡頭，renegotiateWithPeers() 會重用呢兩條通道（replaceTrack）。
+      if (pc.getTransceivers().length === 0) {
+        try {
+          pc.addTransceiver('video', { direction: 'recvonly' });
+          pc.addTransceiver('audio', { direction: 'recvonly' });
+        } catch (e) { console.warn('預留媒體通道失敗:', e); }
+      }
+
+      // v1.209.0：記住「發緊 Offer」，等 handleIncomingOffer 知道撞正（glare）
+      let offerDone;
+      pc._makingOffer = true;
+      pc._offerDone = new Promise((res) => { offerDone = res; });
+      try {
+        const offer = await pc.createOffer();
+        if (pc.signalingState !== 'stable') {
+          // 喺準備 Offer 期間已經收咗對方嘅 Offer（雙方同時發起），讓對方嗰個繼續
+          wrtcLog(`與 ${remoteUid} 同時發起連線，改為接受對方的 Offer`);
+          return;
+        }
+        await pc.setLocalDescription(offer);
+
+        await window.fs.setDoc(window.fs.doc(window.db, "rooms", roomId, "signals", window.currentUser.uid + "_to_" + remoteUid), {
+          from: window.currentUser.uid,
+          to: remoteUid,
+          offer: JSON.parse(JSON.stringify(offer)),
+          timestamp: Date.now()
+        });
+        wrtcLog(`Offer 已送出 → ${remoteUid}`);
+      } catch (err) {
+        if (pc.remoteDescription && pc.remoteDescription.type) {
+          // 對方嘅 Offer 已經接手呢條連線，唔係真正失敗，唔好刪走
+          wrtcLog(`與 ${remoteUid} 同時發起連線，已改用對方的 Offer`);
+        } else {
+          console.error("建立 WebRTC Offer 失敗:", err);
+          if (state.peerConnections[remoteUid] === pc) delete state.peerConnections[remoteUid];
+        }
+      } finally {
+        pc._makingOffer = false;
+        offerDone();
+        state.connectingTo.delete(remoteUid);
+      }
+    }
+
+    async function handleIncomingOffer(roomId, fromUid, offer) {
+      wrtcLog(`收到 Offer ← ${fromUid}`);
+
+      const myUid = window.currentUser.uid;
+      // 撞正兩邊同時重新協商（glare）時邊個讓步嘅 tie-break：UID 較大嘅一方係
+      // 「polite」，會捨棄自己未完成嘅 Offer 改為接受對方嗰個；UID 較細嗰位
+      // 係「impolite」，會堅持自己嘅 Offer、忽略呢個撞埋嚟嘅對方 Offer。
+      const polite = myUid > fromUid;
+
+      let pc = state.peerConnections[fromUid];
+      const isDead = pc && (pc.connectionState === 'failed' || pc.connectionState === 'closed');
+
+      if (!pc || isDead) {
+        // 之前呢度不論任何情況，一收到 Offer 就無條件關咗舊連線再重新建立，
+        // 結果連「純粹加多條 track 嘅重新協商」都會被當成「對方重新入房」，
+        // 令已經傾掂、運作緊嘅連線白白斷咗再重連一次。而家只喺完全冇連線，
+        // 或者舊連線已經死咗（failed／closed，即真係代表對方重新入房）嗰陣，
+        // 先重新建立；如果連線仲生生猛猛，就沿用返同一個 pc 做正常重新協商。
+        if (pc) {
+          wrtcLog(`與 ${fromUid} 的舊連線已經死了，捨棄並用新 Offer 重新建立`);
+          pc.close();
+        }
+        pc = createPeerConnection(fromUid, null);
+        state.peerConnections[fromUid] = pc;
+      } else if (pc.signalingState === 'have-local-offer' || pc._makingOffer) {
+        if (!polite) {
+          wrtcLog(`⚠️ 與 ${fromUid} 的重新協商撞正，我方 UID 較細，忽略對方這個 Offer`);
+          return;
+        }
+        wrtcLog(`⚠️ 與 ${fromUid} 的重新協商撞正，我方讓步，捨棄自己未完成的 Offer`);
+        if (pc._makingOffer && pc._offerDone) { try { await pc._offerDone; } catch (e) {} }
+        if (pc.signalingState === 'have-local-offer') await pc.setLocalDescription({ type: 'rollback' });
+      }
+
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        await flushPendingCandidates(fromUid);
+
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        await window.fs.setDoc(window.fs.doc(window.db, "rooms", roomId, "signals", window.currentUser.uid + "_to_" + fromUid), {
+          from: window.currentUser.uid,
+          to: fromUid,
+          answer: JSON.parse(JSON.stringify(answer)),
+          timestamp: Date.now()
+        });
+        wrtcLog(`Answer 已送出 → ${fromUid}`);
+
+        // 呢個 Answer 一定跟返對方個 Offer 嘅 m-line 數量／次序，唔可以喺
+        // Answer 入面私自加多啲對方冇問過嘅 media。如果自己之前已經開咗鏡頭
+        // ／咪，但對方個 Offer（例如佢仲未開自己鏡頭時發嘅）根本冇包含相應
+        // 嘅 m-line，噉自己已有嘅畫面／聲音就會停留喺「已加咗 sender 但未經
+        // 協商」嘅狀態，永遠傳唔到出去。所以呢度答完 Answer 之後，主動行多
+        // 一次 renegotiateWithPeers() 掃描一次，如果發現有track仲未真正協商
+        // 過，就即刻由自己呢邊補發一個新嘅 Offer 補上。
+        await renegotiateWithPeers();
+      } catch (err) {
+        console.error("處理 Offer / 建立 Answer 失敗:", err);
+      }
+    }
+
+    async function handleIncomingAnswer(fromUid, answer) {
+      const pc = state.peerConnections[fromUid];
+      if (!pc) return;
+      // 用 signalingState 判斷「而家係咪真係度等緊 answer」，比起淨係睇
+      // currentRemoteDescription 準確得多——後者一旦第一次協商成功之後就會
+      // 永遠得個真，令之後任何重新協商嘅 answer 都被誤判成「已經處理過」而略過。
+      if (pc.signalingState !== 'have-local-offer') {
+        wrtcLog(`⚠️ 收到 ${fromUid} 的 Answer，但目前狀態是 ${pc.signalingState}，忽略`);
+        return;
+      }
+      wrtcLog(`收到 Answer ← ${fromUid}`);
+
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        await flushPendingCandidates(fromUid);
+      } catch (err) {
+        console.error("設定 Answer 失敗:", err);
+      }
+    }
+
+    function listenToIceCandidates(roomId) {
+      if (state.candidatesUnsubscribe) state.candidatesUnsubscribe();
+
+      // 同 reactions 一樣：略過第一次快照，唔好處理呢個房間歷史上（例如之前好多次
+      // 退出／重新入房嘅測試）已經留低嘅舊 ICE candidate 文件。呢啲舊文件屬於早已
+      // 失效嘅連線，混入而家呢個新連線只會令 addIceCandidate 塞入垃圾資料，
+      // 反而阻礙真正嘅候選位處理，令連線一直卡喺「連線中」。
+      let isFirstSnapshot = true;
+      const candidatesRef = window.fs.collection(window.db, "rooms", roomId, "candidates");
+      state.candidatesUnsubscribe = window.fs.onSnapshot(candidatesRef, (snapshot) => {
+        if (isFirstSnapshot) {
+          isFirstSnapshot = false;
+          return;
+        }
+        if (!window.currentUser) return;
+        const myUid = window.currentUser.uid;
+
+        snapshot.docChanges().forEach(async (change) => {
+          if (change.type !== 'added') return;
+          const data = change.doc.data();
+          if (data.to !== myUid || !data.candidate) return;
+
+          const pc = state.peerConnections[data.from];
+          if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            } catch (err) {
+              console.error("加入 ICE Candidate 失敗:", err);
+            }
+          } else {
+            if (!state.pendingCandidates[data.from]) state.pendingCandidates[data.from] = [];
+            state.pendingCandidates[data.from].push(data.candidate);
+          }
+        });
+      });
+    }
+
+    async function flushPendingCandidates(remoteUid) {
+      const pc = state.peerConnections[remoteUid];
+      const queued = state.pendingCandidates[remoteUid];
+      if (!pc || !queued || queued.length === 0) return;
+
+      for (const candidate of queued) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error("加入排隊中的 ICE Candidate 失敗:", err);
+        }
+      }
+      state.pendingCandidates[remoteUid] = [];
+    }
+
+    function createPeerConnection(remoteUid, remoteName) {
+      const pc = new RTCPeerConnection(rtcConfig);
+
+      // 如果開咗鏡頭先，喺建立連線時就直接加入軌道；
+      // 如果未開鏡頭，就先建立空白連線接收對方嘅畫面，
+      // 等之後開鏡頭時再由 renegotiateWithPeers 加入軌道並重新協商。
+      if (state.mediaStream) {
+        getOutgoingMediaTracks().forEach(track => pc.addTrack(track, state.mediaStream));
+      }
+
+      pc.ontrack = (event) => {
+        wrtcLog(`收到 ${remoteUid} 的 track: ${event.track.kind}, streams: ${event.streams.length}`);
+        const remoteVideo = getOrCreateRemoteSlot(remoteUid, remoteName);
+        if (!remoteVideo) return;
+
+        if (event.streams[0]) {
+          remoteVideo.srcObject = event.streams[0];
+        } else {
+          if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
+          remoteVideo.srcObject.addTrack(event.track);
+        }
+
+        // Desktop Chrome 嘅 autoplay policy：有 audio track 嘅 video 唔可以直接 autoplay，
+        // 但 muted 狀態就可以。所以先 muted 播放，播放成功後立即 unmute，
+        // 呢樣嘢係目前業界通用嘅 workaround（類似 Zoom、Google Meet 嘅做法）。
+        remoteVideo.muted = true;
+        remoteVideo.play()
+          .then(() => { remoteVideo.muted = false; })
+          .catch(e => {
+            console.log('remote video play failed:', e);
+            // 如果 unmute 播放都失敗，保持 muted 至少顯示畫面
+            remoteVideo.muted = true;
+            remoteVideo.play().catch(() => {});
+          });
+        if (event.track.kind === 'video') markSlotLive(remoteUid);
+      };
+
+      pc.onicecandidate = async (event) => {
+        if (event.candidate && state.currentRoomId && window.currentUser) {
+          const docRef = await window.fs.addDoc(window.fs.collection(window.db, "rooms", state.currentRoomId, "candidates"), {
+            from: window.currentUser.uid,
+            to: remoteUid,
+            candidate: event.candidate.toJSON(),
+            timestamp: Date.now()
+          });
+          // candidate 文件用完即棄，發送後過幾秒自動刪除，
+          // 避免呢個 collection 隨住每次開關鏡頭不斷累積、拖累之後嘅連線
+          setTimeout(() => {
+            window.fs.deleteDoc(docRef).catch(() => {});
+          }, 8000);
+        }
+      };
+
+      // 診斷用日誌：如果之後仍然連唔到，喺瀏覽器 Console 睇呢啲 log
+      // 可以清楚知道係卡喺邊一步（訊號交換？ICE 收集？定係實際連線？）
+      pc.oniceconnectionstatechange = () => {
+        wrtcLog(`與 ${remoteUid} 的 ICE 連線狀態: ${pc.iceConnectionState}`);
+      };
+      pc.onicegatheringstatechange = () => {
+        wrtcLog(`與 ${remoteUid} 的 ICE 收集狀態: ${pc.iceGatheringState}`);
+      };
+      pc.onsignalingstatechange = () => {
+        wrtcLog(`與 ${remoteUid} 的 signaling 狀態: ${pc.signalingState}`);
+        if (pc.signalingState === 'stable') applySendLimits(pc);
+      };
+      pc.onconnectionstatechange = () => {
+        wrtcLog(`與 ${remoteUid} 的整體連線狀態: ${pc.connectionState}`);
+        if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
+          console.warn(`與 ${remoteUid} 的連線狀態變為 ${pc.connectionState}`);
+        }
+        if (state.peerConnections[remoteUid] === pc) updateSlotConnStatus(remoteUid);
+
+        if (pc.connectionState === 'connected') {
+          applySendLimits(pc);
+          setTimeout(() => reportConnectionType(remoteUid, pc), 1500);
+          // 連線好返（或者本身就一路穩定），取消任何仲排緊隊嘅自動重連
+          if (state.peerReconnectTimers[remoteUid]) {
+            clearTimeout(state.peerReconnectTimers[remoteUid]);
+            delete state.peerReconnectTimers[remoteUid];
+          }
+          return;
+        }
+
+        // 'disconnected' 好多時淨係短暫網絡波動，過幾秒會自動變返 'connected'，
+        // 未必需要成個連線推倒重來。所以先畀 6 秒寬限，時間到仲未自己好返
+        // 先真係當佢係「呢個 viewer 單方面斷咗」（例如 NAT／路由問題只影響
+        // 緊一邊嘅視角，其他人明明都仲見到晒），主動幫佢重新連過，
+        // 唔好就咁畀個黑畫面一直卡喺度冇人理。
+        if (pc.connectionState === 'disconnected') {
+          if (state.peerReconnectTimers[remoteUid]) clearTimeout(state.peerReconnectTimers[remoteUid]);
+          state.peerReconnectTimers[remoteUid] = setTimeout(() => {
+            delete state.peerReconnectTimers[remoteUid];
+            if (state.peerConnections[remoteUid] === pc &&
+                pc.connectionState !== 'connected' && pc.connectionState !== 'completed') {
+              wrtcLog(`與 ${remoteUid} 的連線持續 disconnected 超過寬限期，主動重新連線`);
+              attemptPeerReconnect(remoteUid, pc);
+            }
+          }, 6000);
+          return;
+        }
+
+        // 關鍵修正：連線徹底死咗（failed／closed）之後，一定要將佢由
+        // state.peerConnections 度移除。之前冇做呢步，導致對方離開房間後，
+        // 呢個已經失效嘅連線物件會一直卡喺 state.peerConnections 度，
+        // 令 "!state.peerConnections[remoteUid]" 呢個檢查永遠都係 false，
+        // 對方之後重新入房都再冇機會收到一個全新嘅 Offer——
+        // 佢哋只可以撿到一份舊時已經冇人理會嘅過時 Offer 文件，白費工夫。
+        if (state.peerReconnectTimers[remoteUid]) {
+          clearTimeout(state.peerReconnectTimers[remoteUid]);
+          delete state.peerReconnectTimers[remoteUid];
+        }
+        if (pc._relayTimer && (pc.connectionState === 'failed' || pc.connectionState === 'closed')) clearInterval(pc._relayTimer);
+        if (pc.connectionState === 'failed' && !pc._rtcReported && window.currentUser && window.currentUser.uid < remoteUid) {
+          pc._rtcReported = true;
+          reportRtc({ result: 'failed' });
+        }
+        if (pc.connectionState === 'failed') {
+          // 已經確定死咗，唔使再等，直接試下自動重新連線，好過就咁擺爛
+          // 一直畀對方個黑畫面
+          attemptPeerReconnect(remoteUid, pc);
+        } else if (pc.connectionState === 'closed') {
+          cleanupDeadPeerConnection(remoteUid, pc);
+        }
+      };
+
+      return pc;
+    }
+
+    // 連線卡死（failed，或者 disconnected 寬限期過咗都未自己好返）之後嘅
+    // 自動補救：清走呢條舊連線，然後好似對方啱啱先上線咁，重新發一次
+    // Offer 幫佢建立返一條全新連線——唔理原本邊個負責發起，因為呢度純粹
+    // 係「我依家見到嘅畫面壞咗，我要自己搶返」嘅補救，唔係初次配對，
+    // 就算兩邊啱啱好同時咁做都唔會有問題（createOfferTo 本身已經會捨棄
+    // 重建任何舊連線）。
+    async function attemptPeerReconnect(remoteUid, pc) {
+      if (state.peerConnections[remoteUid] !== pc) return; // 已經俾第二條新連線取代咗，唔使處理
+      if (!state.currentRoomId || !window.currentUser) return;
+      // v1.199.1：對方已經離開咗房（唔喺 participants 名單），唔使重連，清走嗰格就得
+      if (!state.knownParticipantUids.has(remoteUid)) {
+        await cleanupDeadPeerConnection(remoteUid, pc);
+        return;
+      }
+      await cleanupDeadPeerConnection(remoteUid, pc);
+      const remoteName = state.peerNames[remoteUid] || '同學';
+      getOrCreateRemoteSlot(remoteUid, remoteName);
+      try {
+        await createOfferTo(state.currentRoomId, remoteUid, remoteName);
+      } catch (e) {
+        console.warn(`自動重連 ${remoteUid} 失敗:`, e);
+      }
+    }
+
+    // 連線徹底失效後嘅清理：釋放格仔、由連線清單中移除，
+    // 並刪走自己之前送出、而家已經過時嘅 offer/answer 文件，
+    // 咁對方之後重新入房先唔會執到呢份舊嘢
+    async function cleanupDeadPeerConnection(remoteUid, pc) {
+      if (state.peerConnections[remoteUid] !== pc) return; // 已經俾一條新連線取代咗，唔使處理
+      delete state.peerConnections[remoteUid];
+      releaseRemoteSlot(remoteUid);
+      wrtcLog(`已清理與 ${remoteUid} 的失效連線`);
+
+      if (state.currentRoomId && window.currentUser) {
+        try {
+          await window.fs.deleteDoc(window.fs.doc(window.db, "rooms", state.currentRoomId, "signals", window.currentUser.uid + "_to_" + remoteUid));
+        } catch (e) { /* 文件可能本身就唔存在，忽略 */ }
+      }
+    }
+
+
+    // ===================== 📸 溫習室合照（v1.204.0） =====================
+    // 撳「📸 合照」→ 將而家溫習室入面每一格鏡頭畫面砌成一張 1080×1350 嘅圖
+    // （適合 IG／Threads／WhatsApp），上面大字顯示日期同今日累積溫習時數，
+    // 右下角細細個 ConcenMate logo 同網址。
+    // 私隱：自己永遠清楚；其他同學要佢自己喺設定開咗「容許被合照」先會清楚，
+    // 否則自動打格仔。鏡頭冇開嘅同學用水獺圖代替。圖入面唔會出現任何名字。
+    (function () {
+      const W = 1080, H = 1350;
+      const tt = (k, f) => (typeof window.t === 'function' ? window.t(k, f) : f);
+      const imgCache = {};
+      function loadImg(src) {
+        if (imgCache[src]) return imgCache[src];
+        imgCache[src] = new Promise((resolve) => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => resolve(null);
+          im.src = src;
+        });
+        return imgCache[src];
+      }
+      function hkParts() {
+        const parts = {};
+        new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: 'numeric', day: 'numeric' })
+          .formatToParts(new Date()).forEach(p => { parts[p.type] = p.value; });
+        return { y: parts.year, m: parts.month, d: parts.day, iso: `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}` };
+      }
+      function todayMinutes() {
+        const u = window.currentUser || {};
+        const today = hkParts().iso;
+        return (u.todayDate === today) ? Math.floor(u.todayMinutes || 0) : 0;
+      }
+      function formatDate() {
+        const p = hkParts();
+        const lang = typeof window.getAppLanguage === 'function' ? window.getAppLanguage() : 'zh-Hant';
+        if (lang === 'en') {
+          const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(p.m) - 1];
+          return `${p.d} ${mon} ${p.y}`;
+        }
+        return `${p.y} 年 ${p.m} 月 ${p.d} 日`;
+      }
+      function formatMinutes(total) {
+        const h = Math.floor(total / 60), m = total % 60;
+        const lang = typeof window.getAppLanguage === 'function' ? window.getAppLanguage() : 'zh-Hant';
+        if (lang === 'en') return h > 0 ? `${h} h ${m} min` : `${m} min`;
+        return h > 0 ? `${h} 小時 ${m} 分鐘` : `${m} 分鐘`;
+      }
+      function roundRectPath(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+      }
+      // 合照背景（admin_config/snapshotBg1～4，data URL）；每次開合照視窗最多讀一次
+      const bgCache = {};
+      async function loadSnapshotBg(n) {
+        if (!window.db || !window.fs || !n) return null;
+        const c = bgCache[n];
+        if (c && Date.now() - c.at < 5 * 60 * 1000) return c.img;
+        let img = null;
+        try {
+          const snap = await window.fs.getDoc(window.fs.doc(window.db, 'admin_config', 'snapshotBg' + n));
+          const data = snap.exists() ? snap.data().image : null;
+          if (typeof data === 'string' && data.startsWith('data:image/')) img = await loadImg(data);
+        } catch (e) { /* 讀唔到就用預設背景 */ }
+        bgCache[n] = { img, at: Date.now() };
+        return img;
+      }
+      function videoReady(v) { return v && v.videoWidth > 0 && v.readyState >= 2; }
+      // 「cover」方式畫影片：填滿格仔、保持比例、多出嘅部分裁走
+      // mirror：左右反轉；rot180：轉 180 度。溫習室畫面上所有鏡頭（自己同其他同學）
+      // 都用 CSS scaleX(-1) 左右反轉顯示（見 index.html .canvas-stream-display／
+      // .remote-video-element），所以合照每一格都要用返同一個反轉，方向先會同
+      // 畫面上見到嘅一致。
+      function drawCover(ctx, src, sw, sh, x, y, w, h, mirror, rot180) {
+        const scale = Math.max(w / sw, h / sh);
+        const dw = sw * scale, dh = sh * scale;
+        ctx.save();
+        ctx.translate(x + w / 2, y + h / 2);
+        if (rot180) ctx.rotate(Math.PI);
+        if (mirror) ctx.scale(-1, 1);
+        ctx.drawImage(src, -dw / 2, -dh / 2, dw, dh);
+        ctx.restore();
+      }
+      // 打格仔：先縮到好細再放大（所有瀏覽器都支援，包括舊 Safari）
+      function drawPixelated(ctx, v, x, y, w, h, mirror, rot180) {
+        const small = document.createElement('canvas');
+        small.width = Math.max(8, Math.round(w / 28)); small.height = Math.max(8, Math.round(h / 28));
+        const sctx = small.getContext('2d');
+        drawCover(sctx, v, v.videoWidth, v.videoHeight, 0, 0, small.width, small.height, mirror, rot180);
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(small, x, y, w, h);
+        ctx.restore();
+      }
+      async function drawPlaceholder(ctx, x, y, w, h) {
+        const g = ctx.createLinearGradient(x, y, x, y + h);
+        g.addColorStop(0, '#CFE3E8'); g.addColorStop(1, '#D2D9E9');
+        ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+        const otter = await loadImg('assets/images/ottie-wave.png');
+        if (otter) {
+          const size = Math.min(w, h) * 1.05; // assets/images/ottie-wave.png 本身四邊有透明留白，要畫大啲先夠大隻
+          ctx.drawImage(otter, x + (w - size) / 2, y + (h - size) / 2, size, size);
+        }
+      }
+
+      // 收集要入相嘅格仔：自己 + 房入面其他同學
+      function collectTiles() {
+        const tiles = [];
+        const selfVideo = document.getElementById('behind-video-engine');
+        const selfTrack = state.mediaStream && state.mediaStream.getVideoTracks ? state.mediaStream.getVideoTracks()[0] : null;
+        const selfOn = state.isCameraOn && videoReady(selfVideo) && (!selfTrack || selfTrack.enabled);
+        tiles.push({ video: selfOn ? selfVideo : null, mirror: true, clear: true });
+        Object.keys(state.slotAssignments || {})
+          .sort((a, b) => state.slotAssignments[a] - state.slotAssignments[b])
+          .forEach(uid => {
+            const el = document.getElementById('video-slot-' + state.slotAssignments[uid]);
+            const v = el ? el.querySelector('video') : null;
+            const overlay = el ? el.querySelector('.video-overlay') : null;
+            const camOff = overlay && overlay.style.display !== 'none';
+            const rot180 = !!(v && /rotate\(180deg\)/.test(v.style.transform || ''));
+            tiles.push({ video: (!camOff && videoReady(v)) ? v : null, mirror: true, rot180, clear: !!(state.photoAllowed && state.photoAllowed[uid]) });
+          });
+        return tiles.slice(0, 4);
+      }
+
+      // v1.205.1：相片位置固定（每個人數一個固定排版），等設計師一早知道
+      // 背景邊度會被相片遮住。每格都係 4:3；鏡頭比例唔同（例如手機直向）
+      // 時，完整顯示原畫面，空位用同一畫面模糊放大填滿，唔會裁走任何人。
+      const MARGIN = 48, HEADER = 48, FOOTER = 120, GAP = 16, MAX_H = 1350;
+      function fixedSlots(n) {
+        const availW = W - MARGIN * 2, availH = MAX_H - HEADER - FOOTER;
+        let rects = [];
+        const col = (count, w) => {
+          const h = w * 3 / 4, total = h * count + GAP * (count - 1);
+          const top = HEADER + (availH - total) / 2, left = (W - w) / 2;
+          return Array.from({ length: count }, (_, i) => ({ x: left, y: top + i * (h + GAP), w, h }));
+        };
+        if (n <= 1) rects = col(1, availW);
+        else if (n === 2) rects = col(2, ((availH - GAP) / 2) * 4 / 3);
+        else if (n === 3) rects = col(3, ((availH - GAP * 2) / 3) * 4 / 3);
+        else {
+          const w = (availW - GAP) / 2, h = w * 3 / 4, total = h * 2 + GAP;
+          const top = HEADER + (availH - total) / 2;
+          rects = [0, 1, 2, 3].map((i) => ({ x: MARGIN + (i % 2) * (w + GAP), y: top + Math.floor(i / 2) * (h + GAP), w, h }));
+        }
+        return rects.map((r) => ({ x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) }));
+      }
+      // 俾管理後台「下載設計範本」用
+      window.getSnapshotLayout = function (n) {
+        return { width: W, height: MAX_H, footerHeight: FOOTER, slots: fixedSlots(n) };
+      };
+      // 完整顯示（contain），空位用同一畫面模糊放大填滿
+      function drawContainBlur(ctx, v, x, y, w, h, mirror, rot180) {
+        const sw = v.videoWidth, sh = v.videoHeight;
+        ctx.save();
+        ctx.filter = 'blur(24px) brightness(0.85)';
+        drawCover(ctx, v, sw, sh, x - 30, y - 30, w + 60, h + 60, mirror, rot180);
+        ctx.restore();
+        const scale = Math.min(w / sw, h / sh);
+        const dw = sw * scale, dh = sh * scale;
+        drawCover(ctx, v, sw, sh, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh, mirror, rot180);
+      }
+
+      async function renderSnapshot() {
+        const font = getComputedStyle(document.body).fontFamily || 'sans-serif';
+        const tiles = collectTiles();
+        const slots = fixedSlots(tiles.length);
+        const H2 = MAX_H;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H2;
+        const ctx = canvas.getContext('2d');
+
+        // 背景：預設米白相紙；管理後台有按人數設定背景圖就用嗰張
+        ctx.fillStyle = '#F7F4EE'; ctx.fillRect(0, 0, W, H2);
+        const bgImg = await loadSnapshotBg(tiles.length);
+        if (bgImg) {
+          const sc = Math.max(W / bgImg.width, H2 / bgImg.height);
+          ctx.drawImage(bgImg, (W - bgImg.width * sc) / 2, (H2 - bgImg.height * sc) / 2, bgImg.width * sc, bgImg.height * sc);
+        }
+
+        for (let i = 0; i < tiles.length; i++) {
+          const { x, y, w, h } = slots[i];
+          const t = tiles[i];
+          ctx.save();
+          roundRectPath(ctx, x, y, w, h, 10);
+          ctx.clip();
+          if (!t.video) await drawPlaceholder(ctx, x, y, w, h);
+          else if (t.clear) drawContainBlur(ctx, t.video, x, y, w, h, t.mirror, t.rot180);
+          else drawPixelated(ctx, t.video, x, y, w, h, t.mirror, t.rot180);
+          ctx.restore();
+        }
+        // 菲林相機風格日期印：橙色數字印喺最後一格右下角（唔遮住塊面）
+        if (tiles.length) {
+          const last = slots[tiles.length - 1];
+          const p = hkParts();
+          const stamp = `'${String(p.y).slice(-2)} ${String(p.m).padStart(2, '0')} ${String(p.d).padStart(2, '0')}`;
+          ctx.save();
+          ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+          ctx.font = `700 ${Math.round(Math.max(24, Math.min(40, last.h * 0.075)))}px "Courier New", ui-monospace, monospace`;
+          ctx.fillStyle = 'rgba(255, 150, 60, 0.92)';
+          ctx.shadowColor = 'rgba(255, 110, 20, 0.85)'; ctx.shadowBlur = 10;
+          ctx.fillText(stamp, last.x + last.w - 22, last.y + last.h - 20);
+          ctx.restore();
+        }
+
+        // 底部資料列：左邊細字今日溫習時數，右邊細 logo＋網址
+        const fy = H2 - FOOTER / 2;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#5E6E73';
+        ctx.font = `600 28px ${font}`;
+        ctx.fillText(tt('snapshot.studiedLine', '今日溫習 {t}').replace('{t}', formatMinutes(todayMinutes())), MARGIN + 4, fy);
+        const logo = await loadImg('assets/images/logo-snapshot.png');
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#4A68A8';
+        ctx.font = `700 24px ${font}`;
+        const urlText = 'concenmate.com';
+        const urlW = ctx.measureText(urlText).width;
+        ctx.fillText(urlText, W - MARGIN, fy);
+        if (logo) {
+          const lh = 56, lgw = logo.width * (lh / logo.height);
+          ctx.drawImage(logo, W - MARGIN - urlW - 12 - lgw, fy - lh / 2, lgw, lh);
+        }
+        return canvas;
+      }
+
+      function canvasToBlob(canvas) {
+        return new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
+      }
+      function fileName() { return `ConcenMate-${hkParts().iso}.png`; }
+
+      function ensureModal() {
+        let m = document.getElementById('room-snapshot-modal');
+        if (m) return m;
+        m = document.createElement('div');
+        m.id = 'room-snapshot-modal';
+        m.style.cssText = 'position:fixed; inset:0; z-index:25000; display:none; align-items:center; justify-content:center; background:rgba(20,45,55,.55); padding:16px; box-sizing:border-box;';
+        m.innerHTML = `
+          <div style="background:#fff; border-radius:18px; padding:18px; width:420px; max-width:100%; max-height:100%; overflow-y:auto; box-shadow:0 14px 40px rgba(0,0,0,.3); text-align:center;">
+            <div style="font-size:18px; font-weight:800; color:#29395C; margin-bottom:10px;" id="room-snapshot-title"></div>
+            <img id="room-snapshot-preview" alt="" style="width:100%; max-height:56vh; object-fit:contain; border-radius:12px; display:block; background:#F6F7FB;">
+            <p id="room-snapshot-hint" style="font-size:12px; color:#7787A8; margin:8px 0 0;"></p>
+            <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px;">
+              <button type="button" class="btn btn-primary" id="room-snapshot-share-btn" style="display:none;"></button>
+              <button type="button" class="btn btn-primary" id="room-snapshot-save-btn"></button>
+              <button type="button" class="btn btn-primary" id="room-snapshot-diary-btn"></button>
+              <button type="button" class="btn btn-outline" id="room-snapshot-retake-btn"></button>
+              <button type="button" class="btn btn-outline" id="room-snapshot-close-btn"></button>
+            </div>
+          </div>`;
+        document.body.appendChild(m);
+        m.addEventListener('click', (e) => { if (e.target === m) closeModal(); });
+        m.querySelector('#room-snapshot-close-btn').onclick = closeModal;
+        m.querySelector('#room-snapshot-retake-btn').onclick = () => window.openRoomSnapshot();
+        m.querySelector('#room-snapshot-save-btn').onclick = saveImage;
+        m.querySelector('#room-snapshot-diary-btn').onclick = postToDiary;
+        m.querySelector('#room-snapshot-share-btn').onclick = shareImage;
+        return m;
+      }
+      let currentBlob = null, currentUrl = null;
+      function closeModal() {
+        const m = document.getElementById('room-snapshot-modal');
+        if (m) m.style.display = 'none';
+      }
+      function saveImage() {
+        if (!currentBlob) return;
+        const a = document.createElement('a');
+        a.href = currentUrl; a.download = fileName();
+        document.body.appendChild(a); a.click(); a.remove();
+        window.showToast(tt('snapshot.saved', '已儲存圖片'), '');
+      }
+      async function shareImage() {
+        if (!currentBlob) return;
+        try {
+          const file = new File([currentBlob], fileName(), { type: 'image/png' });
+          await navigator.share({ files: [file], text: tt('snapshot.shareText', '與書伴一起溫習 concenmate.com') });
+        } catch (e) {
+          if (e && e.name !== 'AbortError') saveImage();
+        }
+      }
+      // v1.205.2：將合照直接發佈到「溫習日記」——沿用 postStudyPhoto（同一套
+      // 每日一張、溫夠 15 分鐘、SafeSearch 內容檢查），唔使另外整新規則。
+      function refreshDiaryButton() {
+        const btn = document.getElementById('room-snapshot-diary-btn');
+        if (!btn) return;
+        const gate = typeof window.getStudyPhotoGateState === 'function' ? window.getStudyPhotoGateState() : { ok: true };
+        btn.textContent = tt('snapshot.diaryBtn', '發佈到溫習日記');
+        btn.style.opacity = gate.ok ? '1' : '0.5';
+        btn.style.cursor = gate.ok ? 'pointer' : 'not-allowed';
+        btn.title = gate.ok ? '' : (gate.reason || '');
+      }
+      function blobToDiaryDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = () => {
+            const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
+            const c = document.createElement('canvas');
+            c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            URL.revokeObjectURL(url);
+            resolve(c.toDataURL('image/jpeg', 0.85));
+          };
+          img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(tt('snapshot.failed', '未能製作合照，請稍後再試'))); };
+          img.src = url;
+        });
+      }
+      let postingDiary = false;
+      async function postToDiary() {
+        if (!currentBlob || postingDiary) return;
+        const gate = typeof window.getStudyPhotoGateState === 'function' ? window.getStudyPhotoGateState() : { ok: true };
+        if (!gate.ok) { window.showToast(gate.reason, ''); return; }
+        postingDiary = true;
+        try {
+          const dataUrl = await blobToDiaryDataUrl(currentBlob);
+          await window.callCloudFunction('postStudyPhoto', { image: dataUrl });
+          const p = hkParts();
+          window.currentUser.photoCount = (window.currentUser.photoCount || 0) + 1;
+          window.currentUser.lastPhotoPostDate = p.iso;
+          if (typeof window.updateMyAccountPhotoStats === 'function') window.updateMyAccountPhotoStats();
+          window.showToast(tt('snapshot.diaryPosted', '已發佈到溫習日記'), '');
+        } catch (err) {
+          window.showToast((err && err.message) || tt('snapshot.diaryFailed', '發佈失敗，請稍後再試'), '');
+        } finally {
+          postingDiary = false;
+          refreshDiaryButton();
+        }
+      }
+
+      async function setAllowGroupPhoto(on) {
+        if (!window.currentUser || !window.db || !window.fs) return;
+        try {
+          await window.fs.updateDoc(window.fs.doc(window.db, 'users', window.currentUser.uid), { allowGroupPhoto: !!on });
+          window.currentUser.allowGroupPhoto = !!on;
+          ['prof-allow-group-photo', 'room-allow-photo-cb'].forEach((id) => { const cb = document.getElementById(id); if (cb) cb.checked = !!on; });
+          if (state.currentRoomId) {
+            await window.fs.updateDoc(window.fs.doc(window.db, 'rooms', state.currentRoomId, 'participants', window.currentUser.uid), { allowPhoto: !!on }).catch(() => {});
+          }
+          window.showToast(on ? tt('snapshot.allowOnToast', '其他同學拍攝合照時，會清楚顯示你的鏡頭') : tt('snapshot.allowOffToast', '其他同學拍攝合照時，你的鏡頭會以馬賽克遮蓋'), '');
+        } catch (e) {
+          ['prof-allow-group-photo', 'room-allow-photo-cb'].forEach((id) => { const cb = document.getElementById(id); if (cb) cb.checked = window.currentUser.allowGroupPhoto === true; });
+          window.showToast(tt('snapshot.settingFailed', '設定未能儲存，請稍後再試'), '');
+        }
+      }
+      window.setAllowGroupPhoto = setAllowGroupPhoto;
+
+      window.openRoomSnapshot = async function () {
+        if (!state.currentRoomId) return;
+        const m = ensureModal();
+        m.querySelector('#room-snapshot-title').textContent = tt('snapshot.title', '溫習室合照');
+        m.querySelector('#room-snapshot-save-btn').textContent = tt('snapshot.saveBtn', '儲存圖片');
+        refreshDiaryButton();
+        m.querySelector('#room-snapshot-share-btn').textContent = tt('snapshot.shareBtn', '分享');
+        m.querySelector('#room-snapshot-retake-btn').textContent = tt('snapshot.retakeBtn', '重新拍攝');
+        m.querySelector('#room-snapshot-close-btn').textContent = tt('snapshot.closeBtn', '關閉');
+        m.querySelector('#room-snapshot-hint').textContent = tt('snapshot.hint', '未勾選「容許合照」的同學會以馬賽克遮蓋。手機亦可長按圖片儲存。');
+        try {
+          if (window.showLoading) window.showLoading(tt('snapshot.making', '正在製作合照…'));
+          const canvas = await renderSnapshot();
+          currentBlob = await canvasToBlob(canvas);
+          if (currentUrl) URL.revokeObjectURL(currentUrl);
+          currentUrl = currentBlob ? URL.createObjectURL(currentBlob) : null;
+          m.querySelector('#room-snapshot-preview').src = currentUrl || '';
+          let canShare = false;
+          try { canShare = !!(navigator.canShare && currentBlob && navigator.canShare({ files: [new File([currentBlob], fileName(), { type: 'image/png' })] })); } catch (e) {}
+          m.querySelector('#room-snapshot-share-btn').style.display = canShare ? '' : 'none';
+          m.style.display = 'flex';
+        } catch (e) {
+          console.error('製作合照失敗:', e);
+          window.showToast(tt('snapshot.failed', '未能製作合照，請稍後再試'), '');
+        } finally {
+          if (window.hideLoading) window.hideLoading();
+        }
+      };
+    })();
