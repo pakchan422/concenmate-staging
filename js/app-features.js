@@ -1930,7 +1930,14 @@
       if (petWrap) petWrap.classList.toggle('otter-has-bg', !!(avatarSticker && avatarSticker.photo && (avatarSticker.rarity === 'rare' || avatarSticker.rarity === 'limited')));
       if (avatarSticker) {
         if (avatarSticker.photo) {
-          if (photoImg) { photoImg.src = avatarSticker.photo; photoImg.style.display = 'block'; }
+          // v1.230.7：新圖片下載完成先淡入，避免一截截咁顯示
+          if (photoImg && photoImg.getAttribute('src') !== avatarSticker.photo) {
+            photoImg.style.opacity = '0';
+            photoImg.onload = () => { photoImg.style.opacity = '1'; };
+            photoImg.onerror = () => { photoImg.style.opacity = '1'; };
+            photoImg.src = avatarSticker.photo;
+          }
+          if (photoImg) photoImg.style.display = 'block';
           if (blankEl) blankEl.style.display = 'none';
         } else {
           if (photoImg) { photoImg.src = 'assets/images/ottie-full.png'; photoImg.style.display = 'block'; }
