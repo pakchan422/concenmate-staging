@@ -3840,6 +3840,13 @@
       }
     };
 
+    // v1.232.2：預先下載貼圖（已在瀏覽器快取的會即時完成），超時就不再等
+    function gachaPreloadImages(urls, timeoutMs) {
+      const list = (urls || []).filter(u => typeof u === 'string' && u);
+      if (!list.length) return Promise.resolve();
+      const all = Promise.all([...new Set(list)].map(u => new Promise(res => { const im = new Image(); im.onload = im.onerror = res; im.src = u; })));
+      return Promise.race([all, new Promise(r => setTimeout(r, timeoutMs || 2500))]);
+    }
     async function doGachaInner(type) {
       // 「幸運扭蛋」掣而家改咗做「連續抽十次」——一次過用同一個獎池
       // （lucky 池）抽 10 次、一次過扣總費用，結果分兩行顯示，唔再係
@@ -3894,8 +3901,9 @@
       void machine.offsetWidth; // reflow to restart animation
       machine.classList.add('gacha-shaking');
 
-      // 等震動動畫完成
-      await new Promise(r => setTimeout(r, 500));
+      // 等震動動畫完成；v1.232.2：同時預先下載抽中貼圖，結果卡出現時圖片已就緒（最多多等 2.5 秒）
+      const _preSticker = findGachaStickerById(serverStickerIds[0]);
+      await Promise.all([new Promise(r => setTimeout(r, 500)), gachaPreloadImages([_preSticker && _preSticker.photo])]);
 
       // 抽獎：而家全部改成 Ottiee 貼紙，抽之前先記低呢隻之前擁有幾多張
       // （0 即係「新貼紙」），抽完即刻寫返擁有狀態（畫面 + Firestore）。
@@ -4045,7 +4053,7 @@
       void machine.offsetWidth;
       machine.classList.add('gacha-shaking');
 
-      await new Promise(r => setTimeout(r, 500));
+      await Promise.all([new Promise(r => setTimeout(r, 500)), gachaPreloadImages(serverStickerIds.map(id => { const st = findGachaStickerById(id); return st && st.photo; }))]);
 
       // 連續抽 10 次貼紙，每次獨立 roll。先喺本機複製一份目前擁有狀態
       // （localOwned）嚟逐次模擬，先至知呢 10 抽入面邊幾張係「新貼紙」
