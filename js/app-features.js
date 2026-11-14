@@ -6733,6 +6733,17 @@
     document.getElementById('cm-force-update-btn').onclick = function () { window.open(PLAY_URL, '_blank'); };
   }
 
+  const LAUNCH_AT = Date.now();
+  function launchedRecently() { return Date.now() - LAUNCH_AT < 20000; }
+  // 測試環境：在「環境除錯面板」顯示更新狀態，方便檢查
+  function setUpdStatus(t) {
+    if (window.IS_PROD_SITE) return;
+    const panelTs = document.getElementById('load-timestamp');
+    if (!panelTs) return;
+    let el = document.getElementById('cm-upd-debug');
+    if (!el) { el = document.createElement('span'); el.id = 'cm-upd-debug'; panelTs.parentNode.appendChild(document.createElement('br')); panelTs.parentNode.appendChild(document.createTextNode('App 更新: ')); panelTs.parentNode.appendChild(el); el.style.color = '#A4B4D4'; }
+    el.textContent = t;
+  }
   let checking = false, lastCheck = 0;
   async function checkForUpdate() {
     if (checking || Date.now() - lastCheck < 30 * 60 * 1000) return;
@@ -6746,13 +6757,24 @@
       if (Number(cfg.minNativeBuild) > 0 && info.build > 0 && info.build < Number(cfg.minNativeBuild)) { showForceUpdate(); return; }
       if (!U || !cfg.version || !cfg.url) return;
       if (cfg.env && cfg.env !== window.CM_APP_ENV) return; // 測試版／正式版更新包不可混用
-      if (cmpVer(cfg.version, window.APP_VERSION) <= 0) return;
+      if (cmpVer(cfg.version, window.APP_VERSION) <= 0) { setUpdStatus('已是最新（後台發佈 v' + cfg.version + '）'); return; }
       const list = await U.list();
       let b = (list.bundles || []).find(x => x.version === cfg.version && x.status !== 'error');
-      if (!b) b = await U.download({ url: cfg.url, version: cfg.version });
+      if (b && launchedRecently()) {
+        // v1.235.3：上次已下載好（例如用戶未把 App 放到背景就直接關閉），App 剛打開便即時套用，免得再等一次
+        setUpdStatus('套用 v' + cfg.version + '…');
+        await U.set({ id: b.id });
+        return;
+      }
+      if (!b) {
+        setUpdStatus('下載 v' + cfg.version + ' 中…');
+        b = await U.download({ url: cfg.url, version: cfg.version });
+      }
       await U.next({ id: b.id });
-      console.log('[App 更新] 已下載 v' + cfg.version + '，下次打開時生效');
+      setUpdStatus('已下載 v' + cfg.version + '，下次打開或返回 App 時生效');
+      console.log('[App 更新] 已下載 v' + cfg.version);
     } catch (e) {
+      setUpdStatus('失敗：' + ((e && e.message) || e));
       console.warn('[App 更新] 檢查或下載失敗:', e);
     } finally { checking = false; }
   }
